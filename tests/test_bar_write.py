@@ -179,7 +179,7 @@ def test_skip_goes_to_the_next_phase_and_ends_after_the_last_work(bar, clock):
     assert bar.snapshot().snapshot.current_interval == 2
     bar.next_phase()  # index 3 = cycles*2-1: the end
     assert bar.snapshot().snapshot.type == "NOT_STARTED"
-    with pytest.raises(constants.AppError, match="No interval"):
+    with pytest.raises(constants.AppError, match="No session is running"):
         bar.next_phase()
 
 

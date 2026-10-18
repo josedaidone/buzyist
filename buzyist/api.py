@@ -16,6 +16,7 @@ from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
+from buzyist.i18n import ENGLISH, app_error, language, languages, raw_catalog, t
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -38,10 +39,15 @@ class Api:
             return {"ok": False, "error": str(err)}
         except Exception as err:
             log.exception("api call")
-            return {"ok": False, "error": f"Unexpected error: {err!r}"}
+            return {"ok": False, "error": t("errors.unexpected", error=repr(err))}
 
     def get_state(self):
         return self._app.state()
+
+    def i18n(self):
+        """The app language and its catalog, with English's for what it lacks (ui/i18n.js)."""
+        lang = language()
+        return {"lang": lang, "catalog": raw_catalog(lang), "english": raw_catalog(ENGLISH)}
 
     def get_tasks(self, filter_name=None):
         return self._do(self._app.task_list, None if filter_name is None else str(filter_name))
@@ -59,7 +65,7 @@ class Api:
         return self._do(lambda: {"count": len(self._app.check_query(str(query)))})
 
     def start(self, task_id=None, name="", activity="", fixed=False):
-        """`fixed`: the usual tomato settings even when the task has a duration."""
+        """`fixed`: the usual pomodoro settings even when the task has a duration."""
         return self._do(
             self._app.start_task,
             None if task_id is None else str(task_id),
@@ -113,6 +119,7 @@ class Api:
             extension_dir=str(paths.EXTENSION_DIR),
             extension_browser=(find_browser() or (None,))[0],
             sync_info=self._app.sync_info(),
+            languages=[{"code": code, "name": name} for code, name in languages().items()],
         )
 
     def sync_info(self):
@@ -186,7 +193,7 @@ class Api:
         def go():
             sync_extension()
             if not paths.EXTENSION_DIR.exists():
-                raise AppError("The extension folder is missing; reinstall buZyist.")
+                raise app_error("errors.extension.missing")
             copied = set_clipboard(str(paths.EXTENSION_DIR))
             browser = find_browser()
             if browser:
@@ -211,7 +218,7 @@ class Api:
     def test_bar(self):
         def go():
             if self._app.bar.is_local:
-                raise AppError("The BUSY Bar is turned off; the timer runs on this PC.")
+                raise app_error("errors.bar.off")
             self._app.bar.reset()
             version = self._app.bar.run(lambda bar: bar.version(), device=True)
             return {"via": self._app.bar.via, "version": getattr(version, "version", "")}
@@ -226,8 +233,10 @@ class Api:
         """A text screen as the bar would show it: a PNG data URL (bar_display.render)."""
 
         def go():
-            values = {"task": "Write the Q4 plan", "activity": "Email", "apps": "Teams", "round": 2, "rounds": 4}
-            values |= {"tomatoes": 3, "minutes": 75}
+            # The editor's sample task and activity, in the app language.
+            values = {"task": t("settings.bar.sample_task"), "activity": t("settings.bar.sample_activity")}
+            values |= {"apps": "Teams", "pomodoro": 2}
+            values |= {"pomodoros": 4, "minutes": 75, "round": 2, "rounds": 4, "tomatoes": 3}
             shown = fill_text(str(text or ""), values)
             picture = png(render(shown, str(color), None if minutes is None else int(minutes)))
             return {"url": "data:image/png;base64," + base64.b64encode(picture).decode()}

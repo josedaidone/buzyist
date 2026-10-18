@@ -10,6 +10,7 @@ import time
 
 from buzyist import paths
 from buzyist.constants import APP, AppError, app_version
+from buzyist.i18n import app_error, english, t
 from buzyist.storage import read_json, write_json
 from buzyist.updater import UPDATABLE, UPDATE_EVERY, download_setup, latest_release, stream_sha256
 from buzyist.win32.files import open_locked
@@ -49,12 +50,12 @@ class UpdatesMixin:
                 try:
                     self.check_for_update()
                 except AppError as err:
-                    log.info("update check: %s", err)
+                    log.info("update check: %s", english(err))
             if self.cfg["auto_update"] and self.can_auto_update and self.idle_for_update():
                 try:
                     self.install_update()
                 except AppError as err:
-                    log.warning("update: %s", err)  # kept in update_error; retried at the next check
+                    log.warning("update: %s", english(err))  # kept in update_error; retried at the next check
             self.update_wake.wait(60)
             self.update_wake.clear()
 
@@ -77,7 +78,7 @@ class UpdatesMixin:
         if found:
             log.info("buZyist %s is available", found["version"])
         if new and not (self.cfg["auto_update"] and self.can_auto_update):
-            self.notify(f"buZyist {found['version']} is here", "Open Settings → About to get it.")
+            self.notify(t("notify.update_found.title", version=found["version"]), t("notify.update_found.text"))
         if self.tray:
             self.tray.update_menu()
         return {"update": self.update_view()}
@@ -87,11 +88,11 @@ class UpdatesMixin:
         with self.lock:
             release = self.update
             if not release:
-                raise AppError("There's no update to install.")
+                raise app_error("errors.update.none")
             if not UPDATABLE:
-                raise AppError("Only an installed buZyist can update itself; download the new version from GitHub.")
+                raise app_error("errors.update.portable")
             if self.updating:
-                raise AppError("The update is already on its way.")
+                raise app_error("errors.update.busy")
             self.updating, self.update_error = True, ""
         locked = None
         try:
@@ -105,7 +106,7 @@ class UpdatesMixin:
                 locked = None
                 log.error("the installer %s changed after it was checked; deleting it", path)
                 path.unlink(missing_ok=True)
-                raise AppError("The installer changed after it was checked; not installing it.")
+                raise app_error("errors.update.changed")
             write_json(paths.UPDATE_MARK, {"from": app_version(), "to": release["version"]})
             log.info("installing buZyist %s from %s", release["version"], path)
             # /RELAUNCH=1 makes Setup start buZyist again when it is done,
@@ -121,10 +122,10 @@ class UpdatesMixin:
             if locked:
                 locked.close()
             paths.UPDATE_MARK.unlink(missing_ok=True)
-            message = str(err) if isinstance(err, AppError) else f"Couldn't start the installer ({err})."
+            failed = err if isinstance(err, AppError) else app_error("errors.update.start_failed", error=err)
             with self.lock:
-                self.updating, self.update_error = False, message
-            raise AppError(message)
+                self.updating, self.update_error = False, str(failed)
+            raise AppError(str(failed), failed.english)
         # Setup replaces files this process has open, so get out of its way.
         # Free the instance port at once so the copy Setup starts can claim it.
         if self.instance_socket:
@@ -139,13 +140,10 @@ class UpdatesMixin:
         paths.UPDATE_MARK.unlink(missing_ok=True)
         if mark.get("to") == app_version():
             log.info("updated from %s to %s", mark.get("from"), app_version())
-            self.notify("All up to date", f"buZyist {app_version()} is installed. Enjoy!")
+            self.notify(t("notify.updated.title"), t("notify.updated.text", version=app_version()))
         else:
             log.warning("the update to %s didn't install; see %s", mark.get("to"), paths.SETUP_LOG)
             with self.lock:
                 self.update_failed = str(mark.get("to"))
-                self.update_error = f"Updating to {mark.get('to')} didn't work (details in {paths.SETUP_LOG.name})."
-            self.notify(
-                "The update didn't go through",
-                f"buZyist {mark.get('to')} didn't install. Try again from Settings → About.",
-            )
+                self.update_error = t("errors.update.failed", version=mark.get("to"), log=paths.SETUP_LOG.name)
+            self.notify(t("notify.update_failed.title"), t("notify.update_failed.text", version=mark.get("to")))

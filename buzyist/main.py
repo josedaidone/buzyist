@@ -6,6 +6,7 @@ window), the log, the WebView2 check, files from old versions, then App.
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import shutil
 import socket
@@ -18,6 +19,7 @@ from buzyist import paths
 from buzyist.app import App
 from buzyist.constants import APP, APP_NAME, INSTANCE_PORT, app_version
 from buzyist.extension import sync_extension
+from buzyist.i18n import ENGLISH, translate
 from buzyist.win32 import ASFW_ANY, MB_SETFOREGROUND, user32
 from buzyist.win32.registry import webview2_installed
 
@@ -57,6 +59,15 @@ def adopt_old_files() -> None:
             log.info("copied %s to %s", name, paths.DATA_DIR)
 
 
+def saved_language() -> str:
+    """The app language config.json holds, without App (English when it can't be read)."""
+    try:
+        saved = json.loads(paths.CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ENGLISH
+    return str(saved.get("language") or ENGLISH) if isinstance(saved, dict) else ENGLISH
+
+
 def message_box(text: str, flags: int = 0x40) -> int:
     return user32.MessageBoxW(None, text, APP_NAME, flags | MB_SETFOREGROUND)
 
@@ -85,12 +96,9 @@ def main() -> None:
     setup_logging()
     log.info("%s %s starting (%s)", APP_NAME, app_version(), "packaged" if paths.FROZEN else "from source")
     if not webview2_installed():
-        answer = message_box(
-            "buZyist needs the Microsoft Edge WebView2 Runtime, which draws its window.\n\n"
-            'Open Microsoft\'s download page now? Install the "Evergreen" runtime, '
-            "then start buZyist again.",
-            0x04 | 0x30,
-        )  # MB_YESNO | MB_ICONWARNING
+        # Before App reads the settings: the app language straight from config.json.
+        lang = saved_language()
+        answer = message_box(translate(lang, "errors.webview2"), 0x04 | 0x30)  # MB_YESNO | MB_ICONWARNING
         if answer == 6:  # IDYES
             webbrowser.open("https://developer.microsoft.com/microsoft-edge/webview2/#download-section")
         return

@@ -17,7 +17,8 @@ import urllib.request
 from pathlib import Path
 
 from buzyist import paths
-from buzyist.constants import APP, RELEASES_API, REPO_URL, AppError, app_version
+from buzyist.constants import APP, RELEASES_API, REPO_URL, app_version
+from buzyist.i18n import app_error
 from buzyist.updater_sign import minisign_verify
 
 log = logging.getLogger(APP)
@@ -43,9 +44,9 @@ def github_open(url: str, timeout: float = 20, api: bool = False):
     try:
         return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout)
     except urllib.error.HTTPError as err:
-        raise AppError(f"GitHub answered {err.code}.")
+        raise app_error("errors.update.github_answered", status=err.code)
     except OSError as err:
-        raise AppError(f"Can't reach GitHub ({getattr(err, 'reason', err)}).")
+        raise app_error("errors.update.github_unreachable", error=getattr(err, "reason", err))
 
 
 # Release signing (#022): SHA256SUMS.txt is signed with minisign (Ed25519,
@@ -60,7 +61,7 @@ def github_open(url: str, timeout: float = 20, api: bool = False):
 # installed (no fallback).
 UPDATE_PUBKEYS: list[str] = []
 UPDATE_SIG_ASSET = "SHA256SUMS.txt.minisig"
-UNSIGNED_UPDATE = "The update isn't signed by buZyist; not installing it."
+UNSIGNED_UPDATE = "errors.update.unsigned"  # the catalog key of what an unsigned update says
 # Every download of an update must come from this repository's releases.
 RELEASE_DOWNLOAD_PATH = urllib.parse.urlsplit(REPO_URL).path.rstrip("/") + "/releases/download/"
 
@@ -77,7 +78,7 @@ def check_release_url(url: str) -> None:
         or "." in segments
     ):
         log.error("refused an update download from %s", url)
-        raise AppError("The update doesn't come from buZyist's GitHub releases; not installing it.")
+        raise app_error("errors.update.wrong_source")
 
 
 def latest_release() -> dict | None:
@@ -86,7 +87,7 @@ def latest_release() -> dict | None:
         with github_open(RELEASES_API, api=True) as response:
             release = json.loads(response.read())
     except (OSError, ValueError) as err:
-        raise AppError(f"Couldn't read the latest release from GitHub ({err}).")
+        raise app_error("errors.update.release_unreadable", error=err)
     tag = release.get("tag_name") or ""
     if (version_tuple(tag) or ()) <= version_tuple(app_version()):
         return None
@@ -115,7 +116,7 @@ def download_setup(release: dict) -> tuple[Path, str]:
     """
     setup = release["setup"]
     if not setup or not release["sums"]:
-        raise AppError(f"Release {release['version']} has no installer to update with.")
+        raise app_error("errors.update.no_installer", version=release["version"])
     for url in (setup["url"], release["sums"], release.get("sig")):
         if url:
             check_release_url(url)
@@ -123,21 +124,21 @@ def download_setup(release: dict) -> tuple[Path, str]:
         with github_open(release["sums"]) as response:
             raw_sums = response.read()
     except OSError as err:
-        raise AppError(f"Couldn't download the release checksums ({err}).")
+        raise app_error("errors.update.sums_failed", error=err)
     if UPDATE_PUBKEYS:
         if not release.get("sig"):
             log.error("release %s has no %s; not installing it", release["version"], UPDATE_SIG_ASSET)
-            raise AppError(UNSIGNED_UPDATE)
+            raise app_error(UNSIGNED_UPDATE)
         try:
             with github_open(release["sig"]) as response:
                 signature = response.read().decode("utf-8", "replace")
         except OSError as err:
-            raise AppError(f"Couldn't download the release signature ({err}).")
+            raise app_error("errors.update.sig_failed", error=err)
         try:
             trusted = minisign_verify(raw_sums, signature, UPDATE_PUBKEYS)
         except ValueError as err:
             log.error("release %s: bad signature on SHA256SUMS.txt (%s); not installing it", release["version"], err)
-            raise AppError(UNSIGNED_UPDATE)
+            raise app_error(UNSIGNED_UPDATE)
         log.info("release %s: SHA256SUMS.txt is signed (%s)", release["version"], trusted)
     else:
         log.warning("this build has no update signing key; trusting SHA256SUMS.txt without a signature")
@@ -146,7 +147,7 @@ def download_setup(release: dict) -> tuple[Path, str]:
         (parts[0].lower() for parts in map(str.split, sums.splitlines()) if parts[1:] == [setup["name"]]), None
     )
     if not expected:
-        raise AppError("The release's checksums don't list its installer.")
+        raise app_error("errors.update.not_listed")
     paths.UPDATES_DIR.mkdir(parents=True, exist_ok=True)
     path = paths.UPDATES_DIR / setup["name"]
     part = path.with_suffix(".part")
@@ -158,10 +159,10 @@ def download_setup(release: dict) -> tuple[Path, str]:
                 out.write(chunk)
     except OSError as err:
         part.unlink(missing_ok=True)
-        raise AppError(f"The download failed ({err}).")
+        raise app_error("errors.update.download_failed", error=err)
     if digest.hexdigest() != expected:
         part.unlink(missing_ok=True)
-        raise AppError("The downloaded installer doesn't match the release's checksum; not installing it.")
+        raise app_error("errors.update.checksum")
     part.replace(path)
     return path, expected
 

@@ -87,7 +87,7 @@ def test_clean_blocked_sites_wants_a_list(values):
 
 
 def test_clean_blocked_sites_rejects_a_bad_entry():
-    with pytest.raises(constants.AppError, match="'localhost' isn't a website"):
+    with pytest.raises(constants.AppError, match="“localhost” isn't a website"):
         site_rules.clean_blocked_sites(["youtube.com", "localhost"])
 
 

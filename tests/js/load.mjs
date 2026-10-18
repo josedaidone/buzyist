@@ -72,6 +72,13 @@ export function loadBackground() {
     clearTimeout,
     setInterval,
     clearInterval,
+    // The worker's importScripts("i18n.js"): run the file in the same context.
+    importScripts: (...names) => {
+      for (const name of names) {
+        const path = join(ROOT, "extension", name);
+        vm.runInContext(readFileSync(path, "utf8"), context, { filename: path });
+      }
+    },
   });
   const file = join(ROOT, "extension", "background.js");
   vm.runInContext(readFileSync(file, "utf8"), context, { filename: file });
@@ -105,4 +112,12 @@ export function loadUiFunction(name, path = "ui/main.js") {
   const context = vm.createContext({});
   vm.runInContext(functionSource(path, name), context, { filename: path });
   return context[name];
+}
+
+// A whole UI script that touches no page at its top level (ui/i18n.js) in a
+// fresh context; its function declarations are the context's globals.
+export function loadUiScript(path) {
+  const context = vm.createContext({ console });
+  vm.runInContext(readFileSync(join(ROOT, path), "utf8"), context, { filename: path });
+  return context;
 }

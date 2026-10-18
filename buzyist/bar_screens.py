@@ -28,6 +28,7 @@ import copy
 import re
 
 from buzyist.constants import AppError
+from buzyist.i18n import ENGLISH, app_error, t, translate
 
 SCREENS = ("focus", "call", "done")
 MODES = {"focus": ("card", "theme", "text"), "call": ("card", "theme", "text"), "done": ("text", "off")}
@@ -47,11 +48,14 @@ SCREEN_COLORS = {
 }
 
 # What a text can say, per screen; anything else in braces stays as typed.
+# Texts saved before #22 (one word per concept) may say {round}/{rounds} (focus) or {tomatoes}
+# (done): OLD_PLACEHOLDERS still fills them, but they aren't offered.
 PLACEHOLDERS = {
-    "focus": ("task", "activity", "round", "rounds"),
+    "focus": ("task", "activity", "pomodoro", "pomodoros"),
     "call": ("task", "activity", "apps"),
-    "done": ("task", "activity", "tomatoes", "minutes"),
+    "done": ("task", "activity", "pomodoros", "minutes"),
 }
+OLD_PLACEHOLDERS = {"focus": {"round": "pomodoro", "rounds": "pomodoros"}, "done": {"tomatoes": "pomodoros"}}
 
 # The themes buZyist puts on the bar for its text screens start with this,
 # and aren't offered as themes to pick (bar_display.THEME_SLOTS).
@@ -66,6 +70,18 @@ DEFAULT_BAR_SCREENS = {
 }
 
 
+def default_bar_screens(lang: str | None = None) -> dict:
+    """
+    DEFAULT_BAR_SCREENS with the call and end texts in `lang` (defaults.bar_call,
+    defaults.bar_done; English when None or not shipped): for a config that has
+    no bar screens yet. Saved screens keep their texts.
+    """
+    out = copy.deepcopy(DEFAULT_BAR_SCREENS)
+    for screen in ("call", "done"):
+        out[screen]["text"] = translate(str(lang or ENGLISH), f"defaults.bar_{screen}")
+    return out
+
+
 def fill_text(template: str, values: dict) -> str:
     """`template` with each {name} it may hold replaced by values[name] ("" when missing), on one line."""
 
@@ -78,21 +94,21 @@ def fill_text(template: str, values: dict) -> str:
 
 def clean_screen(value, screen: str) -> dict:
     """One screen as saved: {mode, theme, text, color}. AppError with Settings' message if it's wrong."""
-    label = {"focus": "focus", "call": "call", "done": "end of session"}[screen]
+    label = t(f"errors.bar_screens.name_{screen}")
     if not isinstance(value, dict):
-        raise AppError(f"The {label} screen didn't come through; try again.")
+        raise app_error("errors.bar_screens.missing", screen=label)
     mode = value.get("mode")
     if mode not in MODES[screen]:
-        raise AppError(f"Pick what the bar shows for the {label} screen.")
+        raise app_error("errors.bar_screens.mode", screen=label)
     theme = str(value.get("theme") or "").strip()
     text = " ".join(str(value.get("text") or "").split())
     color = value.get("color") if value.get("color") in SCREEN_COLORS else "tomate"
     if mode == "theme" and not (_THEME.fullmatch(theme) and not theme.startswith(OWN_THEME_PREFIX)):
-        raise AppError(f"Pick one of the bar's themes for the {label} screen.")
+        raise app_error("errors.bar_screens.theme", screen=label)
     if mode == "text" and not text:
-        raise AppError(f"Type what the bar shows for the {label} screen.")
+        raise app_error("errors.bar_screens.text", screen=label)
     if len(text) > MAX_SCREEN_TEXT:
-        raise AppError(f"Keep the {label} screen's text to {MAX_SCREEN_TEXT} characters or fewer.")
+        raise app_error("errors.bar_screens.text_long", screen=label, max=MAX_SCREEN_TEXT)
     return {"mode": mode, "theme": theme if _THEME.fullmatch(theme) else "", "text": text, "color": color}
 
 
@@ -104,7 +120,7 @@ def clean_bar_screens(value, tidy: bool = False) -> dict:
     if not isinstance(value, dict):
         if tidy:
             return copy.deepcopy(DEFAULT_BAR_SCREENS)
-        raise AppError("The bar screens didn't come through; try again.")
+        raise app_error("errors.bar_screens.list")
     out = {}
     for screen in SCREENS:
         if screen not in value:

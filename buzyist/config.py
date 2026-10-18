@@ -22,9 +22,9 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, ValidationInfo, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
-from buzyist.activities import DEFAULT_ACTIVITIES, clean_activities
+from buzyist.activities import DEFAULT_ACTIVITIES, clean_activities, default_activities
 from buzyist.app_limits import _sanitize_app_limits, clean_app_limits
-from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens
+from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens, default_bar_screens
 from buzyist.blocker import clean_blocked_apps, normalize_blocked_apps
 from buzyist.calls import clean_call_ignore
 from buzyist.constants import (
@@ -43,6 +43,7 @@ from buzyist.constants import (
     AppError,
 )
 from buzyist.hotkey import parse_hotkey
+from buzyist.i18n import app_error, languages, t
 from buzyist.secrets_dpapi import protect_secrets
 from buzyist.site_rules import _sanitize_site_limits, _sanitize_sites, clean_blocked_sites, clean_site_limits
 from buzyist.storage import write_bytes_atomic, write_json
@@ -86,6 +87,9 @@ DEFAULTS = {
     "launch_at_login": True,
     "open_on_finish": True,
     "auto_update": True,
+    # The app language (a catalog in ui/i18n/, see buzyist/i18n.py): English
+    # until someone picks another, never taken from Windows.
+    "language": "en",
     # The Stats tab's streak: a Saturday or Sunday without a tomato doesn't
     # break it (one with a tomato still counts).
     "streak_skip_weekends": False,
@@ -303,7 +307,7 @@ def clean_bar_address(raw) -> str:
     text = re.sub(r"^https?://", "", shown, flags=re.IGNORECASE).rstrip("/")
     if not text:
         return ""
-    bad = AppError(f"{shown!r} isn't the bar's address; type one like 192.168.1.50.")
+    bad = app_error("errors.bar.bad_address", address=shown)
     bracketed = re.fullmatch(r"\[([0-9a-fA-F:.]+)\](?::(\d{1,5}))?", text)
     try:
         if bracketed:
@@ -374,6 +378,7 @@ class Config(BaseModel):
     launch_at_login: bool = _default("launch_at_login")
     open_on_finish: bool = _default("open_on_finish")
     auto_update: bool = _default("auto_update")
+    language: str = _default("language")
     block_apps: bool = _default("block_apps")
     blocked_apps: list[dict] = _default("blocked_apps")
     block_sites: bool = _default("block_sites")
@@ -406,7 +411,7 @@ class Config(BaseModel):
                     log.warning("config: dropped the unusable filter %r", item)
             value = kept
         if isinstance(value, list) and not value:
-            raise PydanticCustomError("app", "{message}", {"message": "Keep at least one filter."})
+            raise PydanticCustomError("app", "{message}", {"message": t("errors.filters.keep_one")})
         return value
 
     @field_validator("busybar_ip")
@@ -465,11 +470,18 @@ class Config(BaseModel):
     def _call_ignore(cls, value):
         return _app_error(clean_call_ignore, value)
 
+    @field_validator("language")
+    @classmethod
+    def _language(cls, value: str) -> str:
+        if value not in languages():
+            raise PydanticCustomError("app", "{message}", {"message": t("errors.language")})
+        return value
+
     @field_validator("sync_owner")
     @classmethod
     def _owner(cls, value: str) -> str:
         if not re.fullmatch(r"[a-z0-9]{0,32}", value):
-            raise PydanticCustomError("app", "{message}", {"message": FIELD_ERRORS["sync_owner"]})
+            raise PydanticCustomError("app", "{message}", {"message": field_error("sync_owner")})
         return value
 
     @model_validator(mode="after")
@@ -481,7 +493,7 @@ class Config(BaseModel):
             for key in ("plan_target", "plan_min", "plan_max"):
                 setattr(self, key, DEFAULTS[key])
             return self
-        raise PydanticCustomError("app", "{message}", {"message": FIELD_ERRORS["plan_target"]})
+        raise PydanticCustomError("app", "{message}", {"message": field_error("plan_target")})
 
     @classmethod
     def check(cls, data) -> dict:
@@ -495,6 +507,12 @@ class Config(BaseModel):
     def load(cls, raw: dict) -> dict:
         """config.json's settings, valid: a key that isn't falls back to its default (and is logged)."""
         data = dict(raw)
+        if "activities" not in data:
+            # A config without activities gets the defaults, named in its language
+            # (written once: saved activities keep their names when it changes).
+            data["activities"] = default_activities(data.get("language"))
+        if "bar_screens" not in data:
+            data["bar_screens"] = default_bar_screens(data.get("language"))  # the same for the bar's texts
         for _ in range(len(cls.model_fields) + 1):
             try:
                 return cls.model_validate(data, context={"load": True}).model_dump()
@@ -509,21 +527,33 @@ class Config(BaseModel):
 
 
 # What Settings says when a key is wrong, for checks that aren't clean_*
-# functions (those bring their own message). In the order save_settings
-# used to check them: with several problems, the first one is shown.
+# functions (those bring their own message): the catalog key of the message
+# and its values, translated when it is shown (field_error), never here. In
+# the order save_settings used to check them: with several problems, the
+# first one is shown.
 FIELD_ERRORS = {
-    "sync_owner": "Pick the browser profile that shares the limits.",
-    "site_mode": "Pick whether to block the listed websites or allow only them.",
-    "work_minutes": f"Phases run {PHASE_MIN} to {PHASE_MAX} minutes.",
-    "rest_minutes": f"Phases run {PHASE_MIN} to {PHASE_MAX} minutes.",
-    "cycles": f"Sessions run {CYCLES_MIN} to {CYCLES_MAX} rounds.",
-    "plan_single_max": f"One tomato for tasks up to 0 to {PHASE_MAX} minutes.",
-    "plan_target": "Aim for a tomato length between the shortest and the longest.",
-    "plan_min": f"Tomatoes run {PHASE_MIN} to {PHASE_MAX} minutes.",
-    "plan_max": f"Tomatoes run {PHASE_MIN} to {PHASE_MAX} minutes.",
-    "poll_seconds": f"Check the bar every {POLL_MIN} to {POLL_MAX} seconds.",
-    "focus_label": f"Keep the label to {MAX_LABEL} characters or fewer.",
+    "sync_owner": ("errors.fields.sync_owner", {}),
+    "site_mode": ("errors.sites.mode", {}),
+    "work_minutes": ("errors.fields.work_minutes", {"min": PHASE_MIN, "max": PHASE_MAX}),
+    "rest_minutes": ("errors.fields.rest_minutes", {"min": PHASE_MIN, "max": PHASE_MAX}),
+    "cycles": ("errors.fields.cycles", {"min": CYCLES_MIN, "max": CYCLES_MAX}),
+    "plan_single_max": ("errors.fields.plan_single_max", {"max": PHASE_MAX}),
+    "plan_target": ("errors.fields.plan_target", {}),
+    "plan_min": ("errors.fields.work_minutes", {"min": PHASE_MIN, "max": PHASE_MAX}),
+    "plan_max": ("errors.fields.work_minutes", {"min": PHASE_MIN, "max": PHASE_MAX}),
+    "poll_seconds": ("errors.fields.poll_seconds", {"min": POLL_MIN, "max": POLL_MAX}),
+    "focus_label": ("errors.fields.focus_label", {"max": MAX_LABEL}),
 }
+
+
+def field_error(key: str) -> str:
+    """What Settings says when `key` is wrong, in the app language (FIELD_ERRORS, else a generic line)."""
+    if key in FIELD_ERRORS:
+        message, values = FIELD_ERRORS[key]
+        return t(message, **values)
+    return t("errors.fields.invalid", name=key.replace("_", " ")) if key else t("errors.fields.invalid_any")
+
+
 LIST_KEYS = (
     "filters",
     "blocked_apps",
@@ -555,7 +585,7 @@ def validation_message(err: ValidationError) -> str:
     key = str(first["loc"][0]) if first["loc"] else ""
     if first["type"] == "app":
         return first["msg"]
-    return FIELD_ERRORS.get(key) or f"{key.replace('_', ' ') or 'A setting'} isn't valid."
+    return field_error(key)
 
 
 def migrate_pre_versioning(cfg: dict) -> None:

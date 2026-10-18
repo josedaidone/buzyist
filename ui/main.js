@@ -2,11 +2,11 @@
 
 const $ = (id) => document.getElementById(id);
 const RING = 2 * Math.PI * 120;  // the ring's r in ui/main.html
-const PRESETS = [
-  { name: "Classic", work_minutes: 25, rest_minutes: 5, cycles: 4 },
-  { name: "Short", work_minutes: 15, rest_minutes: 5, cycles: 4 },
-  { name: "Long", work_minutes: 50, rest_minutes: 10, cycles: 3 },
-  { name: "Deep", work_minutes: 90, rest_minutes: 15, cycles: 2 },
+const PRESETS = [  // name: main.setup.presets.<name>
+  { name: "classic", work_minutes: 25, rest_minutes: 5, cycles: 4 },
+  { name: "short", work_minutes: 15, rest_minutes: 5, cycles: 4 },
+  { name: "long", work_minutes: 50, rest_minutes: 10, cycles: 3 },
+  { name: "deep", work_minutes: 90, rest_minutes: 15, cycles: 2 },
 ];
 
 let api = null;
@@ -42,12 +42,19 @@ function icon(name) {
   return svg;
 }
 
+// [text before `part`, text after it] (all of it before when it isn't there),
+// to set part of a translated text apart, e.g. a number in bold.
+function splitAround(text, part) {
+  const i = text.indexOf(part);
+  return i < 0 ? [text, ""] : [text.slice(0, i), text.slice(i + part.length)];
+}
+
 function toast(message, bad) {
-  const t = $("toast");
-  t.textContent = message;
-  t.className = "on" + (bad ? " bad" : "");
+  const box = $("toast");
+  box.textContent = message;
+  box.className = "on" + (bad ? " bad" : "");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (t.className = ""), bad ? 7000 : 3200);
+  toastTimer = setTimeout(() => (box.className = ""), bad ? 7000 : 3200);
 }
 
 function clock(ms) {
@@ -59,7 +66,7 @@ function clock(ms) {
 
 function duration(min) {
   const h = Math.floor(min / 60), m = min % 60;
-  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m} min`;
+  return t(h ? (m ? "common.duration.h_m" : "common.duration.h") : "common.duration.min", { h, m });
 }
 
 function isoDay(offset) {
@@ -70,20 +77,20 @@ function isoDay(offset) {
 
 function niceDay(iso) {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDate(new Date(y, m - 1, d), { month: "short", day: "numeric" });
 }
 
-function dueText(t) {
-  if (!t.day) return "";
-  if (t.overdue) return "Overdue · " + niceDay(t.day);
-  if (t.day === isoDay(0)) return t.time || "";
-  if (t.day === isoDay(1)) return "Tomorrow" + (t.time ? " " + t.time : "");
-  return niceDay(t.day) + (t.time ? " " + t.time : "");
+function dueText(task) {
+  if (!task.day) return "";
+  if (task.overdue) return t("main.tasks.overdue", { day: niceDay(task.day) });
+  if (task.day === isoDay(0)) return task.time || "";
+  if (task.day === isoDay(1)) return task.time ? t("main.tasks.tomorrow_at", { time: task.time }) : t("main.tasks.tomorrow");
+  return niceDay(task.day) + (task.time ? " " + task.time : "");
 }
 
+// Todoist's priorities (its API counts 4 as P1), with a word (main.tasks.priority.p1...)
+// so the colour is never the only cue.
 const prioClass = (p) => ({ 4: "p1", 3: "p2", 2: "p3" })[p] || "";
-// Todoist's priorities (its API counts 4 as P1), with a word so the colour is never the only cue.
-const PRIO_WORD = { p1: "Urgent", p2: "High", p3: "Medium" };
 
 // One of the three tomatinhos: "done" (full), "now" (ring with a core), "plan" (outline).
 function tomato(kind, cls) {
@@ -108,33 +115,36 @@ function timeLeft() {
 // A call (phase "call") has no timer: it counts up from when it began.
 const callTime = (t) => t.elapsed_ms + (Date.now() - state.now);
 
+// The phase chip's text: common.phase.<key>.
+const PHASE_KEYS = { idle: "ready", paused: "paused", work: "focus", rest: "break", call: "call" };
+
 function renderTimer() {
   if (!state) return;
-  const t = state.timer, s = state.session;
-  const phase = !t ? "idle" : t.phase === "call" ? "call" : t.paused ? "paused" : t.phase === "work" ? "work" : "rest";
+  const tm = state.timer, s = state.session;
+  const phase = !tm ? "idle" : tm.phase === "call" ? "call" : tm.paused ? "paused" : tm.phase === "work" ? "work" : "rest";
   document.body.dataset.phase = phase;
   const p = pomo || state.pomodoro;
-  if (phase === "call") return renderCall(t, s);
+  if (phase === "call") return renderCall(tm, s);
 
   // ring + time: the ring shows the time left and empties as it passes
   let left, total;
-  if (t) {
+  if (tm) {
     left = Math.max(0, timeLeft());
-    total = t.total_ms;
+    total = tm.total_ms;
   } else {
     left = total = p.work_minutes * 60000;
   }
   $("time").textContent = clock(left);
   $("ringProgress").style.strokeDasharray = RING;
-  $("ringProgress").style.strokeDashoffset = t ? RING * (1 - left / total) : 0;
-  $("timeLabel").textContent = !t ? "per tomato" : t.paused ? "paused" : "left";
-  $("timerBox").setAttribute("aria-label", `${clock(left)} ${t ? "left" : "per tomato"}`);
-  $("phaseTag").textContent = { idle: "Ready", paused: "Paused", work: "Focus", rest: "Break" }[phase];
+  $("ringProgress").style.strokeDashoffset = tm ? RING * (1 - left / total) : 0;
+  $("timeLabel").textContent = t(!tm ? "main.timer.per_pomodoro" : tm.paused ? "main.timer.paused" : "main.timer.left");
+  $("timerBox").setAttribute("aria-label", t(tm ? "main.timer.aria_left" : "main.timer.aria_per_pomodoro", { time: clock(left) }));
+  $("phaseTag").textContent = t("common.phase." + PHASE_KEYS[phase]);
 
-  // this session's tomatoes: done, now, planned
-  const rounds = t ? t.rounds : p.cycles;
-  const done = !t ? 0 : t.round - (t.phase === "rest" ? 0 : 1);
-  const now = t && t.phase === "work" ? t.round : 0;
+  // this session's pomodoros: done, now, planned
+  const rounds = tm ? tm.rounds : p.cycles;
+  const done = !tm ? 0 : tm.round - (tm.phase === "rest" ? 0 : 1);
+  const now = tm && tm.phase === "work" ? tm.round : 0;
   const key = `${rounds}/${done}/${now}`;
   const dots = $("rounds");
   if (dots.dataset.key !== key) {
@@ -143,51 +153,52 @@ function renderTimer() {
     if (rounds <= 12) {
       for (let n = 1; n <= rounds; n++) dots.append(tomato(n <= done ? "done" : n === now ? "now" : "plan"));
     }
-    dots.setAttribute("aria-label", t ? `Tomato ${Math.min(t.round, rounds)} of ${rounds}` : `${rounds} tomato${rounds === 1 ? "" : "es"}`);
+    dots.setAttribute("aria-label", tm ? t("main.timer.round", { round: Math.min(tm.round, rounds), rounds })
+      : t("main.timer.rounds", { n: rounds }));
   }
-  const restMin = Math.round((t ? t.rest_ms : p.rest_minutes * 60000) / 60000);
+  const restMin = Math.round((tm ? tm.rest_ms : p.rest_minutes * 60000) / 60000);
   let line;
-  if (!t) line = p.cycles === 1 ? `1 tomato of ${p.work_minutes} min, no break`
-    : `${p.cycles} tomatoes of ${p.work_minutes} min, ${p.rest_minutes} min breaks`;
-  else if (t.phase === "rest") line = `Break · tomato ${t.round + 1} of ${t.rounds} next`;
-  else if (t.round >= t.rounds) line = `Tomato ${t.round} of ${t.rounds} · the last one`;
-  else line = `Tomato ${t.round} of ${t.rounds} · ${restMin} min break after`;
+  if (!tm) line = t("main.timer.plan", { n: p.cycles, work: p.work_minutes, rest: p.rest_minutes });
+  else if (tm.phase === "rest") line = t("main.timer.break_next", { next: tm.round + 1, rounds: tm.rounds });
+  else if (tm.round >= tm.rounds) line = t("main.timer.last", { round: tm.round, rounds: tm.rounds });
+  else line = t("main.timer.break_after", { round: tm.round, rounds: tm.rounds, rest: restMin });
   $("roundsText").textContent = line;
-  document.title = t ? `${clock(left)} · ${s ? s.task.content : "buZyist"}` : "buZyist";
+  document.title = tm ? `${clock(left)} · ${s ? s.task.content : "buZyist"}` : "buZyist";
 }
 
-// A call shows the time so far on a full ring, and no tomatoes.
-function renderCall(t, s) {
-  const so = clock(callTime(t));
+// A call shows the time so far on a full ring, and no pomodoros.
+function renderCall(tm, s) {
+  const so = clock(callTime(tm));
   $("time").textContent = so;
   $("ringProgress").style.strokeDasharray = RING;
   $("ringProgress").style.strokeDashoffset = 0;
-  $("timeLabel").textContent = "on a call";
-  $("timerBox").setAttribute("aria-label", `${so} on a call`);
-  $("phaseTag").textContent = "Call";
+  $("timeLabel").textContent = t("main.timer.call");
+  $("timerBox").setAttribute("aria-label", t("main.timer.call_aria", { time: so }));
+  $("phaseTag").textContent = t("common.phase.call");
   const dots = $("rounds");
   if (dots.dataset.key !== "call") {
     dots.dataset.key = "call";
     dots.textContent = "";
-    dots.setAttribute("aria-label", "A call, with no tomatoes");
+    dots.setAttribute("aria-label", t("main.timer.call_rounds"));
   }
-  $("roundsText").textContent = "Ends when the call does · counted as focus";
+  $("roundsText").textContent = t("main.timer.call_line");
   document.title = `${so} · ${s ? s.task.content : "buZyist"}`;
 }
 
 let wasRunning = null;
 function renderCurrent() {
-  const t = state.timer, s = state.session;
+  const tm = state.timer, s = state.session;
   const box = $("current");
   const meta = $("curMeta");
   meta.textContent = "";
   box.classList.toggle("idle", !s);
-  $("controls").classList.toggle("hidden", !t);
+  $("controls").classList.toggle("hidden", !tm);
   if (s) {
-    $("curEyebrow").textContent = t && t.phase === "call" ? `On a call · since ${s.started_at}`
-      : t
-      ? (t.phase === "rest" ? `Break time. Since ${s.started_at}` : `${t.paused ? "Paused" : "Just this"} · since ${s.started_at}`)
-      : "Wrapping up…";
+    const time = s.started_at;
+    $("curEyebrow").textContent = tm && tm.phase === "call" ? t("main.current.call", { time })
+      : tm
+      ? t(tm.phase === "rest" ? "main.current.break" : tm.paused ? "main.current.paused" : "main.current.focus", { time })
+      : t("main.current.wrapping_up");
     $("curTask").textContent = s.task.content;
     if (s.task.project) {
       const proj = el("span", "", s.task.project);
@@ -195,45 +206,46 @@ function renderCurrent() {
     }
     if (s.label_added && state.label) meta.append(el("span", "", "@" + state.label));
     if (s.task.url) {
-      const open = el("button", "link", "Open in Todoist");
+      const open = el("button", "link", t("main.current.open_todoist"));
       open.onclick = () => api.open_url(s.task.url);
       meta.append(open);
     }
-  } else if (t && state.remote) {
+  } else if (tm && state.remote) {
     // Started on another PC, which shared its task through Chrome sync.
     const r = state.remote;
-    $("curEyebrow").textContent = `Started on ${r.by}` + (r.started_at ? ` · since ${r.started_at}` : "");
+    $("curEyebrow").textContent = r.started_at ? t("main.current.remote_since", { by: r.by, time: r.started_at })
+      : t("main.current.remote", { by: r.by });
     $("curTask").textContent = r.task.content;
     if (r.task.project) meta.append(el("span", "", r.task.project));
     if (r.task.url) {
-      const open = el("button", "link", "Open in Todoist");
+      const open = el("button", "link", t("main.current.open_todoist"));
       open.onclick = () => api.open_url(r.task.url);
       meta.append(open);
     }
-  } else if (t) {
-    $("curEyebrow").textContent = state.bar.local || state.bar.offline ? "No task linked" : "Started on the bar, no task linked";
-    $("curTask").textContent = "Timer running";
-    meta.append(el("span", "", state.todoist ? "Pick a task to put it in focus" : ""));
+  } else if (tm) {
+    $("curEyebrow").textContent = t(state.bar.local || state.bar.offline ? "main.current.no_task" : "main.current.bar_no_task");
+    $("curTask").textContent = t("main.current.timer_running");
+    meta.append(el("span", "", state.todoist ? t("main.current.pick_to_focus") : ""));
   } else {
-    $("curEyebrow").textContent = state.todoist ? "One tomato at a time." : "Name it if you like, then go.";
-    $("curTask").textContent = state.todoist ? "Pick a task to start" : "Ready when you are";
+    $("curEyebrow").textContent = t(state.todoist ? "main.current.idle" : "main.current.idle_solo");
+    $("curTask").textContent = t(state.todoist ? "main.current.pick" : "main.current.ready");
   }
-  $("freeBox").classList.toggle("hidden", !!t || !!s);
+  $("freeBox").classList.toggle("hidden", !!tm || !!s);
   syncFreeActivity();
-  if (t || s) closeFreeList();
+  if (tm || s) closeFreeList();
   // One Tomate button per screen: with a task list, its play buttons are the main action.
   $("startFree").classList.toggle("primary", !state.todoist);
   // A call has no pause or skip: it ends with the call, or with Stop.
-  $("btnPause").classList.toggle("hidden", !!t && t.phase === "call");
-  $("btnSkip").classList.toggle("hidden", !!t && t.phase === "call");
-  if (t) {
-    $("pauseIcon").setAttribute("href", t.paused ? "#i-play" : "#i-pause");
-    $("btnPause").title = t.paused ? "Resume" : "Pause";
+  $("btnPause").classList.toggle("hidden", !!tm && tm.phase === "call");
+  $("btnSkip").classList.toggle("hidden", !!tm && tm.phase === "call");
+  if (tm) {
+    $("pauseIcon").setAttribute("href", tm.paused ? "#i-play" : "#i-pause");
+    $("btnPause").title = t(tm.paused ? "main.controls.resume" : "main.controls.pause");
     $("btnPause").setAttribute("aria-label", $("btnPause").title);
   }
-  $("setupHint").textContent = t ? "Applies to the next session" : "Used for the next session";
+  $("setupHint").textContent = t(tm ? "main.setup.hint_running" : "main.setup.hint_idle");
   // Settings stay open while idle and fold away once a timer runs.
-  const running = !!t;
+  const running = !!tm;
   if (running !== wasRunning) $("setup").open = !running;
   wasRunning = running;
 }
@@ -242,48 +254,47 @@ function renderGuard() {
   const b = state.blocks;
   if (!b) return;
   const parts = [];
-  if (b.apps) parts.push(`${b.apps} app${b.apps === 1 ? "" : "s"}`);
-  if (b.sites_on) parts.push(b.site_mode === "allow" ? "allowlist" : `${b.sites} site${b.sites === 1 ? "" : "s"}`);
-  if (b.limits) parts.push(`${b.limits} limit${b.limits === 1 ? "" : "s"}`);
+  if (b.apps) parts.push(t("main.guard.apps", { n: b.apps }));
+  if (b.sites_on) parts.push(b.site_mode === "allow" ? t("main.guard.allowlist") : t("main.guard.sites", { n: b.sites }));
+  if (b.limits) parts.push(t("main.guard.limits", { n: b.limits }));
   const count = (b.apps || 0) + (b.limits || 0) + (!b.sites_on ? 0 : b.site_mode === "allow" ? 1 : b.sites);
-  const blocks = `${count} block${count === 1 ? "" : "s"}`;
   const guard = $("guard");
   let text;
-  if (!parts.length) text = "Focus guard off · set it up";
-  else if (b.active) text = `Focus guard on · ${blocks} active`;
-  else text = `Focus guard ready · ${blocks}`;
+  if (!parts.length) text = t("main.guard.off");
+  else text = t(b.active ? "main.guard.on" : "main.guard.ready", { n: count });
   if ($("guardText").textContent !== text) $("guardText").textContent = text;
   guard.classList.toggle("on", parts.length > 0);
   guard.classList.toggle("active", !!b.active);
   $("guardIcon").setAttribute("href", b.active ? "#i-shield-check" : "#i-shield");
-  guard.title = parts.length ? "What stays blocked during focus: " + parts.join(", ") : "Block distracting apps and websites during focus";
+  guard.title = parts.length ? t("main.guard.title", { list: parts.join(", ") }) : t("main.guard.title_off");
   guard.dataset.tab = b.apps || !b.sites_on ? "apps" : "sites";
 }
 
 function renderToday() {
   const today = state.today;
   const n = today.pomodoros;
-  const date = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const date = formatDate(new Date(), { weekday: "long", month: "long", day: "numeric" });
   if ($("todayDate").textContent !== date) $("todayDate").textContent = date;
-  $("sumTitle").textContent = n ? `${n} tomato${n === 1 ? "" : "es"} today` : "No tomatoes yet today";
+  $("sumTitle").textContent = n ? t("main.today.count", { n }) : t("main.today.none");
   const side = [];
-  if (today.minutes) side.push(duration(today.minutes) + " of focus");
-  if (today.completed) side.push(`${today.completed} done`);
+  if (today.minutes) side.push(t("main.today.focus", { duration: duration(today.minutes) }));
+  if (today.completed) side.push(t("main.today.completed", { n: today.completed }));
   $("sumSide").textContent = side.join(" · ");
   const box = $("sumTomatoes");
   const key = String(n);
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.textContent = "";
-    if (!n) box.append(el("span", "none", "Pick a task. 25 minutes, just that."));
+    if (!n) box.append(el("span", "none", t("main.today.empty")));
     for (let i = 0; i < Math.min(n, 16); i++) box.append(tomato("done"));
     if (n > 16) box.append(el("span", "more", `+${n - 16}`));
-    box.setAttribute("aria-label", `${n} tomato${n === 1 ? "" : "es"} finished today`);
+    box.setAttribute("aria-label", t("main.today.finished", { n }));
   }
-  // Without the task list (no Todoist) the header chip carries the count.
+  // Without the task list (no Todoist) the header chip carries the count, in bold.
   const chip = $("today");
   chip.textContent = "";
-  chip.append(tomato("done", "t"), el("b", "", String(n)), n === 1 ? " tomato today" : " tomatoes today");
+  const [before, after] = splitAround(t("main.today.count", { n }), String(n));
+  chip.append(tomato("done", "t"), before, el("b", "", String(n)), after);
   if (today.minutes) chip.append(" · " + duration(today.minutes));
 }
 
@@ -293,16 +304,15 @@ function renderChrome() {
 
   const bar = state.bar;
   $("barChip").className = "chip" + (bar.offline ? "" : bar.ok === true ? " ok" : bar.ok === false ? " bad" : "");
-  $("barText").textContent = bar.local ? "Timer on this PC"
-    : bar.offline ? "Bar out of reach · timer on this PC"
-    : bar.ok === true ? `BUSY Bar · ${bar.via}` : bar.ok === false ? "Bar offline" : "Looking for the bar";
-  $("barChip").title = bar.offline ? "The BUSY Bar can't be reached. The timer runs here and goes back to the bar once it answers."
-    : bar.ok === false ? bar.error : "";
+  $("barText").textContent = bar.local ? t("main.bar.local")
+    : bar.offline ? t("main.bar.offline")
+    : bar.ok === true ? t("main.bar.via", { via: bar.via }) : bar.ok === false ? t("main.bar.unreachable") : t("main.bar.looking");
+  $("barChip").title = bar.offline ? t("main.bar.offline_title") : bar.ok === false ? bar.error : "";
   $("hotkeyHint").textContent = state.hotkey ? state.hotkey.replace(/\b\w/g, (c) => c.toUpperCase()) : "";
 
   const u = state.update;
   $("updateChip").classList.toggle("hidden", !u);
-  if (u) $("updateChip").textContent = u.busy ? "Updating…" : `Update ${u.version}`;
+  if (u) $("updateChip").textContent = u.busy ? t("main.header.updating") : t("main.header.update", { version: u.version });
   $("extChip").classList.toggle("hidden", !state.extension_outdated);
   if ($("drawer").classList.contains("on")) {
     renderUpdate();
@@ -316,11 +326,12 @@ function renderUpdate() {
   btn.classList.toggle("hidden", !u);
   $("releaseNotes").classList.toggle("hidden", !u);
   if (!u) return;
-  btn.textContent = u.busy ? "Installing…" : u.installable ? `Install ${u.version}` : `Download ${u.version}`;
+  btn.textContent = u.busy ? t("settings.about.installing")
+    : t(u.installable ? "settings.about.install" : "settings.about.download", { version: u.version });
   btn.disabled = u.busy;
   const out = $("updateResult");
   out.className = "test-result " + (u.error ? "bad" : "ok");
-  out.textContent = u.error || (u.busy ? "Downloading the update…" : `buZyist ${u.version} is out. Installing it restarts buZyist.`);
+  out.textContent = u.error || (u.busy ? t("settings.about.downloading") : t("settings.about.out", { version: u.version }));
 }
 
 function renderEnded() {
@@ -329,20 +340,20 @@ function renderEnded() {
   $("scrim").classList.toggle("on", !!e || $("drawer").classList.contains("on") || editing !== undefined);
   if (!e) return;
   const finished = e.reason === "finished";
-  $("endedChip").textContent = finished ? "Done" : "Stopped";
+  $("endedChip").textContent = t(finished ? "summary.chip_done" : "summary.chip_stopped");
   $("endedChip").className = "state-chip " + (finished ? "done-chip" : "stopped-chip");
   const box = $("endedTomatoes");
   box.textContent = "";
   for (let i = 0; i < Math.min(e.done, 8); i++) box.append(tomato("done"));
   if (e.done > 8) box.append(el("span", "more", `+${e.done - 8}`));
   box.classList.toggle("hidden", !e.done);
-  box.setAttribute("aria-label", `${e.done} tomato${e.done === 1 ? "" : "es"}`);
-  $("endedTitle").textContent = finished ? "Done. Take a breather." : "Session stopped";
+  box.setAttribute("aria-label", t("summary.pomodoros", { n: e.done }));
+  $("endedTitle").textContent = t(finished ? "summary.title_done" : "summary.title_stopped");
   $("endedTask").textContent = e.task.content;
   $("endedComplete").classList.toggle("hidden", !e.task.id || !state.todoist);
   $("endedSummary").textContent = e.done
-    ? `${e.done} tomato${e.done === 1 ? "" : "es"} · ${duration(e.minutes)} of focus`
-    : "No full tomato this time. That's fine.";
+    ? t("summary.result", { n: e.done, duration: duration(e.minutes) })
+    : t("summary.none");
   $("endedProblems").textContent = (e.problems || []).join(" ");
 }
 
@@ -386,8 +397,7 @@ function renderTasksEnabled() {
     tasks = [];
     $("filterTabs").textContent = "";
     $("filterText").textContent = "";
-    showEmpty("Todoist is off",
-      state.needs_setup ? "Add your Todoist API token to see your tasks." : "Turn it on in Settings to pick tasks.");
+    showEmpty(t("main.tasks.off"), t(state.needs_setup ? "main.tasks.needs_token" : "main.tasks.turn_on"));
   }
   if (!off && tasksWereOff) loadTasks();
   tasksWereOff = off;
@@ -446,7 +456,7 @@ function applyTaskResult(result) {
   if (!result.ok) {
     tasks = [];
     renderFilters();
-    showEmpty("Couldn't load tasks", result.error, /token/i.test(result.error));
+    showEmpty(t("main.tasks.load_failed"), result.error, /token/i.test(result.error));
     return;
   }
   tasks = result.tasks;
@@ -492,7 +502,7 @@ const EXAMPLES = ["today | overdue", "7 days", "p1 | p2", "#Inbox", "@waiting", 
 function openFilterEditor(name) {
   const f = name ? filters.find((x) => x.name === name) : null;
   editing = f ? f.name : null;
-  $("filterTitle").textContent = f ? "Edit filter" : "New filter";
+  $("filterTitle").textContent = t(f ? "main.filters.edit_title" : "main.filters.new");
   $("f_name").value = f ? f.name : "";
   $("f_query").value = f ? f.query : "";
   $("filterTest").textContent = "";
@@ -505,7 +515,7 @@ function openFilterEditor(name) {
   for (const q of EXAMPLES) {
     const b = el("button", "", q);
     b.type = "button";
-    b.title = "Add to the query";
+    b.title = t("main.filters.add_to_query");
     b.onclick = () => {
       const area = $("f_query");
       const cur = area.value.trim();
@@ -539,16 +549,16 @@ $("editFilter").onclick = () => openFilterEditor(activeFilter);
 $("filterCancel").onclick = closeFilterEditor;
 $("filterPreview").onclick = async () => {
   filterBusy(true);
-  filterMessage("Asking Todoist…", true);
+  filterMessage(t("main.filters.asking"), true);
   const r = await api.preview_filter($("f_query").value);
   filterBusy(false);
-  if (r.ok) filterMessage(`${r.count} task${r.count === 1 ? "" : "s"} match`, true);
+  if (r.ok) filterMessage(t("main.filters.matches", { n: r.count }), true);
   else filterMessage(r.error, false);
 };
 $("filterForm").onsubmit = async (e) => {
   e.preventDefault();
   filterBusy(true);
-  filterMessage("Checking the filter with Todoist…", true);
+  filterMessage(t("main.filters.checking"), true);
   const r = await api.save_filter(editing, $("f_name").value, $("f_query").value);
   filterBusy(false);
   if (!r.ok) return filterMessage(r.error, false);
@@ -556,10 +566,10 @@ $("filterForm").onsubmit = async (e) => {
   closeFilterEditor();
   sel = 0;
   applyTaskResult(r);
-  toast(`Filter “${r.active}” saved`);
+  toast(t("main.filters.saved", { name: r.active }));
 };
 $("filterDelete").onclick = async () => {
-  if (!confirm(`Delete the filter “${editing}”?`)) return;
+  if (!confirm(t("main.filters.delete_confirm", { name: editing }))) return;
   filterBusy(true);
   const r = await api.delete_filter(editing);
   filterBusy(false);
@@ -567,7 +577,7 @@ $("filterDelete").onclick = async () => {
   ++loadSeq;
   closeFilterEditor();
   applyTaskResult(r);
-  toast("Filter deleted");
+  toast(t("main.filters.deleted"));
 };
 async function moveFilter(delta) {
   const r = await api.move_filter(editing, delta);
@@ -588,7 +598,7 @@ function showEmpty(title, text, withSettings) {
   const li = el("li", "empty");
   li.append(el("b", "", title), el("span", "", text));
   if (withSettings) {
-    const b = el("button", "btn", "Open settings");
+    const b = el("button", "btn", t("main.tasks.open_settings"));
     b.style.marginTop = "14px";
     b.onclick = () => openSettings("todoist");
     li.append(el("br"), b);
@@ -599,90 +609,92 @@ function showEmpty(title, text, withSettings) {
 
 function renderTasks() {
   const q = $("search").value.trim().toLowerCase();
-  shown = !q ? tasks : tasks.filter((t) =>
-    [t.content, t.parent, t.project, ...t.labels].join(" ").toLowerCase().includes(q));
+  shown = !q ? tasks : tasks.filter((task) =>
+    [task.content, task.parent, task.project, ...task.labels].join(" ").toLowerCase().includes(q));
   sel = Math.min(sel, Math.max(0, shown.length - 1));
   // The filter's Todoist durations added up (tasks without one count nothing).
-  const planned = tasks.reduce((sum, t) => sum + (t.minutes || 0), 0);
-  $("count").textContent = `${shown.length} of ${tasks.length}` + (planned ? ` · ${duration(planned)}` : "");
-  $("count").title = planned ? `${duration(planned)} of Todoist durations in this filter` : "";
+  const planned = tasks.reduce((sum, task) => sum + (task.minutes || 0), 0);
+  $("count").textContent = planned
+    ? t("main.tasks.count_planned", { shown: shown.length, total: tasks.length, duration: duration(planned) })
+    : t("main.tasks.count", { shown: shown.length, total: tasks.length });
+  $("count").title = planned ? t("main.tasks.count_title", { duration: duration(planned) }) : "";
   const list = $("list");
   list.textContent = "";
-  if (!tasks.length) return showEmpty("All clear", "Nothing in this filter. Enjoy it.");
-  if (!shown.length) return showEmpty("No match", `No task contains “${$("search").value}”.`);
+  if (!tasks.length) return showEmpty(t("main.tasks.empty"), t("main.tasks.empty_text"));
+  if (!shown.length) return showEmpty(t("main.tasks.no_match"), t("main.tasks.no_match_text", { text: $("search").value }));
 
-  shown.forEach((t, i) => {
+  shown.forEach((task, i) => {
     const li = el("li", "task");
-    li.dataset.id = t.id;
+    li.dataset.id = task.id;
     const body = el("div", "t-body");
     const title = el("div", "t-title");
     // A subtask carries its parent's name in front: "parent › subtask".
-    if (t.parent) title.append(el("span", "t-parent", t.parent + " › "));
-    title.append(t.content);
-    title.title = t.parent ? `${t.parent} › ${t.content}` : t.content;
+    if (task.parent) title.append(el("span", "t-parent", task.parent + " › "));
+    title.append(task.content);
+    title.title = task.parent ? `${task.parent} › ${task.content}` : task.content;
     body.append(title);
-    if (t.description) body.append(taskDescription(t));
+    if (task.description) body.append(taskDescription(task));
     const meta = el("div", "t-meta");
-    if (t.project && !t.inbox) {
+    if (task.project && !task.inbox) {
       const proj = el("span", "proj");
       const sw = el("i");
-      sw.style.background = t.color;
-      proj.append(sw, t.project);
+      sw.style.background = task.color;
+      proj.append(sw, task.project);
       meta.append(proj);
     }
-    const due = dueText(t);
-    if (due) meta.append(el("span", t.overdue ? "late" : "", due));
-    if (t.plan) {
-      // Its Todoist duration sets the tomatoes (buzyist/plan.py).
-      const [mins, rounds] = t.plan;
+    const due = dueText(task);
+    if (due) meta.append(el("span", task.overdue ? "late" : "", due));
+    if (task.plan) {
+      // Its Todoist duration sets the pomodoros (buzyist/plan.py).
+      const [mins, rounds] = task.plan;
       const chip = el("span", "plan");
-      chip.title = `${t.minutes} min in Todoist: ${rounds} tomato${rounds === 1 ? "" : "es"} of ${mins} min. Shift+click play for your usual settings.`;
-      chip.append(icon("recent"), rounds === 1 ? `${mins} min` : `${rounds} × ${mins} min`);
+      chip.title = t("main.tasks.plan_title", { minutes: task.minutes, n: rounds, work: mins });
+      chip.append(icon("recent"), t("main.tasks.plan", { n: rounds, work: mins }));
       meta.append(chip);
     }
-    for (const l of t.labels) meta.append(el("span", "lbl" + (l === state?.label ? " mine" : ""), "@" + l));
-    if (t.subtasks && t.subtasks.length) {
+    for (const l of task.labels) meta.append(el("span", "lbl" + (l === state?.label ? " mine" : ""), "@" + l));
+    if (task.subtasks && task.subtasks.length) {
       // Play asks which one to start on (openSubtaskPicker).
-      const n = t.subtasks.length;
-      const chip = el("span", "subs", `${n} subtask${n === 1 ? "" : "s"}`);
-      chip.title = "Play lets you pick one of them, or the whole task";
+      const chip = el("span", "subs", t("main.tasks.subtasks", { n: task.subtasks.length }));
+      chip.title = t("main.tasks.subtasks_title");
       meta.append(chip);
-      li.dataset.subs = t.subtasks.map((s) => s.id).join(" ");
+      li.dataset.subs = task.subtasks.map((s) => s.id).join(" ");
     }
     const dots = el("span", "t-dots");
     meta.prepend(dots);
     // Priority: a pill (filled flag, P1-P3 and a word) first in the meta line,
     // and the checkbox takes the same colour, like in Todoist.
-    const prio = prioClass(t.priority);
+    const prio = prioClass(task.priority);
     if (prio) {
       li.classList.add(prio);
       const pill = el("span", "prio-pill " + prio);
-      pill.title = `Priority ${prio.slice(1)} in Todoist`;
-      pill.append(icon("flag-fill"), el("b", "", prio.toUpperCase()), PRIO_WORD[prio]);
+      pill.title = t("main.tasks.priority_title", { p: prio.slice(1) });
+      pill.append(icon("flag-fill"), el("b", "", prio.toUpperCase()), t("main.tasks.priority." + prio));
       meta.prepend(pill);
     }
     body.append(meta);
     const play = el("button", "play");
     play.append(icon("play"));
-    play.title = "Start a tomato";
-    play.setAttribute("aria-label", "Start a tomato on: " + t.content);
+    play.title = t("main.tasks.start");
+    play.setAttribute("aria-label", t("main.tasks.start_on", { task: task.content }));
     play.tabIndex = -1;
     const check = el("button", "prio");
-    check.title = "Mark as done";
-    check.setAttribute("aria-label", "Mark as done: " + t.content + (prio ? ` (priority ${prio.slice(1)})` : ""));
+    check.title = t("main.tasks.done");
+    check.setAttribute("aria-label", prio ? t("main.tasks.done_on_priority", { task: task.content, p: prio.slice(1) })
+      : t("main.tasks.done_on", { task: task.content }));
     check.tabIndex = -1;
     const box = el("span", "box");
     box.append(icon("check"));
     check.append(box);
-    check.onclick = (e) => { e.stopPropagation(); completeTask(t, li); };
+    check.onclick = (e) => { e.stopPropagation(); completeTask(task, li); };
     li.append(check, body, play);
-    play.onclick = (e) => { e.stopPropagation(); startTask(t, li, e.shiftKey); };
-    li.onclick = (e) => { sel = i; markSelection(false); openTaskMenu(t, li, e.clientX, e.clientY); };
+    play.onclick = (e) => { e.stopPropagation(); startTask(task, li, e.shiftKey); };
+    li.onclick = (e) => { sel = i; markSelection(false); openTaskMenu(task, li, e.clientX, e.clientY); };
     li.oncontextmenu = (e) => {
       e.preventDefault();
       sel = i;
       markSelection(false);
-      openTaskMenu(t, li, e.clientX, e.clientY);
+      openTaskMenu(task, li, e.clientX, e.clientY);
     };
     li.onmousemove = () => { if (sel !== i) { sel = i; markSelection(false); } };
     list.append(li);
@@ -694,24 +706,24 @@ function renderTasks() {
 // The description under the title, cut to two lines; "more" opens it (the row's
 // click still opens the task menu, so the toggle stops it).
 const openDescriptions = new Set();
-function taskDescription(t) {
+function taskDescription(task) {
   const wrap = el("div", "t-desc");
-  const text = el("div", "t-desc-text", t.description);
+  const text = el("div", "t-desc-text", task.description);
   const more = el("button", "t-more");
   more.type = "button";
   more.tabIndex = -1;
   const set = (open) => {
     wrap.classList.toggle("open", open);
-    more.textContent = open ? "less" : "more";
+    more.textContent = t(open ? "main.tasks.less" : "main.tasks.more");
     more.setAttribute("aria-expanded", open);
   };
   more.onclick = (e) => {
     e.stopPropagation();
     const open = !wrap.classList.contains("open");
-    if (open) openDescriptions.add(t.id); else openDescriptions.delete(t.id);
+    if (open) openDescriptions.add(task.id); else openDescriptions.delete(task.id);
     set(open);
   };
-  set(openDescriptions.has(t.id));
+  set(openDescriptions.has(task.id));
   wrap.append(text, more);
   // Only long texts get the toggle: measured once the row is on the page.
   requestAnimationFrame(() => {
@@ -731,8 +743,9 @@ function markSelection(scroll) {
 // one small tomato per pomodoro done on it.
 function markCurrentTask() {
   const id = state && state.session && state.session.task.id;
-  const t = state && state.timer;
-  const word = !t ? "Wrapping up" : t.phase === "call" ? "On a call" : t.paused ? "Paused" : t.phase === "rest" ? "Break" : "In focus";
+  const tm = state && state.timer;
+  const word = t("main.tasks.badge." + (!tm ? "wrapping_up" : tm.phase === "call" ? "call" : tm.paused ? "paused"
+    : tm.phase === "rest" ? "break" : "focus"));
   const counts = (state && state.task_tomatoes) || {};
   for (const li of $("list").querySelectorAll(".task")) {
     // a session on one of its subtasks marks the row too
@@ -755,30 +768,30 @@ function markCurrentTask() {
       if (n > 8) dots.append(el("span", "", "+" + (n - 8)));
       dots.classList.toggle("hidden", !n);
       dots.setAttribute("role", "img");
-      dots.setAttribute("aria-label", `${n} tomato${n === 1 ? "" : "es"} done`);
+      dots.setAttribute("aria-label", t("main.tasks.pomodoros_done", { n }));
     }
   }
 }
 
-// fixed: the usual tomato settings even when the task's duration would set them.
+// fixed: the usual pomodoro settings even when the task's duration would set them.
 // A task with open subtasks first asks which one (direct: start this one, no asking;
 // at: where to open the question, see openSubtaskPicker).
 async function startTask(task, li, fixed, direct, at) {
   if (!direct && task.subtasks && task.subtasks.length) return openSubtaskPicker(task, li, fixed, at);
   if (state && state.session && state.session.task.id === task.id) {
-    toast("That task is already in focus.");
+    toast(t("main.start.already"));
     return;
   }
-  if (state && state.session && !confirm(`Replace the current session on “${state.session.task.content}”?`)) return;
+  if (state && state.session && !confirm(t("main.start.replace", { task: state.session.task.content }))) return;
   if (li) li.classList.add("busy");
   flushPomodoro();
   const result = await api.start(task.id, "", "", !!fixed);
   if (li) li.classList.remove("busy");
   if (!result.ok) return toast(result.error, true);
-  const where = state && (state.bar.local || state.bar.offline) ? "" : " (on the bar)";
+  const onBar = !(state && (state.bar.local || state.bar.offline));
   toast(result.planned
-    ? `Go. ${result.rounds === 1 ? "1 tomato" : result.rounds + " tomatoes"} of ${result.work_minutes} min, from the task's duration${where}.`
-    : `Go. ${result.work_minutes} minutes, just this${where}.`);
+    ? t(onBar ? "main.start.go_planned_bar" : "main.start.go_planned", { n: result.rounds, work: result.work_minutes })
+    : t(onBar ? "main.start.go_bar" : "main.start.go", { work: result.work_minutes }));
   $("search").value = "";
   renderTasks();
   poll();
@@ -786,7 +799,7 @@ async function startTask(task, li, fixed, direct, at) {
 
 async function completeTask(task, li) {
   const inFocus = state && state.session && state.session.task.id === task.id;
-  if (inFocus && !confirm(`“${task.content}” is in focus. Stop the session and mark it as done?`)) return;
+  if (inFocus && !confirm(t("main.tasks.complete_in_focus", { task: task.content }))) return;
   if (li) li.classList.add("busy", "done");
   if (inFocus) {
     const stopped = await api.control("stop");
@@ -797,8 +810,8 @@ async function completeTask(task, li) {
     if (li) li.classList.remove("busy", "done");
     return toast(result.error, true);
   }
-  toast("Done in Todoist.");
-  tasks = tasks.filter((t) => t.id !== task.id);
+  toast(t("main.tasks.completed"));
+  tasks = tasks.filter((x) => x.id !== task.id);
   renderTasks();
   poll();
 }
@@ -822,12 +835,12 @@ function openTaskMenu(task, li, x, y) {
     b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); fn(); };
     menu.append(b);
   };
-  item("play", "Start pomodoro", () => startTask(task, li, false, false, { x, y }));
+  item("play", t("main.menu.start"), () => startTask(task, li, false, false, { x, y }));
   if (task.plan || task.subtasks?.length) {
-    item("play", `Start with your usual ${pomo.work_minutes}-min tomatoes`, () => startTask(task, li, true, false, { x, y }));
+    item("play", t("main.menu.start_usual", { work: pomo.work_minutes }), () => startTask(task, li, true, false, { x, y }));
   }
-  item("check", "Mark as done", () => completeTask(task, li));
-  if (task.url) item("eye", "See on Todoist", () => api.open_url(task.url));
+  item("check", t("main.menu.done"), () => completeTask(task, li));
+  if (task.url) item("eye", t("main.menu.todoist"), () => api.open_url(task.url));
   document.body.append(menu);
   const r = menu.getBoundingClientRect();
   menu.style.left = Math.max(4, Math.min(x, innerWidth - r.width - 4)) + "px";
@@ -843,22 +856,22 @@ function openSubtaskPicker(task, li, fixed, at) {
   const menu = el("div", "ctx-menu pick-menu");
   menu.id = "taskMenu";
   menu.setAttribute("role", "menu");
-  menu.setAttribute("aria-label", "Start on");
-  menu.append(el("div", "pick-head", "Start on…"));
-  const item = (t, depth, label) => {
+  menu.setAttribute("aria-label", t("main.picker.aria"));
+  menu.append(el("div", "pick-head", t("main.picker.head")));
+  const item = (one, depth, label) => {
     const b = el("button", "ctx-item pick-item");
     b.setAttribute("role", "menuitem");
     b.style.paddingLeft = 12 + (depth - 1) * 16 + "px";
-    b.append(el("span", "pick-name", label || t.content));
-    // the tomatoes it would get (unless shift+click asked for the usual ones)
-    if (t.plan && !fixed) b.append(el("span", "pick-plan", t.plan[1] === 1 ? `${t.plan[0]} min` : `${t.plan[1]} × ${t.plan[0]}`));
-    b.title = t.content;
-    b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); startTask(t, li, fixed, true); };
+    b.append(el("span", "pick-name", label || one.content));
+    // the pomodoros it would get (unless shift+click asked for the usual ones)
+    if (one.plan && !fixed) b.append(el("span", "pick-plan", t("main.picker.plan", { n: one.plan[1], work: one.plan[0] })));
+    b.title = one.content;
+    b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); startTask(one, li, fixed, true); };
     menu.append(b);
   };
   for (const s of task.subtasks) item(s, s.depth);
   menu.append(el("div", "pick-sep"));
-  item(task, 1, "The whole task");
+  item(task, 1, t("main.picker.whole"));
   document.body.append(menu);
   const r = menu.getBoundingClientRect();
   const play = li && li.querySelector(".play");
@@ -906,7 +919,9 @@ function renderPomodoro() {
   for (const p of PRESETS) {
     const on = p.work_minutes === pomo.work_minutes && p.rest_minutes === pomo.rest_minutes && p.cycles === pomo.cycles;
     const b = el("button", "preset" + (on ? " on" : ""), `${p.work_minutes} / ${p.rest_minutes}`);
-    b.title = `${p.name}: ${p.cycles} × ${p.work_minutes} min focus, ${p.rest_minutes} min breaks`;
+    b.title = t("main.setup.preset", {
+      name: t("main.setup.presets." + p.name), cycles: p.cycles, work: p.work_minutes, rest: p.rest_minutes,
+    });
     b.onclick = () => {
       Object.assign(pomo, { work_minutes: p.work_minutes, rest_minutes: p.rest_minutes, cycles: p.cycles });
       changed();
@@ -914,8 +929,8 @@ function renderPomodoro() {
     presets.append(b);
   }
   const minutes = pomo.cycles * pomo.work_minutes + (pomo.cycles - 1) * pomo.rest_minutes;
-  const end = new Date(Date.now() + minutes * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  $("total").textContent = `${duration(minutes)} · ends ~${end}`;
+  const end = formatTime(new Date(Date.now() + minutes * 60000), { hour: "2-digit", minute: "2-digit" });
+  $("total").textContent = t("main.setup.total", { duration: duration(minutes), time: end });
   if (state) renderTimer();
 }
 
@@ -991,7 +1006,7 @@ $("btnPause").onclick = () => control(state.timer && state.timer.paused ? "resum
 
 // ------------------------------------------------- what are you working on
 
-// The free field (a tomato with no task) is a combobox. Focusing it lists
+// The free field (a session with no task) is a combobox. Focusing it lists
 // the activities (state.activities, edited in Settings, General) and the
 // latest names used (Api.recent_free). Picking an activity turns it into a
 // chip in the field, and what you type after it is the detail ("Email ·
@@ -1017,7 +1032,7 @@ function setFreeActivity(activity) {
     $("freeChipIcon").setAttribute("href", "#a-" + (ACTIVITY_ICONS.includes(activity.icon) ? activity.icon : "dot"));
     $("freeChipName").textContent = activity.name;
   }
-  $("freeName").placeholder = activity ? "Add a detail (optional)" : "What are you working on? (optional)";
+  $("freeName").placeholder = t(activity ? "main.free.detail" : "main.free.placeholder");
 }
 
 // An activity renamed, given another icon or removed in Settings meanwhile.
@@ -1042,19 +1057,23 @@ function freeOptions() {
     for (const r of free.recent) {
       const detail = r.detail.toLowerCase();
       if (r.activity === free.activity.id && detail.includes(text) && detail !== text) {
-        out.push({ kind: "recent", group: `Recent ${free.activity.name}`, recent: r });
+        out.push({ kind: "recent", group: t("main.free.recent_of", { activity: free.activity.name }), recent: r });
       }
     }
-    if (!text) for (const a of activities()) if (a.id !== free.activity.id) out.push({ kind: "activity", group: "Switch to", activity: a });
+    if (!text) {
+      for (const a of activities()) {
+        if (a.id !== free.activity.id) out.push({ kind: "activity", group: t("main.free.switch_to"), activity: a });
+      }
+    }
     return out;
   }
   const starts = (s) => s.toLowerCase().startsWith(text);
   const found = activities().filter((a) => a.name.toLowerCase().includes(text));
   found.sort((a, b) => starts(b.name) - starts(a.name));
-  for (const a of found) out.push({ kind: "activity", group: "Activities", activity: a });
+  for (const a of found) out.push({ kind: "activity", group: t("main.free.activities"), activity: a });
   for (const r of free.recent) {
     const shown = recentText(r).toLowerCase();
-    if (shown.includes(text) && shown !== text) out.push({ kind: "recent", group: "Recent", recent: r });
+    if (shown.includes(text) && shown !== text) out.push({ kind: "recent", group: t("main.free.recent"), recent: r });
   }
   if (typed && !activities().some((a) => a.name.toLowerCase() === text)) out.push({ kind: "custom", group: "", text: typed });
   return out;
@@ -1072,7 +1091,7 @@ function renderFreeList() {
   }
   // Enter takes the highlighted option: an activity the text starts with,
   // or (nothing else matching) the text as typed. With nothing typed, or
-  // after a chip, nothing is highlighted and Enter starts the tomato.
+  // after a chip, nothing is highlighted and Enter starts the session.
   const text = $("freeName").value.trim().toLowerCase();
   if (free.active === -2) {
     free.active = text && !free.activity
@@ -1097,14 +1116,14 @@ function renderFreeList() {
       else opt.append(el("span", "grow", o.recent.detail));
     } else {
       opt.classList.add("custom");
-      opt.append(icon("play"), el("span", "grow", `Start “${o.text}”`));
+      opt.append(icon("play"), el("span", "grow", t("main.free.custom", { text: o.text })));
     }
     opt.onmousedown = (e) => e.preventDefault();  // keep the focus in the field
     opt.onclick = () => chooseFree(o);
     opt.onmousemove = () => { if (free.active !== i) { free.active = i; markFreeActive(); } };
     nodes.push(opt);
   });
-  const edit = el("button", "combo-edit", "Edit activities…");
+  const edit = el("button", "combo-edit", t("main.free.edit"));
   edit.type = "button";
   edit.tabIndex = -1;
   edit.onmousedown = (e) => e.preventDefault();
@@ -1184,11 +1203,12 @@ async function startFree(name, activityId) {
     name = $("freeName").value;
     activityId = free.activity ? free.activity.id : "";
   }
-  if (state && state.session && !confirm(`Replace the current session on “${state.session.task.content}”?`)) return;
+  if (state && state.session && !confirm(t("main.start.replace", { task: state.session.task.content }))) return;
   flushPomodoro();
   const result = await api.start(null, name, activityId || "");
   if (!result.ok) return toast(result.error, true);
-  toast(`Go. ${pomo.work_minutes} minutes, just this${state && (state.bar.local || state.bar.offline) ? "" : " (on the bar)"}.`);
+  const onBar = !(state && (state.bar.local || state.bar.offline));
+  toast(t(onBar ? "main.start.go_bar" : "main.start.go", { work: pomo.work_minutes }));
   $("freeName").value = "";
   setFreeActivity(null);
   closeFreeList();
@@ -1257,7 +1277,7 @@ $("endedComplete").onclick = async () => {
   const e = state.ended;
   const result = await api.complete(e.task.id, true);
   if (!result.ok) return toast(result.error, true);
-  toast("Done in Todoist.");
+  toast(t("summary.completed"));
   // drop it at once, then reload so the filter shows what Todoist now has
   const gone = new Set([e.task.id]);
   const dropGone = () => {
@@ -1269,10 +1289,10 @@ $("endedComplete").onclick = async () => {
   await poll();
   // That was the last open subtask: offer to close its parent too.
   const parent = result.parent;
-  if (parent && confirm(`That was the last subtask of “${parent.content || "its parent"}”. Complete it too?`)) {
+  if (parent && confirm(t("summary.parent_confirm", { parent: parent.content || t("summary.parent_unnamed") }))) {
     const closed = await api.complete(parent.id, false, parent.content);
     if (!closed.ok) toast(closed.error, true);
-    else { toast("Both done in Todoist."); gone.add(parent.id); dropGone(); }
+    else { toast(t("summary.both_completed")); gone.add(parent.id); dropGone(); }
   }
   loadTasks(true);
 };
@@ -1281,7 +1301,7 @@ $("endedAgain").onclick = async () => {
   const task = findTask(e.task.id);
   await api.dismiss_ended();
   if (!e.task.id) return e.activity ? startFree(e.activity.detail, e.activity.id) : startFree(e.task.content);
-  if (!task) return toast("That task is no longer in the list.", true);
+  if (!task) return toast(t("summary.task_gone"), true);
   startTask(task, null, false, true);  // the same one again, no picker
 };
 
@@ -1334,41 +1354,40 @@ $("appTimeMore").onclick = () => { appTimeAll = true; loadStats(); };
 $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("appTimeTiles").replaceChildren(...tiles.map(([label, t]) => {
+  $("appTimeTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(t.focus + t.other)),
-                el("div", "help", `${duration(t.focus)} during focus`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.focus + tot.other)),
+                el("div", "help", t("stats.apps.during_focus", { duration: duration(tot.focus) })));
     return tile;
   }));
 
   barChart($("appTimeChart"), s.days, [["focus", "stat-f"], ["other", "stat-l"]],
-    `Time in apps per day over the last ${s.span} days: ${duration(s.totals.span.focus + s.totals.span.other)} in all.`,
-    { line: (d) => d.focus + d.other ? `${duration(d.focus)} during focus · ${duration(d.other)} outside` : "Nothing counted", max: duration });
+    t("stats.apps.chart", { n: s.span, duration: duration(s.totals.span.focus + s.totals.span.other) }),
+    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), max: duration });
   $("appTimeFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
-  timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "apps", (a) => a.key + ".exe",
-    s.on ? "Nothing counted yet. Use an app for a minute and come back." : "Turn this on to see which apps get your time.");
-  timeRows($("siteTimeSites"), $("siteTimeMore"), s.sites || [], siteTimeAll, "websites", (a) => a.key,
-    !s.on ? "Turn this on to see which websites get your time."
-      : s.extension ? "Nothing counted yet. Browse for a minute and come back."
-        : "Websites are timed by the Chrome extension: set it up in the Websites tab.");
+  timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "stats.apps.show_all_apps", (a) => a.key + ".exe",
+    t(s.on ? "stats.apps.apps_empty" : "stats.apps.apps_off"));
+  timeRows($("siteTimeSites"), $("siteTimeMore"), s.sites || [], siteTimeAll, "stats.apps.show_all_sites", (a) => a.key,
+    t(!s.on ? "stats.apps.sites_off" : s.extension ? "stats.apps.sites_empty" : "stats.apps.sites_no_extension"));
 }
 
-// The 8 rows with the most time (all of them once "Show all" was pressed).
-function timeRows(list, more, rows, all, noun, title, empty) {
+// The 8 rows with the most time (all of them once "Show all" was pressed);
+// `moreKey` is the "Show all" button's text.
+function timeRows(list, more, rows, all, moreKey, title, empty) {
   const SHOWN = 8;
   const shown = all ? rows : rows.slice(0, SHOWN);
   list.replaceChildren(...(shown.length ? shown.map((a) => {
     const row = el("div", "stat-site");
-    const share = a.span ? Math.round((100 * a.focus) / a.span) : 0;
-    row.append(el("span", "stat-host", a.name), el("span", "help", `${duration(a.today)} today · ${duration(a.week)} this week · ${share}% in focus`),
+    const share = a.span ? a.focus / a.span : 0;
+    row.append(el("span", "stat-host", a.name),
+               el("span", "help", t("stats.apps.row", { today: duration(a.today), week: duration(a.week), share: percent(share) })),
                el("b", "", duration(a.span)));
     row.title = title(a);
     return row;
   }) : [el("div", "help", empty)]));
   more.classList.toggle("hidden", all || rows.length <= SHOWN);
-  more.textContent = `Show all ${rows.length} ${noun}`;
+  more.textContent = t(moreKey, { n: rows.length });
 }
 
 // Saved at once (not with Save), so the streak above changes as you click.
@@ -1380,12 +1399,18 @@ $("s_streak_skip_weekends").onchange = async () => {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// The Stats tab's text in the app language: its three tiles' titles, a share
+// (0..1) as a whole percent, and a day ("Sat, Oct 17" / "sáb., 17 de out.").
+const statTiles = (s) => [[t("stats.today"), s.totals.today], [t("stats.week"), s.totals.week], [t("stats.span", { n: s.span }), s.totals.span]];
+const percent = (share) => formatNumber(share, { style: "percent", maximumFractionDigits: 0 });
+const statDay = (iso) => formatDate(new Date(iso + "T12:00"), { weekday: "short", day: "numeric", month: "short" });
+
 // One column per day, stacked from `series` ([key, css class] pairs, the
 // first at the bottom); `tip(day)` is the hover line, `label` the aria text.
 function barChart(chart, days, series, label, tip) {
   const top = Math.max(1, ...days.map((d) => series.reduce((sum, [k]) => sum + d[k], 0)));
   const box = el("div", "stat-tip hidden");
-  chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : String(top)), box);
+  chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : formatNumber(top)), box);
   chart.setAttribute("aria-label", label);
   days.forEach((d, i) => {
     const col = el("div", "stat-col");
@@ -1396,7 +1421,7 @@ function barChart(chart, days, series, label, tip) {
       col.append(seg);
     }
     col.onmouseenter = () => {
-      box.replaceChildren(el("b", "", i === days.length - 1 ? "Today" : statDay(d.day)), el("span", "", tip.line(d)));
+      box.replaceChildren(el("b", "", i === days.length - 1 ? t("stats.today") : statDay(d.day)), el("span", "", tip.line(d)));
       box.classList.remove("hidden");
       const x = col.offsetLeft + col.offsetWidth / 2;
       box.style.left = Math.min(Math.max(x, 90), chart.clientWidth - 90) + "px";
@@ -1406,69 +1431,74 @@ function barChart(chart, days, series, label, tip) {
   });
 }
 
-// Focus from history.json (Api.focus_stats): focus time, tomatoes, sessions
+// A stat tile's "3 pomodoros · 2 sessions": a narrow tile wraps at the dots or
+// inside a phrase, never between a number and the word after it.
+function keepCounts(text) {
+  return text.split(" · ").map((part) => part.replace(/^(\S+) /, "$1 ")).join(" · ");
+}
+
+// Focus from history.json (Api.focus_stats): focus time, pomodoros, sessions
 // and tasks for today / 7 / 30 days, the streak, minutes per day, top tasks.
 function renderFocusStats(s) {
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("focusTiles").replaceChildren(...tiles.map(([label, t]) => {
+  const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
+  $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(t.minutes)),
-                el("div", "help", `${plural(t.pomodoros, "tomato")} · ${plural(t.sessions, "session")}`),
-                el("div", "help", `${plural(t.tasks, "task")} worked on · ${t.completed} done`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.minutes)),
+                el("div", "help", keepCounts(counts(tot))),
+                el("div", "help", keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed }))));
     return tile;
   }));
-  const streak = $("focusStreak");
-  streak.replaceChildren("Streak: ", el("b", "", plural(s.streak.current, "day")), ` in a row · best ${plural(s.streak.best, "day")}`);
+  const current = t("stats.focus.days", { n: s.streak.current });
+  const [before, after] = splitAround(t("stats.focus.streak", { current, best: t("stats.focus.days", { n: s.streak.best }) }), current);
+  $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
   barChart($("focusChart"), s.days, [["minutes", "stat-f"]],
-    `Focus per day over the last ${s.span} days: ${duration(s.totals.span.minutes)} in all.`,
-    { line: (d) => d.minutes ? `${duration(d.minutes)} · ${plural(d.pomodoros, "tomato")}` : "No tomatoes", max: duration });
+    t("stats.focus.chart", { n: s.span, duration: duration(s.totals.span.minutes) }),
+    { line: (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none"), max: duration });
   $("focusFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
   // One row per activity, with Todoist tasks and typed names ("_task",
   // "_other") as their own rows; hidden until an activity has been used.
   const groups = s.activities || [];
   const used = groups.some((g) => !g.id.startsWith("_"));
+  const groupName = (g) => g.id === "_task" ? t("stats.focus.activity_task") : g.id === "_other" ? t("stats.focus.activity_other") : g.name;
   $("focusActivities").replaceChildren(...(used ? groups.map((g) => {
     const row = el("div", "stat-site");
     const name = el("span", "stat-host stat-activity");
-    name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), g.name);
-    const share = s.totals.span.minutes ? Math.round((100 * g.minutes) / s.totals.span.minutes) : 0;
-    row.append(name, el("span", "help", `${plural(g.pomodoros, "tomato")} · ${share}%`), el("b", "", duration(g.minutes)));
+    name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), groupName(g));
+    const share = s.totals.span.minutes ? g.minutes / s.totals.span.minutes : 0;
+    row.append(name, el("span", "help", t("stats.focus.pomodoros", { n: g.pomodoros }) + " · " + percent(share)), el("b", "", duration(g.minutes)));
     return row;
-  }) : [el("div", "help", "Pick an activity under “What are you working on?” to see where your focus goes.")]));
+  }) : [el("div", "help", t("stats.focus.activities_empty"))]));
 
-  $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((t) => {
+  $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((task) => {
     const row = el("div", "stat-site");
-    row.append(el("span", "stat-host", t.content), el("span", "help", `${plural(t.pomodoros, "tomato")} · ${plural(t.sessions, "session")}`),
-               el("b", "", duration(t.minutes)));
+    row.append(el("span", "stat-host", task.content), el("span", "help", counts(task)),
+               el("b", "", duration(task.minutes)));
     return row;
-  }) : [el("div", "help", "No tomatoes yet. Pick a task and start the timer.")]));
+  }) : [el("div", "help", t("stats.focus.tasks_empty"))]));
 }
 
-const blockWord = (n) => `${n} block${n === 1 ? "" : "s"}`;
-const statDay = (iso) => new Date(iso + "T12:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
-
 function renderStats(s) {
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("statTiles").replaceChildren(...tiles.map(([label, t]) => {
+  const split = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
+  $("statTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", String(t.focus + t.limit)),
-                el("div", "help", `${t.focus} focus · ${t.limit} limit`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", formatNumber(tot.focus + tot.limit)),
+                el("div", "help", keepCounts(split(tot))));
     return tile;
   }));
 
   barChart($("statChart"), s.days, [["focus", "stat-f"], ["limit", "stat-l"]],
-    `Blocks per day over the last ${s.span} days: ${s.totals.span.focus} during focus, ${s.totals.span.limit} over a limit.`,
-    { line: (d) => d.focus + d.limit ? `${d.focus} during focus · ${d.limit} over a limit` : "Nothing blocked" });
+    t("stats.blocks.chart", { n: s.span, focus: formatNumber(s.totals.span.focus), limit: formatNumber(s.totals.span.limit) }),
+    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none") });
   $("statFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
   $("statSites").replaceChildren(...(s.sites.length ? s.sites.map((site) => {
     const row = el("div", "stat-site");
-    row.append(el("span", "stat-host", site.host), el("span", "help", `${site.focus} focus · ${site.limit} limit`),
-               el("b", "", blockWord(site.focus + site.limit)));
+    row.append(el("span", "stat-host", site.host), el("span", "help", split(site)),
+               el("b", "", t("stats.blocks.count", { n: site.focus + site.limit })));
     return row;
-  }) : [el("div", "help", "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.")]));
+  }) : [el("div", "help", t("stats.blocks.empty"))]));
 }
 
 for (const b of document.querySelectorAll("#settingsTabs .stab")) b.onclick = () => showTab(b.dataset.tab);
@@ -1499,6 +1529,7 @@ async function openSettings(tab) {
     else input.value = s[input.name] ?? "";
   }
   $("testResult").textContent = "";
+  showLanguages(s);
   showSecrets(s);
   blockedApps =(s.blocked_apps || []).map((a) => ({ ...a, exes: [...a.exes] }));
   $("addBlockedApp").value = "";
@@ -1524,11 +1555,14 @@ async function openSettings(tab) {
   $("addBlockedSite").value = "";
   $("extDir").textContent = s.extension_dir || "extension";
   $("extDir").title = s.extension_dir || "";
-  for (const n of document.querySelectorAll(".browser-name")) n.textContent = s.extension_browser || "Chrome";
+  const browser = s.extension_browser || "Chrome";
+  for (const n of document.querySelectorAll(".browser-page")) n.textContent = t("settings.ext.open_page", { browser });
   renderBlockedSites();
   renderBlocking();
-  $("extOldVersion").textContent = s.extension_version ? "version " + s.extension_version : "an older version";
-  $("extNewVersion").textContent = s.extension_latest || "";
+  $("extOutdatedText").textContent = t("settings.ext.outdated", {
+    old: s.extension_version ? t("settings.ext.old_version", { version: s.extension_version }) : t("settings.ext.old_unknown"),
+    version: s.extension_latest || "",
+  });
   renderExtension(s.extension_connected, s.extension_outdated);
   barScreens = JSON.parse(JSON.stringify(s.bar_screens || {}));
   renderBarScreens();
@@ -1551,11 +1585,24 @@ async function openSettings(tab) {
   }, 220);
 }
 
+// The app language, each in its own name; saving a new one reloads the windows.
+function showLanguages(s) {
+  const select = $("s_language");
+  select.textContent = "";
+  for (const { code, name } of s.languages || []) {
+    const option = el("option", "", name);
+    option.value = code;
+    option.lang = code;
+    select.append(option);
+  }
+  select.value = s.language || "en";
+}
+
 // The token and the PIN never come to the page (get_settings sends "" and
 // has_*). An empty field keeps the saved one; Remove asks Python to clear it.
 const SECRETS = {
-  todoist_token: { input: "s_todoist_token", saved: "tokenSaved", lost: "tokenLost", remove: "removeToken", empty: "Paste your API token" },
-  busybar_pin: { input: "s_busybar_pin", saved: "pinSaved", lost: "pinLost", remove: "removePin", empty: "" },
+  todoist_token: { input: "s_todoist_token", saved: "tokenSaved", lost: "tokenLost", remove: "removeToken", empty: () => t("settings.todoist.token_placeholder") },
+  busybar_pin: { input: "s_busybar_pin", saved: "pinSaved", lost: "pinLost", remove: "removePin", empty: () => "" },
 };
 let secretsToClear = {};
 
@@ -1564,7 +1611,7 @@ function showSecrets(s) {
   for (const [key, x] of Object.entries(SECRETS)) {
     const has = !!s["has_" + key];
     $(x.input).value = "";
-    $(x.input).placeholder = has ? "•••••••• saved (type to replace)" : x.empty;
+    $(x.input).placeholder = has ? t("settings.secret_saved") : x.empty();
     $(x.saved).classList.toggle("hidden", !has);
     $(x.lost).classList.toggle("hidden", !s[key + "_lost"]);
   }
@@ -1581,7 +1628,7 @@ for (const [key, x] of Object.entries(SECRETS)) {
   $(x.remove).onclick = () => {
     secretsToClear[key] = true;
     $(x.input).value = "";
-    $(x.input).placeholder = x.empty;
+    $(x.input).placeholder = x.empty();
     $(x.saved).classList.add("hidden");
     $(x.input).focus();
   };
@@ -1595,7 +1642,7 @@ function showTodoistFields() {
 }
 $("s_use_todoist").onchange = showTodoistFields;
 
-// (minutes per tomato, tomatoes) for a task of `minutes`, or null. Mirrors
+// (minutes per pomodoro, pomodoros) for a task of `minutes`, or null. Mirrors
 // plan_session in buzyist/plan.py; tests/plan_cases.json checks both.
 function planSession(minutes, c) {
   if (!c.plan_from_duration || !(minutes > 0)) return null;
@@ -1617,14 +1664,15 @@ function showPlanFields() {
   const ok = c.plan_target >= 5 && c.plan_min >= 5 && c.plan_max >= 5 && c.plan_single_max >= 0
     && c.plan_min <= c.plan_target && c.plan_target <= c.plan_max;
   if (!ok) {
-    $("planExample").textContent = "Keep the tomato length between the shortest and the longest.";
+    $("planExample").textContent = t("settings.todoist.plan_bad");
     return;
   }
   c.plan_from_duration = true;
-  $("planExample").textContent = "For example: " + [15, 30, 45, 60, 90, 120].map((m) => {
+  $("planExample").textContent = t("settings.todoist.plan_example", { list: [15, 30, 45, 60, 90, 120].map((m) => {
     const [mins, rounds] = planSession(m, c);
-    return `${duration(m)} → ${rounds === 1 ? mins + " min" : rounds + " × " + mins}`;
-  }).join(" · ");
+    const plan = rounds === 1 ? t("settings.todoist.plan_one", { min: mins }) : t("settings.todoist.plan_many", { n: rounds, min: mins });
+    return `${duration(m)} → ${plan}`;
+  }).join(" · ") });
 }
 for (const name of ["plan_from_duration", "plan_single_max", "plan_target", "plan_min", "plan_max"]) {
   document.querySelector(`#settingsForm input[name="${name}"]`).addEventListener("input", showPlanFields);
@@ -1654,15 +1702,17 @@ const BAR_COLORS = {  // as SCREEN_COLORS in buzyist/bar_screens.py (a test chec
   black: ["#000000", "#FFFFFF"],
 };
 const MAX_SCREEN_TEXT = 60;  // as in buzyist/bar_screens.py
-const OWN_MODES = [["card", "The card's"], ["theme", "A theme"], ["text", "My text"]];
+// Modes as [value, catalog key under settings.bar.modes]; titles are keys too
+// (t() runs once the catalogs are in, not at load).
+const OWN_MODES = [["card", "card"], ["theme", "theme"], ["text", "text"]];
 const SCREEN_EDITS = {
-  focus: { title: "Focus", modes: OWN_MODES, words: ["task", "activity", "round", "rounds"], minutes: 18, text: "{task}", color: "tomate" },
-  call: { title: "Call", modes: OWN_MODES, words: ["task", "activity", "apps"], minutes: 12, text: "CALL", color: "molho" },
-  done: { title: "End of session", modes: [["text", "My text"], ["off", "Off"]], words: ["task", "activity", "tomatoes", "minutes"], minutes: null, text: "DONE", color: "folha" },
+  focus: { title: "focus", modes: OWN_MODES, words: ["task", "activity", "pomodoro", "pomodoros"], minutes: 18, text: "{task}", color: "tomate" },
+  call: { title: "call", modes: OWN_MODES, words: ["task", "activity", "apps"], minutes: 12, text: "CALL", color: "molho" },
+  done: { title: "done", modes: [["text", "text"], ["off", "off"]], words: ["task", "activity", "pomodoros", "minutes"], minutes: null, text: "DONE", color: "folha" },
 };
 let barScreens = {};
 let barThemes = [];  // the bar's own, the card's first; [] until read
-const prettyTheme = (t) => (t ? t[0].toUpperCase() + t.slice(1).replace(/_/g, " ") : "");
+const prettyTheme = (name) => (name ? name[0].toUpperCase() + name.slice(1).replace(/_/g, " ") : "");
 
 async function loadBarThemes() {
   const note = $("barThemesNote");
@@ -1670,7 +1720,7 @@ async function loadBarThemes() {
   if (!$("s_use_busybar").checked) return;
   const result = await api.bar_themes();
   if (!result.ok) {
-    note.textContent = `Couldn't read the bar's themes: ${result.error} The ones already picked stay.`;
+    note.textContent = t("settings.bar.themes_error", { error: result.error });
     return;
   }
   barThemes = result.themes;
@@ -1688,8 +1738,8 @@ function renderBarScreens() {
   // Calls count under callActivity, and have the Call screen above.
   const per = $("barActivityScreens");
   const rows = activityRows.filter((a) => a.id !== callActivity);
-  per.replaceChildren(...rows.map((a) => screenEditor(a, "bar", SCREEN_EDITS.focus, a.name.trim() || "Unnamed")));
-  if (!rows.length) per.append(el("div", "help", "No activities (Settings, General)."));
+  per.replaceChildren(...rows.map((a) => screenEditor(a, "bar", SCREEN_EDITS.focus, a.name.trim() || t("settings.unnamed"))));
+  if (!rows.length) per.append(el("div", "help", t("settings.bar.no_activities")));
   showBarScreenFields();
 }
 
@@ -1697,15 +1747,15 @@ function renderBarScreens() {
 // `name` (an activity's) adds "Same as Focus", which leaves holder[key] out.
 function screenEditor(holder, key, edit, name) {
   const value = holder[key] || { mode: "" };
-  const title = name || edit.title;
+  const title = name || t("settings.bar.screens." + edit.title);
   const box = el("div", "screen-edit");
   const head = el("div", "screen-head");
   head.append(el("span", "screen-name", title));
-  const modes = name ? [["", "Same as Focus"], ...edit.modes] : edit.modes;
-  head.append(segButtons(`${title} on the bar`, modes, value.mode || "", (mode) => {
+  const modes = (name ? [["", "same"], ...edit.modes] : edit.modes).map(([v, k]) => [v, t("settings.bar.modes." + k)]);
+  head.append(segButtons(t("settings.bar.on_bar", { screen: title }), modes, value.mode || "", (mode) => {
     if (!mode) delete holder[key];
     else {
-      const ownTheme = barThemes.find((t) => t === "on_call" && key === "call") || barThemes[1] || barThemes[0] || "";
+      const ownTheme = barThemes.find((th) => th === "on_call" && key === "call") || barThemes[1] || barThemes[0] || "";
       holder[key] = { mode, theme: value.theme || (mode === "theme" ? ownTheme : ""), text: value.text || edit.text, color: value.color || edit.color };
     }
     renderBarScreens();
@@ -1716,9 +1766,9 @@ function screenEditor(holder, key, edit, name) {
   const note = el("div", "bar-preview-note");
   if (mode === "theme") {
     const pick = el("select", "input");
-    pick.setAttribute("aria-label", `Theme for ${title}`);
+    pick.setAttribute("aria-label", t("settings.bar.theme_for", { screen: title }));
     const themes = barThemes.includes(value.theme) || !value.theme ? barThemes : [value.theme, ...barThemes];
-    pick.replaceChildren(...themes.map((t) => new Option(prettyTheme(t), t)));
+    pick.replaceChildren(...themes.map((th) => new Option(prettyTheme(th), th)));
     pick.value = value.theme;
     pick.onchange = () => { value.theme = pick.value; note.textContent = prettyTheme(pick.value).toUpperCase(); };
     const row = el("div", "screen-row");
@@ -1727,11 +1777,11 @@ function screenEditor(holder, key, edit, name) {
   }
   if (mode !== "text") {
     note.textContent = { card: "BUSY · 24:58 LEFT", theme: prettyTheme(value.theme).toUpperCase() || "…", off: "09:41" }[mode];
-    box.append(note, el("div", "help", {
-      card: "The card's own screen, with the time left.",
-      theme: barThemes.length ? "The theme's picture, as the bar draws it." : "The bar's themes show here once it answers.",
-      off: "The bar goes back to its clock.",
-    }[mode]));
+    box.append(note, el("div", "help", t({
+      card: "settings.bar.help_card",
+      theme: barThemes.length ? "settings.bar.help_theme" : "settings.bar.help_theme_wait",
+      off: "settings.bar.help_off",
+    }[mode])));
     return box;
   }
   const row = el("div", "screen-row");
@@ -1740,9 +1790,9 @@ function screenEditor(holder, key, edit, name) {
   input.maxLength = MAX_SCREEN_TEXT;
   input.spellcheck = false;
   input.value = value.text;
-  input.setAttribute("aria-label", `Text for ${title}`);
+  input.setAttribute("aria-label", t("settings.bar.text_for", { screen: title }));
   const img = el("img", "bar-preview");
-  img.alt = `How the bar shows ${title}`;
+  img.alt = t("settings.bar.preview_alt", { screen: title });
   let timer = 0;
   const refresh = () => {
     clearTimeout(timer);
@@ -1751,13 +1801,13 @@ function screenEditor(holder, key, edit, name) {
   input.oninput = () => { value.text = input.value; refresh(); };
   const swatches = el("div", "swatches");
   swatches.setAttribute("role", "group");
-  swatches.setAttribute("aria-label", `Colour for ${title}`);
+  swatches.setAttribute("aria-label", t("settings.bar.colour_for", { screen: title }));
   for (const [k, [back]] of Object.entries(BAR_COLORS)) {
     const b = el("button", "swatch");
     b.type = "button";
-    b.title = prettyTheme(k);
+    b.title = t("settings.bar.colors." + k);
     b.style.background = back;
-    b.setAttribute("aria-label", prettyTheme(k));
+    b.setAttribute("aria-label", b.title);
     b.setAttribute("aria-pressed", k === value.color);
     b.onclick = () => {
       value.color = k;
@@ -1771,7 +1821,7 @@ function screenEditor(holder, key, edit, name) {
   for (const w of edit.words) {
     const b = el("button", "", `{${w}}`);
     b.type = "button";
-    b.title = `Insert {${w}}`;
+    b.title = t("settings.bar.insert", { word: `{${w}}` });
     b.onclick = () => {
       const at = input.selectionStart ?? input.value.length;
       input.setRangeText(`{${w}}`, at, input.selectionEnd ?? at, "end");
@@ -1781,7 +1831,7 @@ function screenEditor(holder, key, edit, name) {
     words.append(b);
   }
   box.append(row, words, img);
-  if (key === "done") box.append(el("div", "help", "Shown until you close the summary."));
+  if (key === "done") box.append(el("div", "help", t("settings.bar.done_help")));
   barPreview(img, value.text, value.color, edit.minutes);
   return box;
 }
@@ -1816,8 +1866,8 @@ function renderActivities() {
     const row = el("div", "activity-row");
     const pick = el("button", "activity-icon");
     pick.type = "button";
-    pick.title = "Change the icon";
-    pick.setAttribute("aria-label", `Icon for ${a.name}`);
+    pick.title = t("settings.general.change_icon");
+    pick.setAttribute("aria-label", t("settings.general.icon_for", { name: a.name }));
     pick.setAttribute("aria-expanded", iconPicker === i);
     pick.append(activityIcon(a.icon));
     pick.onclick = () => { iconPicker = iconPicker === i ? -1 : i; renderActivities(); };
@@ -1827,7 +1877,7 @@ function renderActivities() {
     name.type = "text";
     name.maxLength = 30;
     name.spellcheck = false;
-    name.setAttribute("aria-label", "Activity name");
+    name.setAttribute("aria-label", t("settings.general.activity_name"));
     name.oninput = () => { a.name = name.value; renderScopes(); renderCallActivity(); renderBarScreens(); };
 
     const move = (d) => {
@@ -1840,19 +1890,19 @@ function renderActivities() {
     };
     const up = el("button", "remove up");
     up.type = "button";
-    up.title = "Move up";
+    up.title = t("settings.general.move_up");
     up.disabled = i === 0;
     up.append(icon("up"));
     up.onclick = () => move(-1);
     const down = el("button", "remove down");
     down.type = "button";
-    down.title = "Move down";
+    down.title = t("settings.general.move_down");
     down.disabled = i === activityRows.length - 1;
     down.append(icon("down"));
     down.onclick = () => move(1);
     const x = el("button", "remove", "×");
     x.type = "button";
-    x.title = "Remove " + a.name;
+    x.title = t("settings.remove_item", { name: a.name });
     x.onclick = () => { activityRows.splice(i, 1); iconPicker = -1; renderActivities(); };
 
     row.append(pick, name, up, down, x);
@@ -1860,7 +1910,7 @@ function renderActivities() {
     if (iconPicker === i) {
       const icons = el("div", "icon-grid");
       icons.setAttribute("role", "group");
-      icons.setAttribute("aria-label", `Icons for ${a.name}`);
+      icons.setAttribute("aria-label", t("settings.general.icons_for", { name: a.name }));
       for (const k of ACTIVITY_ICONS) {
         const b = el("button", "activity-icon" + (k === a.icon ? " on" : ""));
         b.type = "button";
@@ -1873,7 +1923,7 @@ function renderActivities() {
       list.append(icons);
     }
   });
-  if (!activityRows.length) list.append(el("div", "help", "No activities: the field takes only what you type."));
+  if (!activityRows.length) list.append(el("div", "help", t("settings.general.no_activities")));
   $("addActivity").disabled = $("addActivityBtn").disabled = activityRows.length >= MAX_ACTIVITIES;
   renderBlocking();  // the picker in Apps and Websites
   renderCallActivity();
@@ -1888,7 +1938,7 @@ function renderCallActivity() {
   const known = activityRows.some((a) => a.id === callActivity);
   pick.replaceChildren(
     ...activityRows.map((a) => new Option(a.name, a.id)),
-    ...(known ? [] : [new Option("No activity", callActivity)]),
+    ...(known ? [] : [new Option(t("settings.general.no_activity"), callActivity)]),
   );
   pick.value = callActivity;
 }
@@ -1905,7 +1955,7 @@ function addActivity() {
   const input = $("addActivity");
   const name = input.value.trim().replace(/\s+/g, " ");
   if (!name) return;
-  if (activityRows.some((a) => a.name.trim().toLowerCase() === name.toLowerCase())) return toast(`${name} is already in the list.`, true);
+  if (activityRows.some((a) => a.name.trim().toLowerCase() === name.toLowerCase())) return toast(t("settings.general.exists", { name }), true);
   const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20) || "activity";
   let id = base;
   for (let n = 2; activityRows.some((a) => a.id === id); n++) id = `${base}-${n}`;
@@ -1937,7 +1987,7 @@ function renderBlockedApps() {
     label.title = app.exes.join(", ");
 
     const action = el("select", "action");
-    for (const [value, text] of [["close", "Close"], ["hide", "Hide to tray"]]) {
+    for (const [value, text] of [["close", t("settings.apps.close")], ["hide", t("settings.apps.hide")]]) {
       const opt = el("option", "", text);
       opt.value = value;
       action.append(opt);
@@ -1949,7 +1999,7 @@ function renderBlockedApps() {
     if (app.custom) {
       const x = el("button", "remove", "×");
       x.type = "button";
-      x.title = "Remove " + app.name;
+      x.title = t("settings.remove_item", { name: app.name });
       x.onclick = () => { blockedApps.splice(i, 1); renderBlockedApps(); };
       row.append(x);
     } else {
@@ -1975,16 +2025,16 @@ function addBlockedApp() {
   const input = $("addBlockedApp");
   const name = input.value.trim();
   if (!name) return;
-  if (/[\\/]/.test(name)) return toast("App names are just the program, like WhatsApp.exe.", true);
+  if (/[\\/]/.test(name)) return toast(t("settings.apps.not_program"), true);
   const key = (n) => n.toLowerCase().replace(/\.exe$/, "");
   if (PROTECTED_EXES.has(key(name))) {
-    return toast(`buZyist won't close ${name}: Windows or your browser needs it.`, true);
+    return toast(t("settings.apps.protected", { app: name }), true);
   }
   const known = blockedApps.find((a) => a.exes.some((e) => key(e) === key(name)));
   input.value = "";
   if (known) { known.on = true; return renderBlockedApps(); }  // already listed: just switch it on
   if (blockedApps.filter((a) => a.custom).length >= MAX_BLOCKED_APPS) {
-    return toast(`Keep the added apps under ${MAX_BLOCKED_APPS}.`, true);
+    return toast(t("settings.apps.too_many", { n: MAX_BLOCKED_APPS }), true);
   }
   const exe = /\.exe$/i.test(name) ? name : name + ".exe";
   blockedApps.push({
@@ -2034,7 +2084,7 @@ function suggestApps(input, { multi = false, skip = () => false, picked = () => 
     box.replaceChildren(...items.map((a, i) => {
       const row = el("div", "suggest-item");
       row.setAttribute("role", "option");
-      row.append(el("span", "suggest-name", a.name), el("span", "suggest-exe", a.window ? a.exe : a.exe + " · in the background"));
+      row.append(el("span", "suggest-name", a.name), el("span", "suggest-exe", a.window ? a.exe : t("settings.apps.in_background", { exe: a.exe })));
       row.onmousedown = (e) => { e.preventDefault(); pick(i); };  // keep the focus in the input
       return row;
     }));
@@ -2099,19 +2149,16 @@ function renderBlockedSites() {
   const sites = siteLists[mode];
   const list = $("blockedSites");
   list.replaceChildren();
-  $("addBlockedSite").placeholder = mode === "allow"
-    ? "Add an allowed website, e.g. github.com or *.google.com"
-    : "Add a website, e.g. youtube.com or *.reddit.com";
-  $("sitesHelp").textContent = mode === "allow"
-    ? (sites.length ? "During work phases every other website shows a \"back to work\" page."
-                    : "The list is empty, so every website is blocked during work phases.")
-    : "These websites show a \"back to work\" page during work phases.";
+  $("addBlockedSite").placeholder = t(mode === "allow" ? "settings.sites.placeholder_allow" : "settings.sites.placeholder_block");
+  $("sitesHelp").textContent = t(mode === "allow"
+    ? (sites.length ? "settings.sites.help_allow" : "settings.sites.help_allow_empty")
+    : "settings.sites.help_block");
   sites.forEach((site, i) => {
     const row = el("div", "app-row");
     row.append(el("span", "site", site));
     const x = el("button", "remove", "\u00d7");
     x.type = "button";
-    x.title = "Remove " + site;
+    x.title = t("settings.remove_item", { name: site });
     x.onclick = () => { sites.splice(i, 1); renderBlockedSites(); };
     row.append(el("span"), x);
     list.append(row);
@@ -2125,8 +2172,8 @@ function renderBlockedSites() {
 function renderExtension(connected, outdated) {
   const status = $("extStatus");
   const good = connected && !outdated;
-  status.textContent = !connected ? "Browser extension: not connected"
-    : outdated ? "Browser extension: needs a reload" : "Browser extension: connected";
+  status.textContent = t(!connected ? "settings.ext.status_off"
+    : outdated ? "settings.ext.status_reload" : "settings.ext.status_on");
   status.classList.toggle("ok", good);
   status.classList.toggle("bad", !good);
   $("extSetup").classList.toggle("hidden", connected);
@@ -2140,10 +2187,10 @@ function addBlockedSite() {
   const site = cleanSitePattern(input.value);
   input.value = "";
   if (site === "") return;
-  if (site === null) return toast("Type a website like youtube.com or *.google.com.", true);
+  if (site === null) return toast(t("settings.sites.not_site"), true);
   const sites = siteLists[siteMode()];
   if (sites.includes(site)) return;
-  if (sites.length >= 50) return toast("Keep the list under 50 websites.", true);
+  if (sites.length >= 50) return toast(t("settings.sites.too_many", { n: 50 }), true);
   sites.push(site);
   renderBlockedSites();
 }
@@ -2173,7 +2220,7 @@ function cleanSitePattern(raw) {
 let blockScope = "";  // "" for the global settings, else an activity's id
 const scopeActivity = () => activityRows.find((a) => a.id === blockScope) || null;
 const appKey = (n) => n.trim().toLowerCase().replace(/\.exe$/, "");  // app_key in blocker.py
-const BLOCK_STATES = [["inherit", "Like global"], ["off", "Don't block"], ["on", "Block"]];
+const blockStates = () => [["inherit", t("settings.scope.inherit")], ["off", t("settings.scope.off")], ["on", t("settings.scope.on")]];
 const RULE_DEFAULTS = {
   apps: { state: "inherit", allow: [], block: [] },
   sites: { state: "inherit", mode: "", allow: [], block: [] },
@@ -2262,8 +2309,8 @@ function renderScopes() {
       };
       box.append(b);
     };
-    choice("", "Everything");
-    for (const a of activityRows) choice(a.id, a.name.trim() || "Unnamed", a.icon);
+    choice("", t("settings.scope.everything"));
+    for (const a of activityRows) choice(a.id, a.name.trim() || t("settings.unnamed"), a.icon);
   }
 }
 
@@ -2308,7 +2355,7 @@ function editableList(box, { title, label, help, items, placeholder, add, remove
   const list = el("div", "app-list");
   items.forEach((item, i) => {
     const row = el("div", "app-row");
-    row.append(el("span", "site", item), el("span"), removeButton(() => remove(i), "Remove " + item));
+    row.append(el("span", "site", item), el("span"), removeButton(() => remove(i), t("settings.remove_item", { name: item })));
     list.append(row);
   });
   const line = el("div", "input-row");
@@ -2316,7 +2363,7 @@ function editableList(box, { title, label, help, items, placeholder, add, remove
   input.spellcheck = false;
   input.placeholder = placeholder;
   input.setAttribute("aria-label", label);
-  const btn = el("button", "btn", "Add");
+  const btn = el("button", "btn", t("settings.add"));
   btn.type = "button";
   line.append(input, btn);
   box.append(list, line);
@@ -2353,7 +2400,7 @@ function inheritedRow(boxId, key, text, exe, kept, state, toggle) {
   return row;
 }
 
-const activityName = (a) => a.name.trim() || "this activity";
+const activityName = (a) => a.name.trim() || t("settings.scope.this_activity");
 
 function renderActivityApps(a) {
   const box = $("appsActivity");
@@ -2361,70 +2408,69 @@ function renderActivityApps(a) {
   const rules = activityRules(a, "apps");
   const name = activityName(a);
   const globalOn = $("s_block_apps").checked;
-  box.append(el("div", "help", `What work phases on ${name} do with apps. Todoist tasks and names you type use Everything.`));
-  box.append(segButtons(`Apps during ${name}`, BLOCK_STATES, rules.state, (v) => editActivityRules(a, "apps", (r) => { r.state = v; })));
-  box.append(el("div", "help", {
-    inherit: globalOn ? "Keeps away the apps of the global list, with the changes below."
-      : "The global switch is off, so no app is blocked. Pick Block to block these anyway.",
-    off: `Leaves every app alone during ${name}.`,
-    on: "Keeps these apps away even when the global switch is off.",
-  }[rules.state]));
+  box.append(el("div", "help", t("settings.apps.activity.intro", { name })));
+  box.append(segButtons(t("settings.apps.activity.during", { name }), blockStates(), rules.state, (v) => editActivityRules(a, "apps", (r) => { r.state = v; })));
+  box.append(el("div", "help", t({
+    inherit: globalOn ? "settings.apps.activity.inherit_on" : "settings.apps.activity.inherit_off",
+    off: "settings.apps.activity.off",
+    on: "settings.apps.activity.on",
+  }[rules.state], { name })));
   if (rules.state === "off") return;
   const fields = el("div", "activity-fields" + (rules.state === "inherit" && !globalOn ? " muted" : ""));
   box.append(fields);
 
-  fields.append(el("h4", "", "From the global list"));
+  fields.append(el("h4", "", t("settings.apps.activity.from_global")));
   const allowed = new Set(rules.allow.map(appKey));
   const shown = blockedApps.filter((e) => e.on);
   const list = el("div", "app-list");
   for (const entry of shown) {
     const kept = !entry.exes.some((e) => allowed.has(appKey(e)));
     list.append(inheritedRow("appsActivity", entry.id, entry.name, entry.exes[0], kept,
-      kept ? (entry.action === "hide" ? "Hidden" : "Closed") : "Let through",
+      t(kept ? (entry.action === "hide" ? "settings.apps.activity.hidden" : "settings.apps.activity.closed") : "settings.scope.let_through"),
       (keep) => editActivityRules(a, "apps", (r) => {
         const keys = new Set(entry.exes.map(appKey));
         r.allow = r.allow.filter((e) => !keys.has(appKey(e)));
         if (!keep) r.allow.push(...entry.exes);
       })));
   }
-  if (!shown.length) list.append(el("div", "help", "The global list blocks no app."));
+  if (!shown.length) list.append(el("div", "help", t("settings.apps.activity.global_none")));
   fields.append(list);
 
   const listed = new Set(shown.flatMap((e) => e.exes.map(appKey)));
   const extra = rules.allow.filter((e) => !listed.has(appKey(e)));
   editableList(fields, {
-    title: "Also let through", label: "Also let through (apps)",
-    help: "Left alone even if the global list blocks them later.",
-    items: extra, placeholder: "Add a program, e.g. Teams.exe",
+    title: t("settings.apps.activity.also_let"), label: t("settings.apps.activity.also_let_label"),
+    help: t("settings.apps.activity.also_let_help"),
+    items: extra, placeholder: t("settings.apps.activity.add_let"),
     add: (raw) => addActivityApp(a, "allow", raw),
     remove: (i) => editActivityRules(a, "apps", (r) => { r.allow = r.allow.filter((e) => e !== extra[i]); }),
     suggest: (app) => allowed.has(appKey(app.exe)),
   });
   editableList(fields, {
-    title: "Also block", label: "Also block (apps)",
-    help: `Closed during work phases on ${name}, on top of the global list.`,
-    items: rules.block, placeholder: "Add a program, e.g. Spotify.exe",
+    title: t("settings.apps.activity.also_block"), label: t("settings.apps.activity.also_block_label"),
+    help: t("settings.apps.activity.also_block_help", { name }),
+    items: rules.block, placeholder: t("settings.apps.activity.add_block"),
     add: (raw) => addActivityApp(a, "block", raw),
     remove: (i) => editActivityRules(a, "apps", (r) => { r.block.splice(i, 1); }),
     suggest: (app) => app.protected || rules.block.some((e) => appKey(e) === appKey(app.exe)),
   });
   const names = [...new Set(appBlocking(draftBlocking(), a.id).map((e) => e.name))];
   fields.append(el("div", "help preview", names.length
-    ? `During ${name}: ${names.join(", ")} ${names.length === 1 ? "is" : "are"} kept away.`
-    : `During ${name}: no app is blocked.`));
+    ? t("settings.apps.activity.summary", { n: names.length, name, apps: names.join(", ") })
+    : t("settings.apps.activity.summary_none", { name })));
 }
 
 function addActivityApp(a, field, raw) {
   const name = raw.trim().replace(/[,;\s]+$/, "");
   if (!name) return;
-  if (/[\\/]/.test(name)) return toast("App names are just the program, like WhatsApp.exe.", true);
+  if (/[\\/]/.test(name)) return toast(t("settings.apps.not_program"), true);
   if (field === "block" && PROTECTED_EXES.has(appKey(name))) {
-    return toast(`buZyist won't close ${name}: Windows or your browser needs it.`, true);
+    return toast(t("settings.apps.protected", { app: name }), true);
   }
   const rules = activityRules(a, "apps");
   if (rules[field].some((e) => appKey(e) === appKey(name))) return;
   if (rules[field].length >= MAX_BLOCKED_APPS) {
-    return toast(`Keep the ${field === "allow" ? "allowed" : "blocked"} apps under ${MAX_BLOCKED_APPS}.`, true);
+    return toast(t(field === "allow" ? "settings.apps.too_many_allowed" : "settings.apps.too_many_blocked", { n: MAX_BLOCKED_APPS }), true);
   }
   const exe = /\.exe$/i.test(name) ? name : name + ".exe";
   const other = field === "allow" ? "block" : "allow";
@@ -2441,78 +2487,80 @@ function renderActivitySites(a) {
   const name = activityName(a);
   const globalOn = $("s_block_sites").checked;
   const globalMode = siteMode();
-  box.append(el("div", "help", `What work phases on ${name} do with websites. Todoist tasks and names you type use Everything.`));
-  box.append(segButtons(`Websites during ${name}`, BLOCK_STATES, rules.state, (v) => editActivityRules(a, "sites", (r) => { r.state = v; })));
-  box.append(el("div", "help", {
-    inherit: globalOn ? "Uses the global websites, with the changes below."
-      : "The global switch is off, so no website is blocked. Pick Block to block these anyway.",
-    off: `Leaves every website open during ${name}.`,
-    on: "Limits these websites even when the global switch is off.",
-  }[rules.state]));
+  box.append(el("div", "help", t("settings.sites.activity.intro", { name })));
+  box.append(segButtons(t("settings.sites.activity.during", { name }), blockStates(), rules.state, (v) => editActivityRules(a, "sites", (r) => { r.state = v; })));
+  box.append(el("div", "help", t({
+    inherit: globalOn ? "settings.sites.activity.inherit_on" : "settings.sites.activity.inherit_off",
+    off: "settings.sites.activity.off",
+    on: "settings.sites.activity.on",
+  }[rules.state], { name })));
   if (rules.state === "off") return;
   const fields = el("div", "activity-fields" + (rules.state === "inherit" && !globalOn ? " muted" : ""));
   box.append(fields);
 
-  fields.append(segButtons(`Website mode during ${name}`, [["", `Like global (${globalMode === "allow" ? "allow only" : "block"})`], ["block", "Block these"], ["allow", "Allow only these"]],
-    rules.mode, (v) => editActivityRules(a, "sites", (r) => { r.mode = v; })));
+  fields.append(segButtons(t("settings.sites.activity.mode_during", { name }), [
+    ["", t(globalMode === "allow" ? "settings.sites.activity.like_global_allow" : "settings.sites.activity.like_global_block")],
+    ["block", t("settings.sites.activity.block_these")], ["allow", t("settings.sites.activity.allow_these")],
+  ], rules.mode, (v) => editActivityRules(a, "sites", (r) => { r.mode = v; })));
   const mode = rules.mode || globalMode;
   const carve = mode === "allow" ? "block" : "allow";  // site_blocking's `except`
   const inherited = mode === globalMode;
   if (inherited) {
-    fields.append(el("h4", "", mode === "allow" ? "Allowed by the global list" : "Blocked by the global list"));
+    fields.append(el("h4", "", t(mode === "allow" ? "settings.sites.activity.global_allowed" : "settings.sites.activity.global_blocked")));
     const list = el("div", "app-list");
     for (const site of siteLists[mode]) {
       const kept = !rules[carve].includes(site);
       list.append(inheritedRow("sitesActivity", site, site, "", kept,
-        mode === "allow" ? (kept ? "Allowed" : "Blocked") : (kept ? "Blocked" : "Let through"),
+        t(mode === "allow" ? (kept ? "settings.sites.activity.allowed" : "settings.sites.activity.blocked")
+          : (kept ? "settings.sites.activity.blocked" : "settings.scope.let_through")),
         (keep) => editActivityRules(a, "sites", (r) => {
           r[carve] = r[carve].filter((p) => p !== site);
           if (!keep) r[carve].push(site);
         })));
     }
     if (!siteLists[mode].length) {
-      list.append(el("div", "help", mode === "allow" ? "The global list allows no website." : "The global list blocks no website."));
+      list.append(el("div", "help", t(mode === "allow" ? "settings.sites.activity.global_none_allow" : "settings.sites.activity.global_none_block")));
     }
     fields.append(list);
   } else {
-    fields.append(el("div", "help", `The global setting ${globalMode === "allow" ? "allows only its list" : "blocks its list"}, so nothing is inherited: ${name} uses only the websites below.`));
+    fields.append(el("div", "help", t(globalMode === "allow" ? "settings.sites.activity.not_inherited_allow" : "settings.sites.activity.not_inherited_block", { name })));
   }
   editableList(fields, {
-    title: inherited ? (mode === "allow" ? "Also allow" : "Also block") : (mode === "allow" ? "Allow only these" : "Block these"),
-    label: (mode === "allow" ? "Allowed" : "Blocked") + " websites",
+    title: t(inherited ? (mode === "allow" ? "settings.sites.activity.also_allow" : "settings.sites.activity.also_block")
+      : (mode === "allow" ? "settings.sites.activity.allow_these" : "settings.sites.activity.block_these")),
+    label: t(mode === "allow" ? "settings.sites.activity.allowed_label" : "settings.sites.activity.blocked_label"),
     items: rules[mode],
-    placeholder: mode === "allow" ? "Add an allowed website, e.g. github.com" : "Add a website, e.g. youtube.com",
+    placeholder: t(mode === "allow" ? "settings.sites.activity.add_allowed" : "settings.sites.activity.add_blocked"),
     add: (raw) => addActivitySite(a, mode, raw),
     remove: (i) => editActivityRules(a, "sites", (r) => { r[mode].splice(i, 1); }),
   });
   const base = new Set(inherited ? siteLists[mode] : []);
   const extra = rules[carve].filter((p) => !base.has(p));
   editableList(fields, {
-    title: mode === "allow" ? "Still block" : "Let through",
-    label: (mode === "allow" ? "Still blocked" : "Let through") + " websites",
-    help: mode === "allow"
-      ? "Blocked even inside an allowed website, e.g. youtube.com/shorts/* inside youtube.com."
-      : "Open even inside a blocked website, e.g. mail.google.com inside *.google.com.",
+    title: t(mode === "allow" ? "settings.sites.activity.still_block" : "settings.sites.activity.let_through"),
+    label: t(mode === "allow" ? "settings.sites.activity.still_blocked_label" : "settings.sites.activity.let_through_label"),
+    help: t(mode === "allow" ? "settings.sites.activity.still_block_help" : "settings.sites.activity.let_through_help"),
     items: extra,
-    placeholder: mode === "allow" ? "e.g. youtube.com/shorts/*" : "e.g. mail.google.com",
+    placeholder: t(mode === "allow" ? "settings.sites.activity.still_block_placeholder" : "settings.sites.activity.let_through_placeholder"),
     add: (raw) => addActivitySite(a, carve, raw),
     remove: (i) => editActivityRules(a, "sites", (r) => { r[carve] = r[carve].filter((p) => p !== extra[i]); }),
   });
   const b = siteBlocking(draftBlocking(), a.id);
   const n = b.patterns.length;
   const m = b.except.length;
-  fields.append(el("div", "help preview", b.mode === "allow"
-    ? (n ? `During ${name}: only ${plural(n, "website")} open${m ? `, with ${m} blocked inside them` : ""}.` : `During ${name}: every website is blocked.`)
-    : (n ? `During ${name}: ${plural(n, "website")} blocked${m ? `, with ${m} let through inside them` : ""}.` : `During ${name}: no website is blocked.`)));
+  const summary = b.mode === "allow"
+    ? (n ? (m ? "allow_except" : "allow") : "allow_none")
+    : (n ? (m ? "block_except" : "block") : "block_none");
+  fields.append(el("div", "help preview", t("settings.sites.activity.summary." + summary, { n, m, name })));
 }
 
 function addActivitySite(a, field, raw) {
   const site = cleanSitePattern(raw);
   if (site === "") return;
-  if (site === null) return toast("Type a website like youtube.com or *.google.com.", true);
+  if (site === null) return toast(t("settings.sites.not_site"), true);
   const rules = activityRules(a, "sites");
   if (rules[field].includes(site)) return;
-  if (rules[field].length >= 50) return toast("Keep the list under 50 websites.", true);
+  if (rules[field].length >= 50) return toast(t("settings.sites.too_many", { n: 50 }), true);
   const other = field === "allow" ? "block" : "allow";
   editActivityRules(a, "sites", (r) => {
     r[other] = r[other].filter((p) => p !== site);  // one or the other
@@ -2534,22 +2582,25 @@ const LIMITS = {
          fields: "appLimitsFields", on: "s_app_limits_on", usageCall: "app_usage" },
 };
 let limitDraft = null;    // {kind, index, rule} while an editor is open
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];  // catalog keys under settings.limits.days
+const dayName = (d) => t("settings.limits.days." + DAYS[d]);
 
-const unitPlural = (every, unit) => (every === 1 ? unit : `${every} ${unit}s`);
-const budgetText = (b) => `${b.minutes} min per ${unitPlural(b.every, b.unit)}`
-  + (!b.days || b.days.length === 7 ? "" : ", " + daysText(b.days));
-const clockText = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+// "5 min per hour", "30 min per 2 days, Mon–Fri"
+function budgetText(b) {
+  const budget = t("settings.limits.budget." + b.unit, { n: b.every, minutes: b.minutes });
+  return !b.days || b.days.length === 7 ? budget : t("settings.limits.budget_days", { budget, days: daysText(b.days) });
+}
+const clockText = (ms) => formatTime(new Date(ms), { hour: "2-digit", minute: "2-digit" });
 const appLabel = (exe) => exe.replace(/\.exe$/i, "").split(".")[0] || exe;  // exe_label in blocker.py
 const limitNames = (kind, rule) => (kind === "site" ? rule.patterns : [...new Set(rule.apps.map(appLabel))]).join(", ");
 const REMIND_MIN = 1, REMIND_MAX = 120;  // APP_LIMIT_REMIND_MIN/MAX in buzyist/constants.py
 const beeps = (kind, rule) => kind === "app" && rule.action === "beep";
 
 function daysText(days) {
-  if (days.length === 7) return "every day";
-  if (days.join() === "0,1,2,3,4") return "Mon–Fri";
-  if (days.join() === "5,6") return "Sat–Sun";
-  return days.map((d) => DAY_NAMES[d]).join(", ");
+  if (days.length === 7) return t("settings.limits.every_day");
+  if (days.join() === "0,1,2,3,4") return t("settings.limits.weekdays");
+  if (days.join() === "5,6") return t("settings.limits.weekend");
+  return days.map(dayName).join(", ");
 }
 
 // One kind's list ("site" or "app"), or both without one.
@@ -2568,13 +2619,13 @@ function renderLimits(kind) {
     box.checked = rule.enabled;
     box.onchange = () => { rule.enabled = box.checked; renderLimits(kind); };
     sw.append(box, el("span", "knob"));
-    sw.title = rule.enabled ? "Turn this limit off" : "Turn this limit on";
-    const edit = el("button", "btn sm ghost", "Edit");
+    sw.title = t(rule.enabled ? "settings.limits.turn_off" : "settings.limits.turn_on");
+    const edit = el("button", "btn sm ghost", t("settings.limits.edit"));
     edit.type = "button";
     edit.onclick = () => openLimitEditor(kind, i);
     const x = el("button", "remove", "×");
     x.type = "button";
-    x.title = "Remove this limit";
+    x.title = t("settings.limits.remove");
     x.onclick = () => { k.rules.splice(i, 1); renderLimits(kind); };
     const name = el("span", "site", limitNames(kind, rule));
     if (kind === "app") name.title = rule.apps.join(", ");
@@ -2582,12 +2633,12 @@ function renderLimits(kind) {
     row.append(head);
     if (kind === "app") {
       row.append(el("div", "limit-line", rule.action === "beep"
-        ? `Beeps when reached, again every ${rule.remind || 5} min; the app stays open`
-        : "Closes the app when reached"));
+        ? t("settings.limits.app_beeps", { n: rule.remind || 5 })
+        : t("settings.limits.app_closes")));
     }
     if (status && status.blocked) {
-      const what = beeps(kind, rule) ? "Over the limit" : kind === "app" ? "Closed" : "Blocked";
-      row.append(el("div", "limit-tag", `${what} until ${clockText(status.until_ms)}`));
+      const what = beeps(kind, rule) ? "over_until" : kind === "app" ? "closed_until" : "blocked_until";
+      row.append(el("div", "limit-tag", t("settings.limits." + what, { time: clockText(status.until_ms) })));
     }
     rule.budgets.forEach((b, j) => {
       const line = el("div", "limit-line");
@@ -2596,7 +2647,7 @@ function renderLimits(kind) {
         const used = Math.min(live.used_s, live.budget_s);
         const text = el("div");
         text.append(el("b", "", budgetText(b)),
-          live.active ? ` · ${Math.floor(used / 60)} of ${b.minutes} min used` : " · not today");
+          " · " + (live.active ? t("settings.limits.used", { used: Math.floor(used / 60), minutes: b.minutes }) : t("settings.limits.not_today")));
         const bar = el("div", "limit-bar" + (live.remaining_s <= 0 ? " full" : ""));
         const fill = el("i");
         fill.style.width = Math.round((100 * used) / live.budget_s) + "%";
@@ -2609,7 +2660,8 @@ function renderLimits(kind) {
     });
     for (const w of rule.windows) {
       const line = el("div", "limit-line");
-      line.append(el("div", "", `${beeps(kind, rule) ? "Beeps" : "Blocked"} ${daysText(w.days)}, ${w.from}–${w.to}`));
+      line.append(el("div", "", t(beeps(kind, rule) ? "settings.limits.window_beeps" : "settings.limits.window_blocked",
+        { days: daysText(w.days), from: w.from, to: w.to })));
       row.append(line);
     }
     list.append(row);
@@ -2640,10 +2692,10 @@ let syncOwner = "";  // as picked here, saved with the rest
 
 const agoText = (ms) => {
   const min = Math.round((Date.now() - ms) / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
-  if (min < 48 * 60) return `${Math.round(min / 60)} h ago`;
-  return `${Math.round(min / 1440)} days ago`;
+  if (min < 1) return t("settings.sync.ago.now");
+  if (min < 60) return t("settings.sync.ago.min", { n: min });
+  if (min < 48 * 60) return t("settings.sync.ago.h", { n: Math.round(min / 60) });
+  return t("settings.sync.ago.days", { n: Math.round(min / 1440) });
 };
 
 function renderSync(info) {
@@ -2651,17 +2703,17 @@ function renderSync(info) {
   const select = $("s_sync_owner");
   if (document.activeElement !== select) {
     select.replaceChildren();
-    const auto = el("option", "", info.instances.length ? "The first profile to connect" : "Waiting for the extension\u2026");
+    const auto = el("option", "", t(info.instances.length ? "settings.sync.first_profile" : "settings.sync.waiting_extension"));
     auto.value = "";
     select.append(auto);
     for (const inst of info.instances) {
-      const name = inst.email || `A profile not signed in to Chrome (${inst.id.slice(0, 4)})`;
-      const opt = el("option", "", name + (inst.connected ? "" : ` \u00b7 last seen ${agoText(inst.seen_ms)}`));
+      const name = inst.email || t("settings.sync.unsigned_profile", { id: inst.id.slice(0, 4) });
+      const opt = el("option", "", inst.connected ? name : t("settings.sync.last_seen", { name, ago: agoText(inst.seen_ms) }));
       opt.value = inst.id;
       select.append(opt);
     }
     if (syncOwner && !info.instances.some((i) => i.id === syncOwner)) {
-      const gone = el("option", "", "A profile not seen lately");
+      const gone = el("option", "", t("settings.sync.not_seen"));
       gone.value = syncOwner;
       select.append(gone);
     }
@@ -2669,13 +2721,14 @@ function renderSync(info) {
   }
   const owner = info.instances.find((i) => i.id === syncOwner);
   const status = $("syncStatus");
-  const others = info.devices.map((d) => `${d.name} (${agoText(d.t)})`).join(", ");
+  const others = info.devices.map((d) => t("settings.sync.device", { name: d.name, ago: agoText(d.t) })).join(", ");
   const synced = !!info.last_sync_ms;
   let text;
-  if (!owner) text = "Not shared yet: load the extension in Chrome";
-  else if (!owner.email) text = "This profile isn't signed in to Chrome, so nothing leaves this PC";
-  else if (!synced) text = "Waiting for Chrome sync\u2026";
-  else text = `Synced ${agoText(info.last_sync_ms)}` + (others ? ` \u00b7 also counting ${others}` : " \u00b7 no other PC yet");
+  if (!owner) text = t("settings.sync.no_owner");
+  else if (!owner.email) text = t("settings.sync.unsigned");
+  else if (!synced) text = t("settings.sync.waiting_sync");
+  else if (others) text = t("settings.sync.synced_others", { ago: agoText(info.last_sync_ms), others });
+  else text = t("settings.sync.synced_alone", { ago: agoText(info.last_sync_ms) });
   status.textContent = text;
   const good = !!(owner && owner.email && synced);
   status.classList.toggle("ok", good);
@@ -2731,8 +2784,8 @@ function removeButton(onclick, title) {
 function dayButtons(item) {
   if (!item.days) item.days = [0, 1, 2, 3, 4, 5, 6];
   const wrap = el("div", "limit-days");
-  DAY_NAMES.forEach((name, d) => {
-    const b = el("button", "day", name);
+  DAYS.forEach((_, d) => {
+    const b = el("button", "day", dayName(d));
     b.type = "button";
     b.setAttribute("aria-pressed", item.days.includes(d));
     b.onclick = () => {
@@ -2755,12 +2808,10 @@ function renderLimitEditor() {
   const names = el("input", "input");
   names.id = kind === "site" ? "limitSite" : "limitApps";
   names.spellcheck = false;
-  names.placeholder = kind === "site" ? "Websites, e.g. instagram.com, facebook.com" : "Apps, e.g. WhatsApp.exe, Slack.exe";
+  names.placeholder = t(kind === "site" ? "settings.limits.editor.sites_placeholder" : "settings.limits.editor.apps_placeholder");
   names.value = namesText;
   names.oninput = () => { namesText = names.value; };
-  box.append(names, el("div", "help", kind === "site"
-    ? "Several websites can share one limit: the time adds up across all of them."
-    : "Program names, as Task Manager's Details tab shows them, separated by commas; the ones running now are suggested as you type. Several apps can share one limit: the time adds up across all of them."));
+  box.append(names, el("div", "help", t(kind === "site" ? "settings.limits.editor.sites_help" : "settings.limits.editor.apps_help")));
   if (kind === "app") suggestApps(names, { multi: true, skip: (a) => a.protected && rule.action === "close" });
   box.onkeydown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "BUTTON" && e.target.tagName !== "SELECT") {
@@ -2771,13 +2822,13 @@ function renderLimitEditor() {
   const hoursHead = el("h4");
   const addWindow = el("button", "btn sm");
   const hoursText = () => {
-    hoursHead.textContent = beeps(kind, rule) ? "Hours it beeps in" : "Blocked hours";
-    addWindow.textContent = beeps(kind, rule) ? "Add hours" : "Add blocked hours";
+    hoursHead.textContent = t(beeps(kind, rule) ? "settings.limits.editor.hours_beep" : "settings.limits.editor.hours_blocked");
+    addWindow.textContent = t(beeps(kind, rule) ? "settings.limits.editor.add_hours" : "settings.limits.editor.add_blocked_hours");
   };
   if (kind === "app") {
     const row = el("div", "limit-sub");
     const action = el("select", "input");
-    for (const [value, text] of [["close", "Close the app"], ["beep", "Beep, keep it open"]]) {
+    for (const [value, text] of [["close", t("settings.limits.editor.action_close")], ["beep", t("settings.limits.editor.action_beep")]]) {
       const o = el("option", "", text);
       o.value = value;
       action.append(o);
@@ -2785,38 +2836,38 @@ function renderLimitEditor() {
     action.value = rule.action;
     if (!rule.remind) rule.remind = 5;
     const remind = el("span", "limit-sub");
-    remind.append("again every", numberInput(rule.remind, REMIND_MIN, (n) => { rule.remind = n; }), "min");
+    remind.append(t("settings.limits.editor.again_every"), numberInput(rule.remind, REMIND_MIN, (n) => { rule.remind = n; }), t("settings.min"));
     remind.classList.toggle("hidden", rule.action !== "beep");
     action.onchange = () => {
       rule.action = action.value;
       remind.classList.toggle("hidden", rule.action !== "beep");
       hoursText();
     };
-    row.append("When a limit is reached:", action, remind);
+    row.append(t("settings.limits.editor.when_reached"), action, remind);
     box.append(row);
   }
 
-  box.append(el("h4", "", "Time allowed"));
+  box.append(el("h4", "", t("settings.limits.editor.time_allowed")));
   rule.budgets.forEach((b, i) => {
     const row = el("div", "limit-sub");
     row.append(dayButtons(b));
     const amount = el("div", "limit-sub");
     const unit = el("select", "input");
     for (const u of ["minute", "hour", "day", "week"]) {
-      const o = el("option", "", u + "s");
+      const o = el("option", "", t("settings.limits.units." + u));
       o.value = u;
       o.selected = u === b.unit;
       unit.append(o);
     }
     unit.onchange = () => { b.unit = unit.value; };
-    amount.append(numberInput(b.minutes, 1, (n) => { b.minutes = n; }), "min every",
+    amount.append(numberInput(b.minutes, 1, (n) => { b.minutes = n; }), t("settings.limits.editor.min_every"),
                   numberInput(b.every, 1, (n) => { b.every = n; }), unit,
-                  removeButton(() => { rule.budgets.splice(i, 1); renderLimitEditor(); }, "Remove this limit"));
+                  removeButton(() => { rule.budgets.splice(i, 1); renderLimitEditor(); }, t("settings.limits.editor.remove_budget")));
     const group = el("div", "limit-group");
     group.append(amount, row);
     box.append(group);
   });
-  const addBudget = el("button", "btn sm", "Add a time limit");
+  const addBudget = el("button", "btn sm", t("settings.limits.editor.add_budget"));
   addBudget.type = "button";
   addBudget.onclick = () => { rule.budgets.push({ minutes: 30, every: 1, unit: "day", days: [0, 1, 2, 3, 4, 5, 6] }); renderLimitEditor(); };
   box.append(addBudget);
@@ -2833,20 +2884,20 @@ function renderLimitEditor() {
     to.type = "time";
     to.value = w.to;
     to.oninput = () => { w.to = to.value; };
-    row.append(from, "to", to, removeButton(() => { rule.windows.splice(i, 1); renderLimitEditor(); }, "Remove these hours"));
+    row.append(from, t("settings.limits.editor.to"), to, removeButton(() => { rule.windows.splice(i, 1); renderLimitEditor(); }, t("settings.limits.editor.remove_hours")));
     box.append(row);
   });
   addWindow.type = "button";
   addWindow.onclick = () => { rule.windows.push({ days: [0, 1, 2, 3, 4], from: "08:00", to: "17:00" }); renderLimitEditor(); };
   hoursText();
   box.append(addWindow);
-  box.append(el("div", "help", "Hours ending before they start run past midnight (22:00 to 06:00). 00:00 to 00:00 is the whole day."));
+  box.append(el("div", "help", t("settings.limits.editor.hours_help")));
 
   const actions = el("div", "limit-actions");
-  const cancel = el("button", "btn ghost", "Cancel");
+  const cancel = el("button", "btn ghost", t("settings.cancel"));
   cancel.type = "button";
   cancel.onclick = closeLimitEditor;
-  const done = el("button", "btn primary", limitDraft.index === undefined ? "Add limit" : "Done");
+  const done = el("button", "btn primary", t(limitDraft.index === undefined ? "settings.limits.editor.add_limit" : "settings.limits.editor.done"));
   done.type = "button";
   done.onclick = commitLimitDraft;
   actions.append(cancel, done);
@@ -2859,16 +2910,16 @@ function draftApps(action) {
   const key = (n) => n.toLowerCase().replace(/\.exe$/, "");
   const apps = [];
   for (const part of namesText.split(/[,;\n]+/).map((p) => p.trim().replace(/^"|"$/g, "")).filter(Boolean)) {
-    if (/[\\/]/.test(part)) { toast("App names are just the program, like WhatsApp.exe.", true); return null; }
+    if (/[\\/]/.test(part)) { toast(t("settings.apps.not_program"), true); return null; }
     const exe = /\.exe$/i.test(part) ? part : part + ".exe";
     if (action === "close" && PROTECTED_EXES.has(key(exe))) {
-      toast(`buZyist won't close ${exe}: Windows or your browser needs it. Make that limit beep.`, true);
+      toast(t("settings.limits.check.protected", { app: exe }), true);
       return null;
     }
     if (!apps.some((a) => key(a) === key(exe))) apps.push(exe);
   }
-  if (!apps.length) { toast("Type an app like WhatsApp.exe.", true); return null; }
-  if (apps.length > 20) { toast("Keep a limit to 20 apps or fewer.", true); return null; }
+  if (!apps.length) { toast(t("settings.limits.check.no_app"), true); return null; }
+  if (apps.length > 20) { toast(t("settings.limits.check.too_many_apps", { n: 20 }), true); return null; }
   return apps;
 }
 
@@ -2877,11 +2928,11 @@ function draftSites() {
   const patterns = [];
   for (const part of namesText.split(/[\s,;]+/).filter(Boolean)) {
     const pattern = cleanSitePattern(part);
-    if (pattern === null) { toast(`"${part}" isn't a website like instagram.com or *.reddit.com.`, true); return null; }
+    if (pattern === null) { toast(t("settings.limits.check.not_site", { text: part }), true); return null; }
     if (pattern && !patterns.includes(pattern)) patterns.push(pattern);
   }
-  if (!patterns.length) { toast("Type a website like instagram.com or *.reddit.com.", true); return null; }
-  if (patterns.length > 20) { toast("Keep a limit to 20 websites or fewer.", true); return null; }
+  if (!patterns.length) { toast(t("settings.limits.check.no_site"), true); return null; }
+  if (patterns.length > 20) { toast(t("settings.limits.check.too_many_sites", { n: 20 }), true); return null; }
   return patterns;
 }
 
@@ -2892,15 +2943,15 @@ function commitLimitDraft() {
   const names = kind === "site" ? draftSites() : draftApps(rule.action);
   if (!names) return false;
   if (beeps(kind, rule) && !(rule.remind >= REMIND_MIN && rule.remind <= REMIND_MAX)) {
-    toast(`Beep again every ${REMIND_MIN} to ${REMIND_MAX} minutes.`, true);
+    toast(t("settings.limits.check.remind", { min: REMIND_MIN, max: REMIND_MAX }), true);
     return false;
   }
-  if (!rule.budgets.length && !rule.windows.length) { toast("Add a time limit or blocked hours.", true); return false; }
-  if (rule.budgets.some((b) => !b.days.length)) { toast("Pick at least one day for each time limit.", true); return false; }
-  if (rule.budgets.some((b) => b.minutes < 1 || b.every < 1)) { toast("Time limits need at least 1 minute and a period of at least 1.", true); return false; }
-  if (rule.windows.some((w) => !w.days.length || !w.from || !w.to)) { toast("Blocked hours need days and times.", true); return false; }
+  if (!rule.budgets.length && !rule.windows.length) { toast(t("settings.limits.check.empty"), true); return false; }
+  if (rule.budgets.some((b) => !b.days.length)) { toast(t("settings.limits.check.budget_days"), true); return false; }
+  if (rule.budgets.some((b) => b.minutes < 1 || b.every < 1)) { toast(t("settings.limits.check.budget_minutes"), true); return false; }
+  if (rule.windows.some((w) => !w.days.length || !w.from || !w.to)) { toast(t("settings.limits.check.hours"), true); return false; }
   if (k.rules.length >= 30 && index === undefined) {
-    toast(`Keep the ${kind === "site" ? "website" : "app"} limits under 30.`, true);
+    toast(t(kind === "site" ? "settings.limits.check.too_many_site_limits" : "settings.limits.check.too_many_app_limits", { n: 30 }), true);
     return false;
   }
   if (kind === "site") rule.patterns = names;
@@ -2928,14 +2979,14 @@ $("openExtensionsPage").onclick = () => $("installExtension").click();
 $("openExtensionFolder").onclick = () => api.open_extension_folder();
 $("copyExtensionPath").onclick = async () => {
   const r = await api.copy_extension_path();
-  toast(r.ok ? "Folder path copied" : "Couldn't reach the clipboard; copy the path by hand.", !r.ok);
+  toast(t(r.ok ? "settings.ext.copied" : "settings.ext.copy_failed"), !r.ok);
 };
 $("installExtension").onclick = async () => {
   const r = await api.install_extension();
   if (!r.ok) return toast(r.error, true);
-  const copied = r.copied ? " The folder path is on your clipboard." : "";
-  if (r.browser) toast(`Opened ${r.browser}'s extensions page.${copied}`);
-  else toast(`Couldn't find Chrome. Open chrome://extensions in your browser.${copied}`, true);
+  const copied = r.copied ? "_copied" : "";
+  if (r.browser) toast(t("settings.ext.opened" + copied, { browser: r.browser }));
+  else toast(t("settings.ext.not_found" + copied), true);
 };
 
 function closeSettings() {
@@ -2945,7 +2996,7 @@ function closeSettings() {
 
 function formValues(names) {
   const out = {};
-  for (const input of $("settingsForm").querySelectorAll("input[name]")) {
+  for (const input of $("settingsForm").querySelectorAll("input[name], select[name]")) {
     if (names && !names.includes(input.name)) continue;
     if (input.type === "radio") { if (input.checked) out[input.name] = input.value; continue; }
     out[input.name] = input.type === "checkbox" ? input.checked : input.value;
@@ -2963,25 +3014,25 @@ $("updateChip").onclick = async () => {
 $("checkUpdate").onclick = async () => {
   const out = $("updateResult");
   out.className = "test-result";
-  out.textContent = "Checking GitHub…";
+  out.textContent = t("settings.about.checking");
   $("checkUpdate").disabled = true;
   const result = await api.check_update();
   $("checkUpdate").disabled = false;
   if (!result.ok) { out.className = "test-result bad"; out.textContent = result.error; return; }
   await poll();
-  if (!result.update) { out.className = "test-result ok"; out.textContent = "You have the latest version."; }
+  if (!result.update) { out.className = "test-result ok"; out.textContent = t("settings.about.latest"); }
 };
 $("installUpdate").onclick = async () => {
   const u = state && state.update;
   if (!u) return;
   if (!u.installable) return api.open_url(u.url);
-  const where = state.bar.local || state.bar.offline ? "" : " on the bar";
-  if (state.session && !confirm(`buZyist restarts to update. The session keeps running${where} and picks up again after the restart. Update now?`)) return;
+  const ask = state.bar.local || state.bar.offline ? "settings.about.confirm" : "settings.about.confirm_bar";
+  if (state.session && !confirm(t(ask))) return;
   $("installUpdate").disabled = true;
-  $("installUpdate").textContent = "Installing…";
+  $("installUpdate").textContent = t("settings.about.installing");
   const result = await api.install_update();
   if (!result.ok) { await poll(); return toast(result.error, true); }
-  toast(`Installing buZyist ${u.version}. It restarts by itself.`);
+  toast(t("settings.about.installing_toast", { version: u.version }));
 };
 $("releaseNotes").onclick = () => state && state.update && api.open_url(state.update.url);
 $("cancelSettings").onclick = closeSettings;
@@ -2999,23 +3050,30 @@ $("saveSettings").onclick = async () => {
   addBlockedSite(); // same for a website typed but not yet added
   addActivity(); // and an activity
   if (limitDraft && !commitLimitDraft()) return; // a limit being edited counts too
+  // A new language reloads the page (Python does it): open Settings again after.
+  const relang = $("s_language").value !== I18N.lang;
+  if (relang) sessionStorage.setItem("reopenSettings", "general");
   const result = await api.save_settings({ ...formValues(), ...secretClears(), blocked_apps: blockedApps, blocked_sites: siteLists.block, allowed_sites: siteLists.allow, site_limits: LIMITS.site.rules, app_limits: LIMITS.app.rules, activities: activityRows, bar_screens: barScreens, call_activity: callActivity, call_ignore_apps: callIgnore(), sync_owner: syncOwner });
-  if (!result.ok) return toast(result.error, true);
+  if (!result.ok) {
+    sessionStorage.removeItem("reopenSettings");
+    return toast(result.error, true);
+  }
   closeSettings();
-  toast("Settings saved");
+  toast(t("settings.saved"));
   await poll();
   loadTasks();
 };
 $("testBar").onclick = async () => {
   const out = $("testResult");
   out.className = "test-result";
-  out.textContent = "Testing…";
+  out.textContent = t("settings.bar.testing");
   const { clear_busybar_pin } = secretClears();
   const saved = await api.save_settings({ ...formValues(["use_busybar", "busybar_ip", "busybar_pin", "usb_fallback"]), clear_busybar_pin });
   if (!saved.ok) { out.className = "test-result bad"; out.textContent = saved.error; return; }
   const result = await api.test_bar();
   out.className = "test-result " + (result.ok ? "ok" : "bad");
-  out.textContent = result.ok ? `Connected over ${result.via}${result.version ? " · firmware " + result.version : ""}` : result.error;
+  out.textContent = !result.ok ? result.error
+    : t(result.version ? "settings.bar.connected_firmware" : "settings.bar.connected", { via: result.via, version: result.version });
 };
 
 // ------------------------------------------------------------- keyboard
@@ -3118,9 +3176,16 @@ window.addEventListener("resize", () => poll());
 
 async function boot() {
   api = window.pywebview.api;
+  await loadI18n(api);
   await poll();
+  const reopen = sessionStorage.getItem("reopenSettings");  // reloaded for a new language
+  sessionStorage.removeItem("reopenSettings");
+  if (reopen && !state.needs_setup) {
+    openSettings(reopen);
+    toast(t("settings.saved"));
+  }
   if (state.needs_setup) {
-    showEmpty("Welcome to buZyist", "Add your Todoist API token to see your tasks, or turn Todoist off in Settings to run sessions without tasks.", true);
+    showEmpty(t("main.tasks.welcome"), t("main.tasks.welcome_text"), true);
     tasksWereOff = true;
     openSettings();
   } else if (state.todoist) {

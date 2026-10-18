@@ -5,8 +5,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from buzyist.constants import PASS_SECONDS, AppError, now_ms
+from buzyist.constants import PASS_SECONDS, now_ms
 from buzyist.extension import EXTENSION_VERSION
+from buzyist.i18n import app_error, language, t
 from buzyist.site_rules import is_plain_domain, site_blocking, site_limit_status
 from buzyist.updater import version_tuple
 
@@ -27,6 +28,11 @@ class SitesMixin:
         session's activity, see site_blocking; `activity` is its name, for
         the block page. `sites` is kept for extensions from before patterns:
         only the plain domains of a blocklist, which they understand.
+
+        `language` is the app language, which the extension shows its popup,
+        block page and badge in (and keeps with this answer while buZyist is
+        closed). Every route answers with this, so /usage, /grant and /sync
+        carry it too.
 
         The browser profile that shares the limits with other PCs (`instance`
         is the sync owner) also gets `sync`, see sync_payload.
@@ -53,6 +59,7 @@ class SitesMixin:
             # Measure the time on every website and send it as site_time (record_site_time).
             "track_sites": bool(cfg.get("app_time_on")),
             "in_focus": focus["active"],  # a work phase runs, blocking or not: splits that time
+            "language": language(),
         }
         if self.is_sync_owner(instance):
             out["sync"] = self.sync_payload()
@@ -85,10 +92,7 @@ class SitesMixin:
             self.note_instance(instance, account, trusted=True)
         if self.extension_outdated() and self._ext_warned != EXTENSION_VERSION:
             self._ext_warned = EXTENSION_VERSION
-            self.notify(
-                "One more step for the extension",
-                "buZyist was updated. On your browser's extensions page, click Reload on buZyist Focus.",
-            )
+            self.notify(t("notify.extension_reload.title"), t("notify.extension_reload.text"))
 
     def site_limits_status(self, enabled_only: bool = False) -> list[dict]:
         """Where every site-limit rule stands right now (see site_limit_status)."""
@@ -123,5 +127,5 @@ class SitesMixin:
     def grant_pass(self, rid) -> None:
         """The block page's "allow 2 more minutes": lift one rule for a short while."""
         if rid not in {r["id"] for r in self.cfg.get("site_limits") or []}:
-            raise AppError("That limit no longer exists.")
+            raise app_error("errors.limits.gone")
         self.usage.grant(rid, now_ms() + PASS_SECONDS * 1000)

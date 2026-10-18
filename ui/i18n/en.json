@@ -1,0 +1,1164 @@
+{
+  "_": "English, the reference catalog: every other catalog has exactly these keys. See \"Translations\" in CLAUDE.md. Keys starting with _ are notes, not text.",
+  "language": {
+    "name": "English"
+  },
+  "common": {
+    "duration": {
+      "h_m": "{h}h {m}m",
+      "h": "{h}h",
+      "min": "{m} min"
+    },
+    "phase": {
+      "_": "The timer's state, on the main window and the mini timer.",
+      "ready": "Ready",
+      "paused": "Paused",
+      "focus": "Focus",
+      "break": "Break",
+      "call": "Call"
+    }
+  },
+  "summary": {
+    "chip_done": "Done",
+    "chip_stopped": "Stopped",
+    "title_done": "Done. Take a breather.",
+    "title_stopped": "Session stopped",
+    "pomodoros": {
+      "one": "{n} pomodoro",
+      "other": "{n} pomodoros"
+    },
+    "result": {
+      "one": "{n} pomodoro · {duration} of focus",
+      "other": "{n} pomodoros · {duration} of focus"
+    },
+    "none": "No full pomodoro this time. That's fine.",
+    "complete": "Complete task",
+    "again": "Another session",
+    "close": "Close",
+    "completed": "Done in Todoist.",
+    "parent_confirm": "That was the last subtask of “{parent}”. Complete it too?",
+    "parent_unnamed": "its parent",
+    "both_completed": "Both done in Todoist.",
+    "task_gone": "That task is no longer in the list."
+  },
+  "main": {
+    "today": {
+      "count": {
+        "one": "{n} pomodoro today",
+        "other": "{n} pomodoros today"
+      },
+      "none": "No pomodoros yet today",
+      "focus": "{duration} of focus",
+      "completed": {
+        "one": "{n} done",
+        "other": "{n} done"
+      },
+      "empty": "Pick a task. 25 minutes, just that.",
+      "finished": {
+        "one": "{n} pomodoro finished today",
+        "other": "{n} pomodoros finished today"
+      }
+    },
+    "header": {
+      "today_title": "Pomodoros finished today",
+      "update_title": "A new version of buZyist is out",
+      "update": "Update {version}",
+      "updating": "Updating…",
+      "ext_title": "The browser extension is out of date",
+      "ext": "Reload extension",
+      "settings": "Settings"
+    },
+    "bar": {
+      "looking": "Looking for the bar",
+      "local": "Timer on this PC",
+      "offline": "Bar out of reach · timer on this PC",
+      "offline_title": "The BUSY Bar can't be reached. The timer runs here and goes back to the bar once it answers.",
+      "via": "BUSY Bar · {via}",
+      "unreachable": "Bar offline"
+    },
+    "timer": {
+      "aria": "Timer",
+      "per_pomodoro": "per pomodoro",
+      "left": "left",
+      "paused": "paused",
+      "aria_left": "{time} left",
+      "aria_per_pomodoro": "{time} per pomodoro",
+      "round": "Pomodoro {round} of {rounds}",
+      "rounds": {
+        "one": "{n} pomodoro",
+        "other": "{n} pomodoros"
+      },
+      "plan": {
+        "one": "{n} pomodoro of {work} min, no break",
+        "other": "{n} pomodoros of {work} min, {rest} min breaks"
+      },
+      "break_next": "Break · pomodoro {next} of {rounds} next",
+      "last": "Pomodoro {round} of {rounds} · the last one",
+      "break_after": "Pomodoro {round} of {rounds} · {rest} min break after",
+      "call": "on a call",
+      "call_aria": "{time} on a call",
+      "call_rounds": "A call, with no pomodoros",
+      "call_line": "Ends when the call does · counted as focus"
+    },
+    "current": {
+      "call": "On a call · since {time}",
+      "break": "Break time. Since {time}",
+      "paused": "Paused · since {time}",
+      "focus": "Just this · since {time}",
+      "wrapping_up": "Wrapping up…",
+      "open_todoist": "Open in Todoist",
+      "remote": "Started on {by}",
+      "remote_since": "Started on {by} · since {time}",
+      "no_task": "No task linked",
+      "bar_no_task": "Started on the bar, no task linked",
+      "timer_running": "Timer running",
+      "pick_to_focus": "Pick a task to put it in focus",
+      "idle": "One pomodoro at a time.",
+      "idle_solo": "Name it if you like, then go.",
+      "pick": "Pick a task to start",
+      "ready": "Ready when you are"
+    },
+    "controls": {
+      "stop": "Stop session",
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip to next phase"
+    },
+    "guard": {
+      "apps": {
+        "one": "{n} app",
+        "other": "{n} apps"
+      },
+      "sites": {
+        "one": "{n} site",
+        "other": "{n} sites"
+      },
+      "allowlist": "allowlist",
+      "limits": {
+        "one": "{n} limit",
+        "other": "{n} limits"
+      },
+      "off": "Focus guard off · set it up",
+      "on": {
+        "one": "Focus guard on · {n} block active",
+        "other": "Focus guard on · {n} blocks active"
+      },
+      "ready": {
+        "one": "Focus guard ready · {n} block",
+        "other": "Focus guard ready · {n} blocks"
+      },
+      "title": "What stays blocked during focus: {list}",
+      "title_off": "Block distracting apps and websites during focus"
+    },
+    "setup": {
+      "title": "Session settings",
+      "hint_idle": "Used for the next session",
+      "hint_running": "Applies to the next session",
+      "focus": "Focus",
+      "break": "Break",
+      "pomodoros": "Pomodoros",
+      "min": "min",
+      "per_session": "per session",
+      "less_focus": "Less focus time",
+      "more_focus": "More focus time",
+      "focus_minutes": "Focus minutes",
+      "shorter_break": "Shorter break",
+      "longer_break": "Longer break",
+      "break_minutes": "Break minutes",
+      "fewer_pomodoros": "Fewer pomodoros",
+      "more_pomodoros": "More pomodoros",
+      "pomodoros_per_session": "Pomodoros per session",
+      "autostart": "Auto-start next phase",
+      "total": "{duration} · ends ~{time}",
+      "preset": "{name}: {cycles} × {work} min focus, {rest} min breaks",
+      "presets": {
+        "classic": "Classic",
+        "short": "Short",
+        "long": "Long",
+        "deep": "Deep"
+      }
+    },
+    "free": {
+      "label": "What are you working on?",
+      "placeholder": "What are you working on? (optional)",
+      "detail": "Add a detail (optional)",
+      "remove": "Remove the activity",
+      "activities": "Activities",
+      "show": "Show the activities",
+      "start": "Start a session",
+      "recent_of": "Recent {activity}",
+      "switch_to": "Switch to",
+      "recent": "Recent",
+      "custom": "Start “{text}”",
+      "edit": "Edit activities…"
+    },
+    "start": {
+      "already": "That task is already in focus.",
+      "replace": "Replace the current session on “{task}”?",
+      "go": "Go. {work} minutes, just this.",
+      "go_bar": "Go. {work} minutes, just this (on the bar).",
+      "go_planned": {
+        "one": "Go. {n} pomodoro of {work} min, from the task's duration.",
+        "other": "Go. {n} pomodoros of {work} min, from the task's duration."
+      },
+      "go_planned_bar": {
+        "one": "Go. {n} pomodoro of {work} min, from the task's duration (on the bar).",
+        "other": "Go. {n} pomodoros of {work} min, from the task's duration (on the bar)."
+      }
+    },
+    "tasks": {
+      "aria": "Tasks",
+      "search": "Search tasks",
+      "refresh": "Reload from Todoist",
+      "off": "Todoist is off",
+      "needs_token": "Add your Todoist API token to see your tasks.",
+      "turn_on": "Turn it on in Settings to pick tasks.",
+      "load_failed": "Couldn't load tasks",
+      "open_settings": "Open settings",
+      "welcome": "Welcome to buZyist",
+      "welcome_text": "Add your Todoist API token to see your tasks, or turn Todoist off in Settings to run sessions without tasks.",
+      "count": "{shown} of {total}",
+      "count_planned": "{shown} of {total} · {duration}",
+      "count_title": "{duration} of Todoist durations in this filter",
+      "empty": "All clear",
+      "empty_text": "Nothing in this filter. Enjoy it.",
+      "no_match": "No match",
+      "no_match_text": "No task contains “{text}”.",
+      "overdue": "Overdue · {day}",
+      "tomorrow": "Tomorrow",
+      "tomorrow_at": "Tomorrow {time}",
+      "plan": {
+        "one": "{work} min",
+        "other": "{n} × {work} min"
+      },
+      "plan_title": {
+        "one": "{minutes} min in Todoist: {n} pomodoro of {work} min. Shift+click play for your usual settings.",
+        "other": "{minutes} min in Todoist: {n} pomodoros of {work} min. Shift+click play for your usual settings."
+      },
+      "subtasks": {
+        "one": "{n} subtask",
+        "other": "{n} subtasks"
+      },
+      "subtasks_title": "Play lets you pick one of them, or the whole task",
+      "priority": {
+        "p1": "Urgent",
+        "p2": "High",
+        "p3": "Medium"
+      },
+      "priority_title": "Priority {p} in Todoist",
+      "start": "Start a session",
+      "start_on": "Start a session on: {task}",
+      "done": "Mark as done",
+      "done_on": "Mark as done: {task}",
+      "done_on_priority": "Mark as done: {task} (priority {p})",
+      "more": "more",
+      "less": "less",
+      "badge": {
+        "wrapping_up": "Wrapping up",
+        "call": "On a call",
+        "paused": "Paused",
+        "break": "Break",
+        "focus": "In focus"
+      },
+      "pomodoros_done": {
+        "one": "{n} pomodoro done",
+        "other": "{n} pomodoros done"
+      },
+      "complete_in_focus": "“{task}” is in focus. Stop the session and mark it as done?",
+      "completed": "Done in Todoist.",
+      "keys_choose": "↑ ↓ choose",
+      "keys_start": "Enter start",
+      "keys_filter": "Ctrl+1–9 filter",
+      "keys_hide": "Esc hide"
+    },
+    "menu": {
+      "start": "Start session",
+      "start_usual": "Start with your usual {work}-min pomodoros",
+      "done": "Mark as done",
+      "todoist": "See on Todoist"
+    },
+    "picker": {
+      "aria": "Start on",
+      "head": "Start on…",
+      "whole": "The whole task",
+      "plan": {
+        "one": "{work} min",
+        "other": "{n} × {work}"
+      }
+    },
+    "filters": {
+      "aria": "Saved filters",
+      "edit": "Edit this filter",
+      "new": "New filter",
+      "edit_title": "Edit filter",
+      "name": "Name",
+      "name_placeholder": "e.g. Deep work",
+      "query": "Todoist filter query",
+      "help": "Same syntax as Todoist's own filters:",
+      "help_and": "and",
+      "help_or": "or",
+      "help_not": "not",
+      "help_dates": "dates",
+      "add_to_query": "Add to the query",
+      "delete": "Delete",
+      "left": "Move left",
+      "right": "Move right",
+      "test": "Test",
+      "cancel": "Cancel",
+      "save": "Save",
+      "asking": "Asking Todoist…",
+      "checking": "Checking the filter with Todoist…",
+      "matches": {
+        "one": "{n} task matches",
+        "other": "{n} tasks match"
+      },
+      "saved": "Filter “{name}” saved",
+      "delete_confirm": "Delete the filter “{name}”?",
+      "deleted": "Filter deleted"
+    }
+  },
+  "mini": {
+    "title": "buZyist timer",
+    "drag": "Drag to move · double-click to open buZyist",
+    "until_end": "until it ends",
+    "round": "Pomodoro {round} of {rounds}",
+    "no_task": "No task",
+    "no_session": "No session",
+    "timer_running": "Timer running",
+    "on_bar": "Running on the bar",
+    "by": "on {by}",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "open": "Open buZyist",
+    "hide": "Hide mini timer"
+  },
+  "settings": {
+    "saved": "Settings saved",
+    "title": "Settings",
+    "close": "Close",
+    "sections": "Settings sections",
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "remove": "Remove",
+    "remove_item": "Remove {name}",
+    "unnamed": "Unnamed",
+    "min": "min",
+    "secret_saved": "•••••••• saved (type to replace)",
+    "tabs": {
+      "apps": "Apps",
+      "sites": "Websites",
+      "limits": "Limits",
+      "stats": "Stats",
+      "general": "General",
+      "about": "About"
+    },
+    "general": {
+      "language": "Language",
+      "language_help": "The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.",
+      "activities": "Activities",
+      "add_activity": "Add an activity, e.g. Planning",
+      "activities_help": "Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.",
+      "change_icon": "Change the icon",
+      "icon_for": "Icon for {name}",
+      "icons_for": "Icons for {name}",
+      "activity_name": "Activity name",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "no_activities": "No activities: the field takes only what you type.",
+      "exists": "{name} is already in the list.",
+      "call_detect": "Start a session when I'm on a call",
+      "call_help": "When an app has your microphone or camera on for 15 seconds, buZyist starts a session with no timer, and ends it when the call does. The call counts as focus under the activity below, and blocks the apps and websites that activity blocks. The app you're calling with is never closed.",
+      "call_activity": "Count calls as",
+      "no_activity": "No activity",
+      "call_ignore": "Not calls",
+      "call_ignore_placeholder": "e.g. Voicenotes.exe, NVIDIA Broadcast",
+      "call_ignore_help": "Apps that keep the microphone or camera on outside calls (dictation, voice effects), separated by commas; the ones running now are suggested as you type.",
+      "hotkey": "Global hotkey",
+      "hotkey_help": "ctrl / alt / shift / win + a key, e.g. <code>ctrl+alt+p</code>. Empty for none.",
+      "notifications": "Notify at breaks and when a session ends",
+      "open_on_finish": "Open this window when a session finishes",
+      "launch_at_login": "Start buZyist when I sign in to Windows",
+      "auto_update": "Install updates automatically when no session is running"
+    },
+    "todoist": {
+      "use": "Use Todoist",
+      "no_todoist_help": "Without Todoist, sessions run with no task and you don't need an API token.",
+      "token": "API token",
+      "reveal": "Show",
+      "token_lost": "Re-enter your Todoist token (it can't be read on this PC).",
+      "token_saved": "A token is saved.",
+      "token_help": "Todoist → Settings → Integrations → Developer → API token.",
+      "token_placeholder": "Paste your API token",
+      "label": "Label added when a task starts",
+      "label_placeholder": "Leave empty for no label",
+      "remove_label": "Remove the label when the session ends",
+      "log_comments": "Log finished pomodoros as a task comment",
+      "offer_subtasks": "Offer a task's subtasks when starting it",
+      "plan_from_duration": "Size the pomodoros from the task's duration",
+      "plan_help": "A task with a duration in Todoist gets its own pomodoros: that much focus time in all, with your usual breaks on top. Shift+click play to use your usual settings instead.",
+      "plan_single_max": "One pomodoro for tasks up to",
+      "plan_target": "Longer tasks: pomodoros of about",
+      "plan_min": "No shorter than",
+      "plan_max": "No longer than",
+      "plan_bad": "Keep the pomodoro length between the shortest and the longest.",
+      "_plan_example": "Under the duration settings: {list} is a few task lengths and what they give, joined with \" · \", each \"1h 30m → 3 × 30\" (plan_many) or \"45 min\" (plan_one).",
+      "plan_example": "For example: {list}",
+      "plan_one": "{min} min",
+      "plan_many": "{n} × {min}"
+    },
+    "bar": {
+      "use": "Run the timer on a BUSY Bar",
+      "no_bar_help": "Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.",
+      "wifi": "Wi-Fi address",
+      "pin": "HTTP API PIN",
+      "pin_lost": "Re-enter the PIN (it can't be read on this PC).",
+      "pin_saved": "A PIN is saved.",
+      "poll": "Check the bar every",
+      "seconds": "seconds",
+      "usb": "Also try USB (10.0.4.20)",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "connected": "Connected over {via}",
+      "connected_firmware": "Connected over {via} · firmware {version}",
+      "screens_title": "Bar screens",
+      "screens_on": "Choose what the bar shows during sessions",
+      "by_activity": "Focus by activity",
+      "by_activity_help": "Sessions on an activity can show something else while you focus. Todoist tasks and names you type use Focus; calls use Call.",
+      "firmware_help": "The break and the pause are the bar's own: it shows REST and PAUSED whatever you pick here. A text of yours replaces the time left on the bar, so its minutes go in the corner, updated every minute.",
+      "themes_error": "Couldn't read the bar's themes: {error} The ones already picked stay.",
+      "no_activities": "No activities (Settings, General).",
+      "screens": {
+        "focus": "Focus",
+        "call": "Call",
+        "done": "End of session"
+      },
+      "modes": {
+        "card": "The card's",
+        "theme": "A theme",
+        "text": "My text",
+        "off": "Off",
+        "same": "Same as Focus"
+      },
+      "on_bar": "{screen} on the bar",
+      "theme_for": "Theme for {screen}",
+      "text_for": "Text for {screen}",
+      "preview_alt": "How the bar shows {screen}",
+      "colour_for": "Colour for {screen}",
+      "insert": "Insert {word}",
+      "help_card": "The card's own screen, with the time left.",
+      "help_theme": "The theme's picture, as the bar draws it.",
+      "help_theme_wait": "The bar's themes show here once it answers.",
+      "help_off": "The bar goes back to its clock.",
+      "done_help": "Shown until you close the summary.",
+      "colors": {
+        "tomate": "Tomate",
+        "molho": "Molho",
+        "manteiga": "Manteiga",
+        "folha": "Folha",
+        "broto": "Broto",
+        "terra": "Terra",
+        "black": "Black"
+      },
+      "_sample": "The sample task and activity in the previews of text screens (Api.bar_preview); the bar drops accents.",
+      "sample_task": "Write the Q4 plan",
+      "sample_activity": "Email"
+    },
+    "scope": {
+      "everything": "Everything",
+      "this_activity": "this activity",
+      "inherit": "Like global",
+      "off": "Don't block",
+      "on": "Block",
+      "let_through": "Let through"
+    },
+    "apps": {
+      "scope_label": "Whose app blocking to edit",
+      "block": "Keep these apps away during focus",
+      "add_placeholder": "Add another program, e.g. Teams.exe",
+      "help": "<b>Close</b> quits the app. <b>Hide to tray</b> closes its window like its X does, so it keeps running and you stay online. Only during work phases; breaks, pauses and the end of a session leave apps alone.",
+      "close": "Close",
+      "hide": "Hide to tray",
+      "not_program": "App names are just the program, like WhatsApp.exe.",
+      "protected": "buZyist won't close {app}: Windows or your browser needs it.",
+      "too_many": "Keep the added apps under {n}.",
+      "too_many_allowed": "Keep the allowed apps under {n}.",
+      "too_many_blocked": "Keep the blocked apps under {n}.",
+      "in_background": "{exe} · in the background",
+      "activity": {
+        "intro": "What work phases on {name} do with apps. Todoist tasks and names you type use Everything.",
+        "during": "Apps during {name}",
+        "inherit_on": "Keeps away the apps of the global list, with the changes below.",
+        "inherit_off": "The global switch is off, so no app is blocked. Pick Block to block these anyway.",
+        "off": "Leaves every app alone during {name}.",
+        "on": "Keeps these apps away even when the global switch is off.",
+        "from_global": "From the global list",
+        "hidden": "Hidden",
+        "closed": "Closed",
+        "global_none": "The global list blocks no app.",
+        "also_let": "Also let through",
+        "also_let_label": "Also let through (apps)",
+        "also_let_help": "Left alone even if the global list blocks them later.",
+        "add_let": "Add a program, e.g. Teams.exe",
+        "also_block": "Also block",
+        "also_block_label": "Also block (apps)",
+        "also_block_help": "Closed during work phases on {name}, on top of the global list.",
+        "add_block": "Add a program, e.g. Spotify.exe",
+        "_summary": "{n} is how many apps {apps} names (joined with \", \").",
+        "summary": {
+          "one": "During {name}: {apps} is kept away.",
+          "other": "During {name}: {apps} are kept away."
+        },
+        "summary_none": "During {name}: no app is blocked."
+      }
+    },
+    "sites": {
+      "scope_label": "Whose website blocking to edit",
+      "block": "Limit websites during focus",
+      "mode_label": "Website mode",
+      "mode_block": "Block these sites",
+      "mode_allow": "Allow only these sites",
+      "placeholder_allow": "Add an allowed website, e.g. github.com or *.google.com",
+      "placeholder_block": "Add a website, e.g. youtube.com or *.reddit.com",
+      "help_allow": "During work phases every other website shows a \"back to work\" page.",
+      "help_allow_empty": "The list is empty, so every website is blocked during work phases.",
+      "help_block": "These websites show a \"back to work\" page during work phases.",
+      "patterns_help": "Subdomains are included (<code>youtube.com</code> also covers <code>m.youtube.com</code>). Use <code>*</code> as a wildcard anywhere: <code>*.google.com</code>, <code>google.*</code>, <code>youtube.com/shorts/*</code>. A path covers the pages below it (<code>reddit.com/r/python</code>).",
+      "not_site": "Type a website like youtube.com or *.google.com.",
+      "too_many": "Keep the list under {n} websites.",
+      "activity": {
+        "intro": "What work phases on {name} do with websites. Todoist tasks and names you type use Everything.",
+        "during": "Websites during {name}",
+        "inherit_on": "Uses the global websites, with the changes below.",
+        "inherit_off": "The global switch is off, so no website is blocked. Pick Block to block these anyway.",
+        "off": "Leaves every website open during {name}.",
+        "on": "Limits these websites even when the global switch is off.",
+        "mode_during": "Website mode during {name}",
+        "like_global_allow": "Like global (allow only)",
+        "like_global_block": "Like global (block)",
+        "block_these": "Block these",
+        "allow_these": "Allow only these",
+        "global_allowed": "Allowed by the global list",
+        "global_blocked": "Blocked by the global list",
+        "allowed": "Allowed",
+        "blocked": "Blocked",
+        "global_none_allow": "The global list allows no website.",
+        "global_none_block": "The global list blocks no website.",
+        "not_inherited_allow": "The global setting allows only its list, so nothing is inherited: {name} uses only the websites below.",
+        "not_inherited_block": "The global setting blocks its list, so nothing is inherited: {name} uses only the websites below.",
+        "also_allow": "Also allow",
+        "also_block": "Also block",
+        "allowed_label": "Allowed websites",
+        "blocked_label": "Blocked websites",
+        "add_allowed": "Add an allowed website, e.g. github.com",
+        "add_blocked": "Add a website, e.g. youtube.com",
+        "still_block": "Still block",
+        "let_through": "Let through",
+        "still_blocked_label": "Still blocked websites",
+        "let_through_label": "Let through websites",
+        "still_block_help": "Blocked even inside an allowed website, e.g. youtube.com/shorts/* inside youtube.com.",
+        "let_through_help": "Open even inside a blocked website, e.g. mail.google.com inside *.google.com.",
+        "still_block_placeholder": "e.g. youtube.com/shorts/*",
+        "let_through_placeholder": "e.g. mail.google.com",
+        "summary": {
+          "_": "The line under an activity's websites: {n} websites in its list, {m} exceptions inside them.",
+          "allow": {
+            "one": "During {name}: only {n} website open.",
+            "other": "During {name}: only {n} websites open."
+          },
+          "allow_except": {
+            "one": "During {name}: only {n} website open, with {m} blocked inside them.",
+            "other": "During {name}: only {n} websites open, with {m} blocked inside them."
+          },
+          "allow_none": "During {name}: every website is blocked.",
+          "block": {
+            "one": "During {name}: {n} website blocked.",
+            "other": "During {name}: {n} websites blocked."
+          },
+          "block_except": {
+            "one": "During {name}: {n} website blocked, with {m} let through inside them.",
+            "other": "During {name}: {n} websites blocked, with {m} let through inside them."
+          },
+          "block_none": "During {name}: no website is blocked."
+        }
+      }
+    },
+    "ext": {
+      "status_off": "Browser extension: not connected",
+      "status_reload": "Browser extension: needs a reload",
+      "status_on": "Browser extension: connected",
+      "setup_intro": "Blocking websites needs the buZyist extension in your browser. It's a one-time setup:",
+      "open_page": "Open {browser}'s extensions page",
+      "open_help": "This also copies the extension's folder path and shows the folder in Explorer.",
+      "_steps": "Developer mode, Load unpacked, Select Folder and Reload are Chrome's own labels: use the ones Chrome shows in the language.",
+      "step_dev": "Turn on <b>Developer mode</b> (the switch at the top right of that page).",
+      "step_load": "Drag the selected <code>chrome-extension</code> folder from Explorer onto the page.<br>Or click <b>Load unpacked</b>, paste the path (<kbd>Ctrl</kbd>+<kbd>V</kbd>) into the folder picker's address bar, press <kbd>Enter</kbd>, then <b>Select Folder</b>.",
+      "setup_done_help": "The status above turns green within a few seconds of loading the extension.",
+      "outdated": "buZyist was updated and so was its extension, but your browser is still running the old one ({old}, now {version}). Reload it:",
+      "old_version": "version {version}",
+      "old_unknown": "an older version",
+      "step_reload": "Find <b>buZyist Focus</b> and click its <b>Reload</b> icon (the circular arrow). No need to load the folder again.",
+      "outdated_help": "This message goes away within a few seconds of reloading.",
+      "all_set": "All set. Keep the extension turned on and buZyist tells it when to block.",
+      "copy_path": "Copy path",
+      "show_folder": "Show folder",
+      "copied": "Folder path copied",
+      "copy_failed": "Couldn't reach the clipboard; copy the path by hand.",
+      "opened": "Opened {browser}'s extensions page.",
+      "opened_copied": "Opened {browser}'s extensions page. The folder path is on your clipboard.",
+      "not_found": "Couldn't find Chrome. Open chrome://extensions in your browser.",
+      "not_found_copied": "Couldn't find Chrome. Open chrome://extensions in your browser. The folder path is on your clipboard."
+    },
+    "limits": {
+      "site_on": "Enforce website limits",
+      "site_help": "These work all day, with or without a session running. A site is blocked once any of its time limits is used up, or during its blocked hours. Time counts while the site is the active tab in a browser window you're using. Needs the browser extension (Websites tab); reload it after updating buZyist.",
+      "add_site": "Add a website limit",
+      "app_on": "Enforce app limits",
+      "app_help": "The same limits for Windows apps, measured by buZyist: time counts while the app's window is in front and you're using the PC. Once a limit is reached, buZyist closes the app; pick <b>Beep</b> to keep it open and just hear how long it's been in front (again every few minutes it stays there; you pick how often). App limits stay on this PC.",
+      "add_app": "Add an app limit",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      },
+      "every_day": "every day",
+      "weekdays": "Mon–Fri",
+      "weekend": "Sat–Sun",
+      "budget": {
+        "_": "A time limit: {minutes} min in each period of {n} units.",
+        "minute": {
+          "one": "{minutes} min per minute",
+          "other": "{minutes} min per {n} minutes"
+        },
+        "hour": {
+          "one": "{minutes} min per hour",
+          "other": "{minutes} min per {n} hours"
+        },
+        "day": {
+          "one": "{minutes} min per day",
+          "other": "{minutes} min per {n} days"
+        },
+        "week": {
+          "one": "{minutes} min per week",
+          "other": "{minutes} min per {n} weeks"
+        }
+      },
+      "budget_days": "{budget}, {days}",
+      "units": {
+        "minute": "minutes",
+        "hour": "hours",
+        "day": "days",
+        "week": "weeks"
+      },
+      "turn_off": "Turn this limit off",
+      "turn_on": "Turn this limit on",
+      "edit": "Edit",
+      "remove": "Remove this limit",
+      "app_beeps": "Beeps when reached, again every {n} min; the app stays open",
+      "app_closes": "Closes the app when reached",
+      "over_until": "Over the limit until {time}",
+      "closed_until": "Closed until {time}",
+      "blocked_until": "Blocked until {time}",
+      "used": "{used} of {minutes} min used",
+      "not_today": "not today",
+      "window_blocked": "Blocked {days}, {from}–{to}",
+      "window_beeps": "Beeps {days}, {from}–{to}",
+      "editor": {
+        "sites_placeholder": "Websites, e.g. instagram.com, facebook.com",
+        "apps_placeholder": "Apps, e.g. WhatsApp.exe, Slack.exe",
+        "sites_help": "Several websites can share one limit: the time adds up across all of them.",
+        "apps_help": "Program names, as Task Manager's Details tab shows them, separated by commas; the ones running now are suggested as you type. Several apps can share one limit: the time adds up across all of them.",
+        "when_reached": "When a limit is reached:",
+        "action_close": "Close the app",
+        "action_beep": "Beep, keep it open",
+        "again_every": "again every",
+        "time_allowed": "Time allowed",
+        "min_every": "min every",
+        "add_budget": "Add a time limit",
+        "remove_budget": "Remove this limit",
+        "hours_blocked": "Blocked hours",
+        "hours_beep": "Hours it beeps in",
+        "add_blocked_hours": "Add blocked hours",
+        "add_hours": "Add hours",
+        "to": "to",
+        "remove_hours": "Remove these hours",
+        "hours_help": "Hours ending before they start run past midnight (22:00 to 06:00). 00:00 to 00:00 is the whole day.",
+        "add_limit": "Add limit",
+        "done": "Done"
+      },
+      "check": {
+        "protected": "buZyist won't close {app}: Windows or your browser needs it. Make that limit beep.",
+        "no_app": "Type an app like WhatsApp.exe.",
+        "too_many_apps": "Keep a limit to {n} apps or fewer.",
+        "not_site": "\"{text}\" isn't a website like instagram.com or *.reddit.com.",
+        "no_site": "Type a website like instagram.com or *.reddit.com.",
+        "too_many_sites": "Keep a limit to {n} websites or fewer.",
+        "remind": "Beep again every {min} to {max} minutes.",
+        "empty": "Add a time limit or blocked hours.",
+        "budget_days": "Pick at least one day for each time limit.",
+        "budget_minutes": "Time limits need at least 1 minute and a period of at least 1.",
+        "hours": "Blocked hours need days and times.",
+        "too_many_site_limits": "Keep the website limits under {n}.",
+        "too_many_app_limits": "Keep the app limits under {n}."
+      }
+    },
+    "sync": {
+      "limits": "Share limits and time with my other PCs",
+      "limits_help": "Through Chrome sync: on each PC, sign one Chrome profile in to the same Google account, with sync on, and load the buZyist extension there. Time on Instagram here then counts on your other PCs too. Only the limits are shared; your other settings stay on each PC.",
+      "session": "Share the running task with my other PCs",
+      "session_help": "Another PC on the same BUSY Bar then shows the task you started here, instead of \"Started on the bar\". Turn it on on both PCs.",
+      "owner": "Chrome profile that shares",
+      "owner_help": "Pick the profile signed in to the account you use on your other PCs. Other profiles on this PC still enforce the limits and count time; they just don't share it.",
+      "not_yet": "Not synced yet",
+      "first_profile": "The first profile to connect",
+      "waiting_extension": "Waiting for the extension…",
+      "unsigned_profile": "A profile not signed in to Chrome ({id})",
+      "last_seen": "{name} · last seen {ago}",
+      "not_seen": "A profile not seen lately",
+      "device": "{name} ({ago})",
+      "no_owner": "Not shared yet: load the extension in Chrome",
+      "unsigned": "This profile isn't signed in to Chrome, so nothing leaves this PC",
+      "waiting_sync": "Waiting for Chrome sync…",
+      "synced_others": "Synced {ago} · also counting {others}",
+      "synced_alone": "Synced {ago} · no other PC yet",
+      "ago": {
+        "now": "just now",
+        "min": {
+          "one": "{n} min ago",
+          "other": "{n} min ago"
+        },
+        "h": {
+          "one": "{n} h ago",
+          "other": "{n} h ago"
+        },
+        "days": {
+          "one": "{n} day ago",
+          "other": "{n} days ago"
+        }
+      }
+    },
+    "about": {
+      "tagline": "One pomodoro at a time. You pick a task, start a session, and the rest of the world waits.",
+      "unofficial": "unofficial; not affiliated with BUSY or Todoist.",
+      "check": "Check for updates",
+      "whats_new": "What's new",
+      "open_data": "Open data folder",
+      "data_dir": "Your settings, token and log live in",
+      "checking": "Checking GitHub…",
+      "latest": "You have the latest version.",
+      "install": "Install {version}",
+      "download": "Download {version}",
+      "installing": "Installing…",
+      "downloading": "Downloading the update…",
+      "out": "buZyist {version} is out. Installing it restarts buZyist.",
+      "confirm_bar": "buZyist restarts to update. The session keeps running on the bar and picks up again after the restart. Update now?",
+      "confirm": "buZyist restarts to update. The session keeps running and picks up again after the restart. Update now?",
+      "installing_toast": "Installing buZyist {version}. It restarts by itself."
+    }
+  },
+  "stats": {
+    "_": "The Stats tab (Settings). Day names and numbers come from formatDate/formatNumber.",
+    "today": "Today",
+    "week": "Last 7 days",
+    "span": {
+      "one": "Last {n} day",
+      "other": "Last {n} days"
+    },
+    "focus": {
+      "title": "Focus",
+      "pomodoros": {
+        "one": "{n} pomodoro",
+        "other": "{n} pomodoros"
+      },
+      "sessions": {
+        "one": "{n} session",
+        "other": "{n} sessions"
+      },
+      "tasks": {
+        "one": "{n} task worked on",
+        "other": "{n} tasks worked on"
+      },
+      "completed": {
+        "one": "{n} done",
+        "other": "{n} done"
+      },
+      "days": {
+        "one": "{n} day",
+        "other": "{n} days"
+      },
+      "streak": "Streak: {current} in a row · best {best}",
+      "skip_weekends": "Weekends don't break the streak",
+      "chart": {
+        "one": "Focus per day over the last {n} day: {duration} in all.",
+        "other": "Focus per day over the last {n} days: {duration} in all."
+      },
+      "tip_none": "No pomodoros",
+      "by_activity": "Focus by activity, last 30 days",
+      "activity_task": "Todoist tasks",
+      "activity_other": "Other",
+      "activities_empty": "Pick an activity under “What are you working on?” to see where your focus goes.",
+      "top_tasks": "Most focused tasks, last 30 days",
+      "tasks_empty": "No pomodoros yet. Pick a task and start the timer.",
+      "help": "Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist."
+    },
+    "apps": {
+      "title": "Time in apps",
+      "switch": "Count the time I spend in each app",
+      "legend_focus": "During focus",
+      "legend_other": "Outside focus",
+      "during_focus": "{duration} during focus",
+      "chart": {
+        "one": "Time in apps per day over the last {n} day: {duration} in all.",
+        "other": "Time in apps per day over the last {n} days: {duration} in all."
+      },
+      "tip": "{focus} during focus · {other} outside",
+      "tip_none": "Nothing counted",
+      "most_apps": "Most used apps, last 30 days",
+      "most_sites": "Most used websites, last 30 days",
+      "row": "{today} today · {week} this week · {share} in focus",
+      "show_all_apps": {
+        "one": "Show all {n} apps",
+        "other": "Show all {n} apps"
+      },
+      "show_all_sites": {
+        "one": "Show all {n} websites",
+        "other": "Show all {n} websites"
+      },
+      "apps_empty": "Nothing counted yet. Use an app for a minute and come back.",
+      "apps_off": "Turn this on to see which apps get your time.",
+      "sites_off": "Turn this on to see which websites get your time.",
+      "sites_empty": "Nothing counted yet. Browse for a minute and come back.",
+      "sites_no_extension": "Websites are timed by the Chrome extension: set it up in the Websites tab.",
+      "help": "The app in front gets the time, in focus or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json."
+    },
+    "blocks": {
+      "title": "Websites blocked",
+      "legend_focus": "During focus",
+      "legend_limit": "Over a limit",
+      "split": "{focus} focus · {limit} limit",
+      "chart": {
+        "one": "Blocks per day over the last {n} day: {focus} during focus, {limit} over a limit.",
+        "other": "Blocks per day over the last {n} days: {focus} during focus, {limit} over a limit."
+      },
+      "tip": "{focus} during focus · {limit} over a limit",
+      "tip_none": "Nothing blocked",
+      "count": {
+        "one": "{n} block",
+        "other": "{n} blocks"
+      },
+      "most": "Most blocked, last 30 days",
+      "empty": "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.",
+      "help": "Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts."
+    }
+  },
+  "tray": {
+    "_": "The tray icon's menu and tooltip.",
+    "open": "Open {app}",
+    "pick_task": "Pick a task ({hotkey})",
+    "no_task": "No task in focus",
+    "pause": "Pause",
+    "resume": "Resume",
+    "skip": "Skip to next phase",
+    "stop": "Stop",
+    "mini": "Mini timer",
+    "install_update": "Install update {version}",
+    "download_update": "Download update {version}",
+    "quit": "Quit",
+    "title_idle": "{app} · pick a task",
+    "title_call": "On a call · {n} min",
+    "title_focus": "Focus · {n} min left · pomodoro {round}/{rounds}",
+    "title_break": "Break · {n} min left · pomodoro {round}/{rounds}",
+    "title_paused": "Paused · {n} min left · pomodoro {round}/{rounds}"
+  },
+  "notify": {
+    "_": "Windows notifications, plus the bits they are made of (weekdays, limit periods).",
+    "failed": "That didn't work",
+    "via_this_pc": "This PC",
+    "break": {
+      "title": "Nice work! Time for a break",
+      "text": "Pomodoro {round} of {rounds} done. Enjoy your {minutes} min break."
+    },
+    "back": {
+      "title": "Back to it",
+      "text": "Pomodoro {round} of {rounds}: {task}"
+    },
+    "finished": {
+      "title": "Great focus!",
+      "text": {
+        "one": "Session complete: {n} pomodoro on {task}.",
+        "other": "Session complete: {n} pomodoros on {task}."
+      }
+    },
+    "call": {
+      "title": "On a call",
+      "text": "Counting {task} as focus until it ends. Stop it from the timer if it isn't a call."
+    },
+    "call_over": {
+      "title": "Call over",
+      "text": "{n} min on {task}, counted as focus."
+    },
+    "label_failed": {
+      "title": "Todoist didn't take the label",
+      "text": "Couldn't add @{label}: {error}"
+    },
+    "bar_back": {
+      "title": "BUSY Bar is back",
+      "text": "The timer is on the bar again."
+    },
+    "bar_gone": {
+      "title": "BUSY Bar out of reach",
+      "text": "Your session carries on on this PC."
+    },
+    "hotkey_unset": {
+      "title": "Your hotkey isn't set",
+      "text": "{error} Pick another in Settings → General."
+    },
+    "blocked": {
+      "title": "{name} can wait",
+      "text": "You're focusing until {until}. It'll be back after.",
+      "text_call": "You're on a call. It'll be back after."
+    },
+    "extension_reload": {
+      "title": "One more step for the extension",
+      "text": "buZyist was updated. On your browser's extensions page, click Reload on buZyist Focus."
+    },
+    "update_found": {
+      "title": "buZyist {version} is here",
+      "text": "Open Settings → About to get it."
+    },
+    "updated": {
+      "title": "All up to date",
+      "text": "buZyist {version} is installed. Enjoy!"
+    },
+    "update_failed": {
+      "title": "The update didn't go through",
+      "text": "buZyist {version} didn't install. Try again from Settings → About."
+    },
+    "and": "{list} and {last}",
+    "day_time": "{day} {time}",
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "limit": {
+      "this_minute": "this minute",
+      "this_hour": "this hour",
+      "this_day": "today",
+      "this_week": "this week",
+      "stretch_minute": "in this {n}-minute stretch",
+      "stretch_hour": "in this {n}-hour stretch",
+      "stretch_day": "in this {n}-day stretch",
+      "stretch_week": "in this {n}-week stretch",
+      "so_far": "so far",
+      "nudge_title": "Time for a break from {name}?",
+      "nudge_hours": "You asked for no {name} until {until}.",
+      "nudge_budget": "You've used it {used} min {period} (your limit is {allowed} min).",
+      "closed_hours_title": "No {name} until {until}",
+      "closed_hours_text": "You set these hours aside. It can open again then.",
+      "closed_budget_title": "That's enough {name} for now",
+      "closed_budget_text": "You've used your {allowed} min {period}. It can open again at {until}."
+    },
+    "another_pc": "another PC",
+    "another_pc_name": "Another PC"
+  },
+  "errors": {
+    "_": "Shown in Settings and the windows (AppError). Python makes them; logs keep their English.",
+    "language": "Pick a language from the list.",
+    "unexpected": "Unexpected error: {error}",
+    "named": "{name}: {error}",
+    "webview2": "buZyist needs the Microsoft Edge WebView2 Runtime, which draws its window.\n\nOpen Microsoft's download page now? Install the \"Evergreen\" runtime, then start buZyist again.",
+    "activities": {
+      "not_list": "The activities must be a list.",
+      "missing_name": "An activity is missing its name.",
+      "no_name": "Give every activity a name.",
+      "name_long": "Keep activity names to {max} characters or fewer.",
+      "duplicate": "There are two activities called “{name}”.",
+      "bad_id": "The activity “{name}” has a bad id.",
+      "too_many": "Keep to {max} activities or fewer.",
+      "allowed_apps_max": "Keep the allowed apps under {max}.",
+      "blocked_apps_max": "Keep the blocked apps under {max}.",
+      "apps_missing": "The activity's apps didn't come through; try again.",
+      "apps_state": "Pick whether the activity blocks apps.",
+      "sites_missing": "The activity's websites didn't come through; try again.",
+      "sites_state": "Pick whether the activity blocks websites."
+    },
+    "apps": {
+      "list": "The app list didn't come through; try again.",
+      "type_name": "Type the program name, like Slack.exe.",
+      "just_program": "App names are just the program, like WhatsApp.exe.",
+      "not_program": "“{name}” isn't a program name like WhatsApp.exe.",
+      "protected": "buZyist won't close {exe}: Windows or your browser needs it.",
+      "too_many": "Keep the added apps under {max}."
+    },
+    "app_limits": {
+      "missing": "An app limit didn't come through; try again.",
+      "apps_missing": "The apps of a limit didn't come through; try again.",
+      "no_apps": "Add at least one app to the limit.",
+      "too_many_apps": "Keep a limit to {max} apps or fewer.",
+      "action": "Pick whether the limit closes the app or beeps.",
+      "protected": "buZyist won't close {exe}: Windows or your browser needs it. Make that limit beep.",
+      "remind": "{name}: beep again every {min} to {max} minutes.",
+      "list": "The app limits didn't come through; try again.",
+      "too_many": "Keep the app limits under {max}."
+    },
+    "bar": {
+      "off": "The BUSY Bar is turned off; the timer runs on this PC.",
+      "no_route": "Set the BUSY Bar's Wi-Fi address in Settings, or allow USB.",
+      "bad_pin": "The bar refused the PIN (check Settings).",
+      "answered": "The bar answered: {error}",
+      "unreachable": "Can't reach the BUSY Bar. {problems}",
+      "no_session": "No session is running.",
+      "bad_address": "“{address}” isn't the bar's address; type one like 192.168.1.50."
+    },
+    "bar_screens": {
+      "name_focus": "focus",
+      "name_call": "call",
+      "name_done": "end of session",
+      "missing": "The {screen} screen didn't come through; try again.",
+      "mode": "Pick what the bar shows for the {screen} screen.",
+      "theme": "Pick one of the bar's themes for the {screen} screen.",
+      "text": "Type what the bar shows for the {screen} screen.",
+      "text_long": "Keep the {screen} screen's text to {max} characters or fewer.",
+      "list": "The bar screens didn't come through; try again."
+    },
+    "calls": {
+      "list": "The apps to ignore didn't come through; try again.",
+      "name_long": "Keep each app to ignore under {max} characters.",
+      "too_many": "Keep the apps to ignore under {max}."
+    },
+    "extension": {
+      "missing": "The extension folder is missing; reinstall buZyist."
+    },
+    "fields": {
+      "sync_owner": "Pick the browser profile that shares the limits.",
+      "work_minutes": "Pomodoros run {min} to {max} minutes.",
+      "rest_minutes": "Breaks run {min} to {max} minutes.",
+      "cycles": "Sessions have {min} to {max} pomodoros.",
+      "plan_single_max": "One pomodoro for tasks up to 0 to {max} minutes.",
+      "plan_target": "Aim for a pomodoro length between the shortest and the longest.",
+      "poll_seconds": "Check the bar every {min} to {max} seconds.",
+      "focus_label": "Keep the label to {max} characters or fewer.",
+      "invalid": "{name} isn't valid.",
+      "invalid_any": "A setting isn't valid."
+    },
+    "filters": {
+      "unknown": "There is no filter called “{name}”.",
+      "no_query": "Type a Todoist filter query.",
+      "refused": "Todoist didn't accept that filter: {detail}",
+      "no_name": "Give the filter a name.",
+      "name_long": "Keep the name under {max} characters.",
+      "duplicate": "There is already a filter called “{name}”.",
+      "too_many": "That's {max} filters already; delete one first.",
+      "keep_one": "Keep at least one filter."
+    },
+    "hotkey": {
+      "invalid": "“{combo}” isn't a hotkey; use something like ctrl+alt+p.",
+      "unknown_key": "buZyist doesn't know the key “{key}”.",
+      "no_modifier": "Add ctrl, alt, shift or win to the hotkey so it doesn't steal a normal key.",
+      "timeout": "The hotkey didn't register in time; try again.",
+      "taken": "{combo} is already taken by another app; pick another hotkey."
+    },
+    "limits": {
+      "gone": "That limit no longer exists.",
+      "times_missing": "{name}: the time limits or blocked hours didn't come through; try again.",
+      "incomplete": "{name}: a time limit is incomplete.",
+      "unit": "{name}: pick minutes, hours, days or weeks for the period.",
+      "over_a_day": "{name}: a period under a day can't be longer than 24 hours; use days.",
+      "too_long": "{name}: that period is too long.",
+      "doesnt_fit": {
+        "one": "{name}: {n} minute doesn't fit in a period of {period} minutes.",
+        "other": "{name}: {n} minutes doesn't fit in a period of {period} minutes."
+      },
+      "budget_days": "{name}: pick at least one day for each time limit.",
+      "window_incomplete": "{name}: a blocked-hours entry needs days and times like 08:00.",
+      "window_days": "{name}: pick at least one day for the blocked hours.",
+      "window_empty": "{name}: blocked hours can't start and end at the same time.",
+      "empty": "{name}: add a time limit or blocked hours.",
+      "too_many_times": "{name}: keep it to {max} time limits and {max} blocked-hours entries."
+    },
+    "session": {
+      "task_gone": "That task is no longer in the list. Refresh and try again.",
+      "call_control": "A call can't be paused or skipped: it ends with the call, or stop it.",
+      "comment_failed": "Couldn't log the pomodoros: {error}",
+      "unlabel_failed": "Couldn't remove the label: {error}"
+    },
+    "settings": {
+      "not_number": "{name} must be a number.",
+      "switch_running": "Stop the running session before switching between the bar and this PC.",
+      "startup_entry": "Couldn't change the Windows startup entry: {error}",
+      "encrypt_failed": "Windows couldn't encrypt the saved token; try again."
+    },
+    "site_limits": {
+      "missing": "A website limit didn't come through; try again.",
+      "sites_missing": "The websites of a limit didn't come through; try again.",
+      "no_sites": "Add at least one website to the limit.",
+      "too_many_sites": "Keep a limit to {max} websites or fewer.",
+      "list": "The website limits didn't come through; try again.",
+      "too_many": "Keep the website limits under {max}."
+    },
+    "sites": {
+      "list": "The site list didn't come through; try again.",
+      "mode": "Pick whether to block the listed websites or allow only them.",
+      "not_site": "“{site}” isn't a website like youtube.com or *.google.com.",
+      "too_many_blocked": "Keep the blocked sites under {max}.",
+      "too_many_allowed": "Keep the allowed sites under {max}."
+    },
+    "todoist": {
+      "no_token": "Add your Todoist API token in Settings.",
+      "bad_token": "Todoist rejected the API token (check Settings).",
+      "answered": "Todoist answered {status}: {detail}",
+      "unreachable": "Can't reach Todoist ({error}).",
+      "off": "Todoist is turned off in Settings."
+    },
+    "update": {
+      "none": "There's no update to install.",
+      "portable": "Only an installed buZyist can update itself; download the new version from GitHub.",
+      "busy": "The update is already on its way.",
+      "changed": "The installer changed after it was checked; not installing it.",
+      "start_failed": "Couldn't start the installer ({error}).",
+      "failed": "Updating to {version} didn't work (details in {log}).",
+      "github_answered": "GitHub answered {status}.",
+      "github_unreachable": "Can't reach GitHub ({error}).",
+      "unsigned": "The update isn't signed by buZyist; not installing it.",
+      "wrong_source": "The update doesn't come from buZyist's GitHub releases; not installing it.",
+      "release_unreadable": "Couldn't read the latest release from GitHub ({error}).",
+      "no_installer": "Release {version} has no installer to update with.",
+      "sums_failed": "Couldn't download the release checksums ({error}).",
+      "sig_failed": "Couldn't download the release signature ({error}).",
+      "not_listed": "The release's checksums don't list its installer.",
+      "download_failed": "The download failed ({error}).",
+      "checksum": "The downloaded installer doesn't match the release's checksum; not installing it.",
+      "lock_failed": "Couldn't lock the downloaded installer (Windows error {error}); not installing it."
+    }
+  },
+  "defaults": {
+    "_": "Text written once and kept: a session's fallback name, the default activities' names (by id) when the defaults are created.",
+    "session_name": "Focus session",
+    "call_name": "Call · {apps}",
+    "activities": {
+      "email": "Email",
+      "messages": "Messages",
+      "call": "Call",
+      "programming": "Programming",
+      "reading": "Reading"
+    },
+    "bar_call": "CALL",
+    "bar_done": "DONE"
+  },
+  "todoist": {
+    "_": "The comment logged on a Todoist task after a session, in the language of that moment. `when` is a strftime format.",
+    "comment_bar": "🍅 × {n} ({minutes} min focus) on BUSY Bar, ended {when}",
+    "comment_local": "🍅 × {n} ({minutes} min focus), ended {when}",
+    "when": "%Y-%m-%d %H:%M"
+  }
+}

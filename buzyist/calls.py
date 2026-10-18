@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from buzyist.blocker import app_key, exe_label
 from buzyist.constants import APP, CALL_END_S, CALL_POLL_S, CALL_START_S, MAX_CALL_IGNORE, AppError, now_ms
+from buzyist.i18n import app_error, english
 from buzyist.win32.processes import list_processes
 from buzyist.win32.registry import devices_in_use
 
@@ -85,18 +86,18 @@ def apps_on_call(ignore: list[str]) -> list[dict]:
 def clean_call_ignore(value) -> list[str]:
     """call_ignore_apps as saved: program or app names, trimmed, no repeats; AppError with Settings' message."""
     if not isinstance(value, list):
-        raise AppError("The apps to ignore didn't come through; try again.")
+        raise app_error("errors.calls.list")
     out: list[str] = []
     for raw in value:
         name = " ".join(str(raw or "").split())
         if not name:
             continue
         if len(name) > 80:
-            raise AppError("Keep each app to ignore under 80 characters.")
+            raise app_error("errors.calls.name_long", max=80)
         if name.lower() not in {n.lower() for n in out}:
             out.append(name)
     if len(out) > MAX_CALL_IGNORE:
-        raise AppError(f"Keep the apps to ignore under {MAX_CALL_IGNORE}.")
+        raise app_error("errors.calls.too_many", max=MAX_CALL_IGNORE)
     return out
 
 
@@ -184,4 +185,4 @@ class CallWatcher:
             if app.start_call(apps, self._since):
                 log.info("call on %s: started a call session", ", ".join(a["name"] for a in apps))
         except AppError as err:
-            log.warning("couldn't start a call session: %s", err)
+            log.warning("couldn't start a call session: %s", english(err))

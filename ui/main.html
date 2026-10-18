@@ -55,21 +55,21 @@
     <div class="brand" role="img" aria-label="buZyist">
       <img class="logo" src="img/logo.svg" alt="" height="30">
     </div>
-    <span class="chip solo-only" id="today" title="Tomatoes finished today"></span>
+    <span class="chip solo-only" id="today" title="Pomodoros finished today" data-i18n-title="main.header.today_title"></span>
     <div class="spacer"></div>
-    <button class="chip update hidden" id="updateChip" title="A new version of buZyist is out"></button>
-    <button class="chip update hidden" id="extChip" title="The browser extension is out of date">Reload extension</button>
-    <span class="chip" id="barChip"><span class="led"></span><span id="barText">Looking for the bar</span></span>
-    <button class="icon-btn" id="openSettings" title="Settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+    <button class="chip update hidden" id="updateChip" title="A new version of buZyist is out" data-i18n-title="main.header.update_title"></button>
+    <button class="chip update hidden" id="extChip" title="The browser extension is out of date" data-i18n-title="main.header.ext_title" data-i18n="main.header.ext">Reload extension</button>
+    <span class="chip" id="barChip"><span class="led"></span><span id="barText" data-i18n="main.bar.looking">Looking for the bar</span></span>
+    <button class="icon-btn" id="openSettings" title="Settings" aria-label="Settings" data-i18n-title="main.header.settings" data-i18n-aria-label="main.header.settings"><svg><use href="#i-gear"/></svg></button>
   </header>
 
   <div class="body">
-    <section class="panel focus" aria-label="Timer">
-      <span class="state-chip" id="phaseTag">Ready</span>
+    <section class="panel focus" aria-label="Timer" data-i18n-aria-label="main.timer.aria">
+      <span class="state-chip" id="phaseTag" data-i18n="common.phase.ready">Ready</span>
 
       <div class="current idle" id="current">
-        <h2 id="curTask">Pick a task to start</h2>
-        <div class="eyebrow" id="curEyebrow">One tomato at a time.</div>
+        <h2 id="curTask" data-i18n="main.current.pick">Pick a task to start</h2>
+        <div class="eyebrow" id="curEyebrow" data-i18n="main.current.idle">One pomodoro at a time.</div>
         <div class="cur-meta" id="curMeta"></div>
       </div>
 
@@ -83,7 +83,7 @@
         </svg>
         <div class="ring-center" role="timer" id="timerBox">
           <div class="time" id="time">25:00</div>
-          <div class="time-label" id="timeLabel">per tomato</div>
+          <div class="time-label" id="timeLabel" data-i18n="main.timer.per_pomodoro">per pomodoro</div>
         </div>
       </div>
 
@@ -96,57 +96,57 @@
         <!-- Pick an activity (it becomes a chip, then type a detail after it) or type anything: see the combobox in ui/main.js. -->
         <div class="combo" id="freeCombo">
           <div class="combo-field" id="freeField">
-            <span class="combo-chip hidden" id="freeChip"><svg><use id="freeChipIcon" href="#a-dot"/></svg><span id="freeChipName"></span><button type="button" id="freeChipX" tabindex="-1" title="Remove the activity" aria-label="Remove the activity"><svg><use href="#i-x"/></svg></button></span>
-            <input type="text" id="freeName" maxlength="80" placeholder="What are you working on? (optional)" autocomplete="off" spellcheck="false"
-                   role="combobox" aria-expanded="false" aria-controls="freeList" aria-autocomplete="list" aria-label="What are you working on?">
-            <button type="button" class="combo-toggle" id="freeToggle" tabindex="-1" title="Activities" aria-label="Show the activities"><svg><use href="#i-chevron"/></svg></button>
+            <span class="combo-chip hidden" id="freeChip"><svg><use id="freeChipIcon" href="#a-dot"/></svg><span id="freeChipName"></span><button type="button" id="freeChipX" tabindex="-1" title="Remove the activity" aria-label="Remove the activity" data-i18n-title="main.free.remove" data-i18n-aria-label="main.free.remove"><svg><use href="#i-x"/></svg></button></span>
+            <input type="text" id="freeName" maxlength="80" placeholder="What are you working on? (optional)" data-i18n-placeholder="main.free.placeholder" autocomplete="off" spellcheck="false"
+                   role="combobox" aria-expanded="false" aria-controls="freeList" aria-autocomplete="list" aria-label="What are you working on?" data-i18n-aria-label="main.free.label">
+            <button type="button" class="combo-toggle" id="freeToggle" tabindex="-1" title="Activities" aria-label="Show the activities" data-i18n-title="main.free.activities" data-i18n-aria-label="main.free.show"><svg><use href="#i-chevron"/></svg></button>
           </div>
-          <div class="combo-list hidden" id="freeList" role="listbox" aria-label="Activities"></div>
+          <div class="combo-list hidden" id="freeList" role="listbox" aria-label="Activities" data-i18n-aria-label="main.free.activities"></div>
         </div>
-        <button class="btn primary lg" id="startFree"><svg><use href="#i-play"/></svg>Start a tomato</button>
+        <button class="btn primary lg" id="startFree" data-i18n="main.free.start"><svg><use href="#i-play"/></svg>Start a session</button>
       </div>
 
       <div class="controls hidden" id="controls">
-        <button class="round-btn" id="btnStop" title="Stop session" aria-label="Stop session"><svg><use href="#i-stop"/></svg></button>
-        <button class="round-btn big" id="btnPause" title="Pause" aria-label="Pause"><svg><use href="#i-pause" id="pauseIcon"/></svg></button>
-        <button class="round-btn" id="btnSkip" title="Skip to next phase" aria-label="Skip to next phase"><svg><use href="#i-skip"/></svg></button>
+        <button class="round-btn" id="btnStop" title="Stop session" aria-label="Stop session" data-i18n-title="main.controls.stop" data-i18n-aria-label="main.controls.stop"><svg><use href="#i-stop"/></svg></button>
+        <button class="round-btn big" id="btnPause" title="Pause" aria-label="Pause" data-i18n-title="main.controls.pause" data-i18n-aria-label="main.controls.pause"><svg><use href="#i-pause" id="pauseIcon"/></svg></button>
+        <button class="round-btn" id="btnSkip" title="Skip to next phase" aria-label="Skip to next phase" data-i18n-title="main.controls.skip" data-i18n-aria-label="main.controls.skip"><svg><use href="#i-skip"/></svg></button>
       </div>
 
-      <button class="guard" id="guard" type="button"><svg><use href="#i-shield" id="guardIcon"/></svg><span id="guardText">Focus guard off</span></button>
+      <button class="guard" id="guard" type="button"><svg><use href="#i-shield" id="guardIcon"/></svg><span id="guardText"></span></button>
 
       <details class="setup" id="setup">
-        <summary><span>Tomato settings</span><span class="hint" id="setupHint">Used for the next session</span></summary>
+        <summary><span data-i18n="main.setup.title">Session settings</span><span class="hint" id="setupHint" data-i18n="main.setup.hint_idle">Used for the next session</span></summary>
         <div class="presets" id="presets"></div>
         <div class="steppers">
           <div class="stepper" data-key="work_minutes" data-step="5" data-min="5" data-max="480">
-            <label>Focus</label>
-            <div class="row"><button data-d="-1" aria-label="Less focus time">−</button><input type="number" inputmode="numeric" aria-label="Focus minutes"><button data-d="1" aria-label="More focus time">+</button></div>
+            <label data-i18n="main.setup.focus">Focus</label>
+            <div class="row"><button data-d="-1" aria-label="Less focus time" data-i18n-aria-label="main.setup.less_focus">−</button><input type="number" inputmode="numeric" aria-label="Focus minutes" data-i18n-aria-label="main.setup.focus_minutes"><button data-d="1" aria-label="More focus time" data-i18n-aria-label="main.setup.more_focus">+</button></div>
             <small>min</small>
           </div>
           <div class="stepper" data-key="rest_minutes" data-step="1" data-min="5" data-max="480">
-            <label>Break</label>
-            <div class="row"><button data-d="-1" aria-label="Shorter break">−</button><input type="number" inputmode="numeric" aria-label="Break minutes"><button data-d="1" aria-label="Longer break">+</button></div>
+            <label data-i18n="main.setup.break">Break</label>
+            <div class="row"><button data-d="-1" aria-label="Shorter break" data-i18n-aria-label="main.setup.shorter_break">−</button><input type="number" inputmode="numeric" aria-label="Break minutes" data-i18n-aria-label="main.setup.break_minutes"><button data-d="1" aria-label="Longer break" data-i18n-aria-label="main.setup.longer_break">+</button></div>
             <small>min</small>
           </div>
           <div class="stepper" data-key="cycles" data-step="1" data-min="1" data-max="35">
-            <label>Tomatoes</label>
-            <div class="row"><button data-d="-1" aria-label="Fewer tomatoes">−</button><input type="number" inputmode="numeric" aria-label="Tomatoes per session"><button data-d="1" aria-label="More tomatoes">+</button></div>
-            <small>per session</small>
+            <label data-i18n="main.setup.pomodoros">Pomodoros</label>
+            <div class="row"><button data-d="-1" aria-label="Fewer pomodoros" data-i18n-aria-label="main.setup.fewer_pomodoros">−</button><input type="number" inputmode="numeric" aria-label="Pomodoros per session" data-i18n-aria-label="main.setup.pomodoros_per_session"><button data-d="1" aria-label="More pomodoros" data-i18n-aria-label="main.setup.more_pomodoros">+</button></div>
+            <small data-i18n="main.setup.per_session">per session</small>
           </div>
         </div>
         <div class="setup-foot">
-          <label class="switch"><input type="checkbox" id="autostart" role="switch"><span class="knob"></span>Auto-start next phase</label>
+          <label class="switch" data-i18n="main.setup.autostart"><input type="checkbox" id="autostart" role="switch"><span class="knob"></span>Auto-start next phase</label>
           <span class="total" id="total"></span>
         </div>
       </details>
     </section>
 
-    <section class="tasks" id="tasksCard" aria-label="Tasks">
+    <section class="tasks" id="tasksCard" aria-label="Tasks" data-i18n-aria-label="main.tasks.aria">
       <div class="today-head">
         <div class="today-date" id="todayDate"></div>
         <div class="summary" id="summary">
           <div class="summary-top">
-            <div class="summary-title" id="sumTitle">No tomatoes yet</div>
+            <div class="summary-title" id="sumTitle" data-i18n="main.today.none">No pomodoros yet today</div>
             <div class="summary-side" id="sumSide"></div>
           </div>
           <div class="summary-tomatoes" id="sumTomatoes" role="img"></div>
@@ -155,88 +155,88 @@
       <div class="tasks-head">
         <label class="search">
           <svg><use href="#i-search"/></svg>
-          <input id="search" placeholder="Search tasks" autocomplete="off" spellcheck="false">
+          <input id="search" placeholder="Search tasks" data-i18n-placeholder="main.tasks.search" autocomplete="off" spellcheck="false">
           <kbd id="hotkeyHint"></kbd>
         </label>
-        <button class="icon-btn" id="refresh" title="Reload from Todoist" aria-label="Reload from Todoist"><svg><use href="#i-refresh"/></svg></button>
+        <button class="icon-btn" id="refresh" title="Reload from Todoist" aria-label="Reload from Todoist" data-i18n-title="main.tasks.refresh" data-i18n-aria-label="main.tasks.refresh"><svg><use href="#i-refresh"/></svg></button>
       </div>
       <div class="filters">
-        <div class="filter-tabs" id="filterTabs" role="tablist" aria-label="Saved filters"></div>
-        <button class="icon-btn sm" id="editFilter" title="Edit this filter" aria-label="Edit this filter"><svg><use href="#i-pencil"/></svg></button>
-        <button class="icon-btn sm" id="addFilter" title="New filter" aria-label="New filter"><svg><use href="#i-plus"/></svg></button>
+        <div class="filter-tabs" id="filterTabs" role="tablist" aria-label="Saved filters" data-i18n-aria-label="main.filters.aria"></div>
+        <button class="icon-btn sm" id="editFilter" title="Edit this filter" aria-label="Edit this filter" data-i18n-title="main.filters.edit" data-i18n-aria-label="main.filters.edit"><svg><use href="#i-pencil"/></svg></button>
+        <button class="icon-btn sm" id="addFilter" title="New filter" aria-label="New filter" data-i18n-title="main.filters.new" data-i18n-aria-label="main.filters.new"><svg><use href="#i-plus"/></svg></button>
       </div>
       <div class="filter-line"><code id="filterText"></code><span id="count"></span></div>
       <ul class="list" id="list"></ul>
-      <div class="list-foot"><span>↑ ↓ choose</span><span>Enter start</span><span>Ctrl+1–9 filter</span><span>Esc hide</span></div>
+      <div class="list-foot"><span data-i18n="main.tasks.keys_choose">↑ ↓ choose</span><span data-i18n="main.tasks.keys_start">Enter start</span><span data-i18n="main.tasks.keys_filter">Ctrl+1–9 filter</span><span data-i18n="main.tasks.keys_hide">Esc hide</span></div>
     </section>
   </div>
 </div>
 
 <div class="scrim" id="scrim"></div>
 
-<aside class="drawer" id="drawer" aria-label="Settings">
+<aside class="drawer" id="drawer" aria-label="Settings" data-i18n-aria-label="settings.title">
   <div class="drawer-head">
-    <h3>Settings</h3>
-    <button class="icon-btn" id="closeSettings" title="Close"><svg><use href="#i-x"/></svg></button>
+    <h3 data-i18n="settings.title">Settings</h3>
+    <button class="icon-btn" id="closeSettings" title="Close" data-i18n-title="settings.close"><svg><use href="#i-x"/></svg></button>
   </div>
-  <div class="stabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
+  <div class="stabs" id="settingsTabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="settings.sections">
     <button type="button" class="stab" role="tab" data-tab="todoist" aria-controls="p_todoist">Todoist</button>
     <button type="button" class="stab" role="tab" data-tab="timer" aria-controls="p_timer">BUSY Bar</button>
-    <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps">Apps</button>
-    <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites">Websites<i class="dot warn hidden" id="sitesDot"></i></button>
-    <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits">Limits<i class="dot warn hidden" id="limitsDot"></i></button>
-    <button type="button" class="stab" role="tab" data-tab="stats" aria-controls="p_stats">Stats</button>
-    <button type="button" class="stab" role="tab" data-tab="general" aria-controls="p_general">General</button>
-    <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about">About<i class="dot good hidden" id="aboutDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps" data-i18n="settings.tabs.apps">Apps</button>
+    <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites"><span data-i18n="settings.tabs.sites">Websites</span><i class="dot warn hidden" id="sitesDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits"><span data-i18n="settings.tabs.limits">Limits</span><i class="dot warn hidden" id="limitsDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="stats" aria-controls="p_stats" data-i18n="settings.tabs.stats">Stats</button>
+    <button type="button" class="stab" role="tab" data-tab="general" aria-controls="p_general" data-i18n="settings.tabs.general">General</button>
+    <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about"><span data-i18n="settings.tabs.about">About</span><i class="dot good hidden" id="aboutDot"></i></button>
   </div>
   <form class="drawer-body" id="settingsForm" autocomplete="off">
     <div class="section" role="tabpanel" id="p_todoist" data-panel="todoist">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist"><span class="knob"></span>Use Todoist</label>
+        <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist"><span class="knob"></span><span data-i18n="settings.todoist.use">Use Todoist</span></label>
       </div>
-      <div class="help" id="noTodoistHelp">Without Todoist, sessions run with no task and you don't need an API token.</div>
+      <div class="help" id="noTodoistHelp" data-i18n="settings.todoist.no_todoist_help">Without Todoist, sessions run with no task and you don't need an API token.</div>
       <div id="todoistFields">
       <div class="field">
-        <label for="s_todoist_token">API token</label>
+        <label for="s_todoist_token" data-i18n="settings.todoist.token">API token</label>
         <div class="input-row">
           <input class="input" id="s_todoist_token" name="todoist_token" type="password" spellcheck="false">
-          <button type="button" class="icon-btn" id="revealToken" title="Show"><svg><use href="#i-eye"/></svg></button>
+          <button type="button" class="icon-btn" id="revealToken" title="Show" data-i18n-title="settings.todoist.reveal"><svg><use href="#i-eye"/></svg></button>
         </div>
-        <div class="help hidden" id="tokenLost">Re-enter your Todoist token (it can't be read on this PC).</div>
-        <div class="help hidden" id="tokenSaved">A token is saved. <button type="button" class="link" id="removeToken">Remove</button></div>
-        <div class="help">Todoist → Settings → Integrations → Developer → API token.</div>
+        <div class="help hidden" id="tokenLost" data-i18n="settings.todoist.token_lost">Re-enter your Todoist token (it can't be read on this PC).</div>
+        <div class="help hidden" id="tokenSaved"><span data-i18n="settings.todoist.token_saved">A token is saved.</span> <button type="button" class="link" id="removeToken" data-i18n="settings.remove">Remove</button></div>
+        <div class="help" data-i18n="settings.todoist.token_help">Todoist → Settings → Integrations → Developer → API token.</div>
       </div>
       <div class="field">
-        <label for="s_focus_label">Label added when a task starts</label>
-        <input class="input" id="s_focus_label" name="focus_label" spellcheck="false" placeholder="Leave empty for no label">
+        <label for="s_focus_label" data-i18n="settings.todoist.label">Label added when a task starts</label>
+        <input class="input" id="s_focus_label" name="focus_label" spellcheck="false" placeholder="Leave empty for no label" data-i18n-placeholder="settings.todoist.label_placeholder">
       </div>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="remove_label_on_end"><span class="knob"></span>Remove the label when the session ends</label>
-        <label class="switch"><input type="checkbox" name="log_comments"><span class="knob"></span>Log finished pomodoros as a task comment</label>
-        <label class="switch"><input type="checkbox" name="offer_subtasks"><span class="knob"></span>Offer a task's subtasks when starting it</label>
-        <label class="switch"><input type="checkbox" name="plan_from_duration" id="s_plan_from_duration"><span class="knob"></span>Size the tomatoes from the task's duration</label>
+        <label class="switch"><input type="checkbox" name="remove_label_on_end"><span class="knob"></span><span data-i18n="settings.todoist.remove_label">Remove the label when the session ends</span></label>
+        <label class="switch"><input type="checkbox" name="log_comments"><span class="knob"></span><span data-i18n="settings.todoist.log_comments">Log finished pomodoros as a task comment</span></label>
+        <label class="switch"><input type="checkbox" name="offer_subtasks"><span class="knob"></span><span data-i18n="settings.todoist.offer_subtasks">Offer a task's subtasks when starting it</span></label>
+        <label class="switch"><input type="checkbox" name="plan_from_duration" id="s_plan_from_duration"><span class="knob"></span><span data-i18n="settings.todoist.plan_from_duration">Size the pomodoros from the task's duration</span></label>
       </div>
       <!-- See buzyist/plan.py for how these split a duration. -->
       <div id="planFields">
-        <div class="help">A task with a duration in Todoist gets its own tomatoes: that much focus time in all, with your usual breaks on top. Shift+click play to use your usual settings instead.</div>
+        <div class="help" data-i18n="settings.todoist.plan_help">A task with a duration in Todoist gets its own pomodoros: that much focus time in all, with your usual breaks on top. Shift+click play to use your usual settings instead.</div>
         <div class="two">
           <div class="field">
-            <label for="s_plan_single_max">One tomato for tasks up to</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_single_max" name="plan_single_max" type="number" min="0" max="480"><span class="help">min</span></div>
+            <label for="s_plan_single_max" data-i18n="settings.todoist.plan_single_max">One pomodoro for tasks up to</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_single_max" name="plan_single_max" type="number" min="0" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
           <div class="field">
-            <label for="s_plan_target">Longer tasks: tomatoes of about</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_target" name="plan_target" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_target" data-i18n="settings.todoist.plan_target">Longer tasks: pomodoros of about</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_target" name="plan_target" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
         </div>
         <div class="two">
           <div class="field">
-            <label for="s_plan_min">No shorter than</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_min" name="plan_min" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_min" data-i18n="settings.todoist.plan_min">No shorter than</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_min" name="plan_min" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
           <div class="field">
-            <label for="s_plan_max">No longer than</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_max" name="plan_max" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_max" data-i18n="settings.todoist.plan_max">No longer than</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_max" name="plan_max" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
         </div>
         <div class="help" id="planExample"></div>
@@ -246,264 +246,269 @@
 
     <div class="section" role="tabpanel" id="p_timer" data-panel="timer">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="use_busybar" id="s_use_busybar"><span class="knob"></span>Run the timer on a BUSY Bar</label>
+        <label class="switch" data-i18n="settings.bar.use"><input type="checkbox" name="use_busybar" id="s_use_busybar"><span class="knob"></span>Run the timer on a BUSY Bar</label>
       </div>
-      <div class="help hidden" id="noBarHelp">Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.</div>
+      <div class="help hidden" id="noBarHelp" data-i18n="settings.bar.no_bar_help">Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.</div>
       <div id="barFields">
-        <div class="two">
+        <div class="two pin-wide">
           <div class="field">
-            <label for="s_busybar_ip">Wi-Fi address</label>
+            <label for="s_busybar_ip" data-i18n="settings.bar.wifi">Wi-Fi address</label>
             <input class="input" id="s_busybar_ip" name="busybar_ip" placeholder="192.168.1.50" spellcheck="false">
           </div>
           <div class="field">
-            <label for="s_busybar_pin">HTTP API PIN</label>
+            <label for="s_busybar_pin" data-i18n="settings.bar.pin">HTTP API PIN</label>
             <input class="input" id="s_busybar_pin" name="busybar_pin" type="password">
-            <div class="help hidden" id="pinLost">Re-enter the PIN (it can't be read on this PC).</div>
-            <div class="help hidden" id="pinSaved">A PIN is saved. <button type="button" class="link" id="removePin">Remove</button></div>
+            <div class="help hidden" id="pinLost" data-i18n="settings.bar.pin_lost">Re-enter the PIN (it can't be read on this PC).</div>
+            <div class="help hidden" id="pinSaved"><span data-i18n="settings.bar.pin_saved">A PIN is saved.</span> <button type="button" class="link" id="removePin" data-i18n="settings.remove">Remove</button></div>
           </div>
         </div>
         <div class="field">
-          <label for="s_poll_seconds">Check the bar every</label>
+          <label for="s_poll_seconds" data-i18n="settings.bar.poll">Check the bar every</label>
           <div class="input-row inline">
             <input class="input narrow" id="s_poll_seconds" name="poll_seconds" type="number" min="2" max="60">
-            <span class="help">seconds</span>
+            <span class="help" data-i18n="settings.bar.seconds">seconds</span>
           </div>
         </div>
         <div class="toggles">
-          <label class="switch"><input type="checkbox" name="usb_fallback"><span class="knob"></span>Also try USB (10.0.4.20)</label>
+          <label class="switch" data-i18n="settings.bar.usb"><input type="checkbox" name="usb_fallback"><span class="knob"></span>Also try USB (10.0.4.20)</label>
         </div>
-        <button type="button" class="btn" id="testBar">Test connection</button>
+        <button type="button" class="btn" id="testBar" data-i18n="settings.bar.test">Test connection</button>
         <div class="test-result" id="testResult"></div>
-        <h4 class="bar-screens-title">Bar screens</h4>
+        <h4 class="bar-screens-title" data-i18n="settings.bar.screens_title">Bar screens</h4>
         <div class="toggles">
-          <label class="switch"><input type="checkbox" name="bar_screens_on" id="s_bar_screens_on"><span class="knob"></span>Choose what the bar shows during sessions</label>
+          <label class="switch" data-i18n="settings.bar.screens_on"><input type="checkbox" name="bar_screens_on" id="s_bar_screens_on"><span class="knob"></span>Choose what the bar shows during sessions</label>
         </div>
         <div id="barScreenFields">
           <div class="help" id="barThemesNote"></div>
           <div id="barScreens"></div>
-          <h4>Focus by activity</h4>
-          <div class="help">Sessions on an activity can show something else while you focus. Todoist tasks and names you type use Focus; calls use Call.</div>
+          <h4 data-i18n="settings.bar.by_activity">Focus by activity</h4>
+          <div class="help" data-i18n="settings.bar.by_activity_help">Sessions on an activity can show something else while you focus. Todoist tasks and names you type use Focus; calls use Call.</div>
           <div id="barActivityScreens"></div>
-          <div class="help">The break and the pause are the bar's own: it shows REST and PAUSED whatever you pick here. A text of yours replaces the time left on the bar, so its minutes go in the corner, updated every minute.</div>
+          <div class="help" data-i18n="settings.bar.firmware_help">The break and the pause are the bar's own: it shows REST and PAUSED whatever you pick here. A text of yours replaces the time left on the bar, so its minutes go in the corner, updated every minute.</div>
         </div>
       </div>
     </div>
 
     <div class="section" role="tabpanel" id="p_apps" data-panel="apps">
-      <div class="scope-picker" id="appsScope" role="group" aria-label="Whose app blocking to edit"></div>
+      <div class="scope-picker" id="appsScope" role="group" aria-label="Whose app blocking to edit" data-i18n-aria-label="settings.apps.scope_label"></div>
       <div id="appsGlobal">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="block_apps" id="s_block_apps"><span class="knob"></span>Keep these apps away during focus</label>
+        <label class="switch" data-i18n="settings.apps.block"><input type="checkbox" name="block_apps" id="s_block_apps"><span class="knob"></span>Keep these apps away during focus</label>
       </div>
       <div id="blockedAppsFields">
         <div class="app-list" id="blockedApps"></div>
         <div class="input-row">
-          <input class="input" id="addBlockedApp" spellcheck="false" placeholder="Add another program, e.g. Teams.exe">
-          <button type="button" class="btn" id="addBlockedAppBtn">Add</button>
+          <input class="input" id="addBlockedApp" spellcheck="false" placeholder="Add another program, e.g. Teams.exe" data-i18n-placeholder="settings.apps.add_placeholder">
+          <button type="button" class="btn" id="addBlockedAppBtn" data-i18n="settings.add">Add</button>
         </div>
-        <div class="help"><b>Close</b> quits the app. <b>Hide to tray</b> closes its window like its X does, so it keeps running and you stay online. Only during work phases; breaks, pauses and the end of a session leave apps alone.</div>
+        <div class="help" data-i18n-rich="settings.apps.help"><b>Close</b> quits the app. <b>Hide to tray</b> closes its window like its X does, so it keeps running and you stay online. Only during work phases; breaks, pauses and the end of a session leave apps alone.</div>
       </div>
       </div>
       <div class="hidden" id="appsActivity"></div>
     </div>
 
     <div class="section" role="tabpanel" id="p_sites" data-panel="sites">
-      <div class="scope-picker" id="sitesScope" role="group" aria-label="Whose website blocking to edit"></div>
+      <div class="scope-picker" id="sitesScope" role="group" aria-label="Whose website blocking to edit" data-i18n-aria-label="settings.sites.scope_label"></div>
       <div id="sitesGlobal">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="block_sites" id="s_block_sites"><span class="knob"></span>Limit websites during focus</label>
+        <label class="switch" data-i18n="settings.sites.block"><input type="checkbox" name="block_sites" id="s_block_sites"><span class="knob"></span>Limit websites during focus</label>
       </div>
       <div id="blockedSitesFields">
-        <div class="seg" role="radiogroup" aria-label="Website mode">
-          <label><input type="radio" name="site_mode" value="block"><span>Block these sites</span></label>
-          <label><input type="radio" name="site_mode" value="allow"><span>Allow only these sites</span></label>
+        <div class="seg" role="radiogroup" aria-label="Website mode" data-i18n-aria-label="settings.sites.mode_label">
+          <label><input type="radio" name="site_mode" value="block"><span data-i18n="settings.sites.mode_block">Block these sites</span></label>
+          <label><input type="radio" name="site_mode" value="allow"><span data-i18n="settings.sites.mode_allow">Allow only these sites</span></label>
         </div>
         <div class="app-list" id="blockedSites"></div>
         <div class="input-row">
           <input class="input" id="addBlockedSite" spellcheck="false" placeholder="Add a website, e.g. youtube.com">
-          <button type="button" class="btn" id="addBlockedSiteBtn">Add</button>
+          <button type="button" class="btn" id="addBlockedSiteBtn" data-i18n="settings.add">Add</button>
         </div>
         <div class="help" id="sitesHelp"></div>
-        <div class="help">Subdomains are included (<code>youtube.com</code> also covers <code>m.youtube.com</code>). Use <code>*</code> as a wildcard anywhere: <code>*.google.com</code>, <code>google.*</code>, <code>youtube.com/shorts/*</code>. A path covers the pages below it (<code>reddit.com/r/python</code>).</div>
+        <div class="help" data-i18n-rich="settings.sites.patterns_help">Subdomains are included (<code>youtube.com</code> also covers <code>m.youtube.com</code>). Use <code>*</code> as a wildcard anywhere: <code>*.google.com</code>, <code>google.*</code>, <code>youtube.com/shorts/*</code>. A path covers the pages below it (<code>reddit.com/r/python</code>).</div>
       </div>
       </div>
       <div class="hidden" id="sitesActivity"></div>
       <div class="extension-box" id="extBox">
         <div class="extension-status" id="extStatus">Browser extension: not connected</div>
         <div id="extSetup">
-          <div class="help">Blocking websites needs the buZyist extension in your browser. It's a one-time setup:</div>
+          <div class="help" data-i18n="settings.ext.setup_intro">Blocking websites needs the buZyist extension in your browser. It's a one-time setup:</div>
           <ol class="steps">
             <li>
-              <button type="button" class="btn primary" id="installExtension">Open <span class="browser-name">Chrome</span>'s extensions page</button>
-              <div class="help">This also copies the extension's folder path and shows the folder in Explorer.</div>
+              <button type="button" class="btn primary browser-page" id="installExtension">Open Chrome's extensions page</button>
+              <div class="help" data-i18n="settings.ext.open_help">This also copies the extension's folder path and shows the folder in Explorer.</div>
             </li>
-            <li>Turn on <b>Developer mode</b> (the switch at the top right of that page).</li>
-            <li>Drag the selected <code>chrome-extension</code> folder from Explorer onto the page.<br>
+            <li data-i18n-rich="settings.ext.step_dev">Turn on <b>Developer mode</b> (the switch at the top right of that page).</li>
+            <li data-i18n-rich="settings.ext.step_load">Drag the selected <code>chrome-extension</code> folder from Explorer onto the page.<br>
               Or click <b>Load unpacked</b>, paste the path (<kbd>Ctrl</kbd>+<kbd>V</kbd>) into the folder picker's address bar, press <kbd>Enter</kbd>, then <b>Select Folder</b>.</li>
           </ol>
-          <div class="help">The status above turns green within a few seconds of loading the extension.</div>
+          <div class="help" data-i18n="settings.ext.setup_done_help">The status above turns green within a few seconds of loading the extension.</div>
         </div>
         <div class="hidden" id="extOutdated">
-          <div class="help">buZyist was updated and so was its extension, but your browser is still running the old one (<span id="extOldVersion">older</span>, now <span id="extNewVersion"></span>). Reload it:</div>
+          <div class="help" id="extOutdatedText"></div>
           <ol class="steps">
             <li>
-              <button type="button" class="btn primary" id="openExtensionsPage">Open <span class="browser-name">Chrome</span>'s extensions page</button>
+              <button type="button" class="btn primary browser-page" id="openExtensionsPage">Open Chrome's extensions page</button>
             </li>
-            <li>Find <b>buZyist Focus</b> and click its <b>Reload</b> icon (the circular arrow). No need to load the folder again.</li>
+            <li data-i18n-rich="settings.ext.step_reload">Find <b>buZyist Focus</b> and click its <b>Reload</b> icon (the circular arrow). No need to load the folder again.</li>
           </ol>
-          <div class="help">This message goes away within a few seconds of reloading.</div>
+          <div class="help" data-i18n="settings.ext.outdated_help">This message goes away within a few seconds of reloading.</div>
         </div>
-        <div class="help hidden" id="extDone">All set. Keep the extension turned on and buZyist tells it when to block.</div>
+        <div class="help hidden" id="extDone" data-i18n="settings.ext.all_set">All set. Keep the extension turned on and buZyist tells it when to block.</div>
         <div class="path-row">
           <code id="extDir">extension</code>
-          <button type="button" class="btn sm" id="copyExtensionPath">Copy path</button>
-          <button type="button" class="btn sm ghost" id="openExtensionFolder">Show folder</button>
+          <button type="button" class="btn sm" id="copyExtensionPath" data-i18n="settings.ext.copy_path">Copy path</button>
+          <button type="button" class="btn sm ghost" id="openExtensionFolder" data-i18n="settings.ext.show_folder">Show folder</button>
         </div>
       </div>
     </div>
 
     <div class="section" role="tabpanel" id="p_limits" data-panel="limits">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="site_limits_on" id="s_site_limits_on"><span class="knob"></span>Enforce website limits</label>
+        <label class="switch" data-i18n="settings.limits.site_on"><input type="checkbox" name="site_limits_on" id="s_site_limits_on"><span class="knob"></span>Enforce website limits</label>
       </div>
-      <div class="help">These work all day, with or without a pomodoro running. A site is blocked once any of its time limits is used up, or during its blocked hours. Time counts while the site is the active tab in a browser window you're using. Needs the browser extension (Websites tab); reload it after updating buZyist.</div>
+      <div class="help" data-i18n="settings.limits.site_help">These work all day, with or without a session running. A site is blocked once any of its time limits is used up, or during its blocked hours. Time counts while the site is the active tab in a browser window you're using. Needs the browser extension (Websites tab); reload it after updating buZyist.</div>
       <div id="limitsFields">
         <div class="limit-list" id="limitList"></div>
         <div class="limit-editor hidden" id="limitEditor"></div>
-        <button type="button" class="btn" id="addLimitBtn">Add a website limit</button>
+        <button type="button" class="btn" id="addLimitBtn" data-i18n="settings.limits.add_site">Add a website limit</button>
       </div>
       <div class="toggles limits-apps">
-        <label class="switch"><input type="checkbox" name="app_limits_on" id="s_app_limits_on"><span class="knob"></span>Enforce app limits</label>
+        <label class="switch" data-i18n="settings.limits.app_on"><input type="checkbox" name="app_limits_on" id="s_app_limits_on"><span class="knob"></span>Enforce app limits</label>
       </div>
-      <div class="help">The same limits for Windows apps, measured by buZyist: time counts while the app's window is in front and you're using the PC. Once a limit is reached, buZyist closes the app; pick <b>Beep</b> to keep it open and just hear how long it's been in front (again every few minutes it stays there; you pick how often). App limits stay on this PC.</div>
+      <div class="help" data-i18n-rich="settings.limits.app_help">The same limits for Windows apps, measured by buZyist: time counts while the app's window is in front and you're using the PC. Once a limit is reached, buZyist closes the app; pick <b>Beep</b> to keep it open and just hear how long it's been in front (again every few minutes it stays there; you pick how often). App limits stay on this PC.</div>
       <div id="appLimitsFields">
         <div class="limit-list" id="appLimitList"></div>
         <div class="limit-editor hidden" id="appLimitEditor"></div>
-        <button type="button" class="btn" id="addAppLimitBtn">Add an app limit</button>
+        <button type="button" class="btn" id="addAppLimitBtn" data-i18n="settings.limits.add_app">Add an app limit</button>
       </div>
       <div class="extension-box" id="syncBox">
-        <label class="switch"><input type="checkbox" name="sync_limits" id="s_sync_limits"><span class="knob"></span>Share limits and time with my other PCs</label>
-        <div class="help">Through Chrome sync: on each PC, sign one Chrome profile in to the same Google account, with sync on, and load the buZyist extension there. Time on Instagram here then counts on your other PCs too. Only the limits are shared; your other settings stay on each PC.</div>
-        <label class="switch"><input type="checkbox" name="sync_session" id="s_sync_session"><span class="knob"></span>Share the running task with my other PCs</label>
-        <div class="help">Another PC on the same BUSY Bar then shows the task you started here, instead of "Started on the bar". Turn it on on both PCs.</div>
+        <label class="switch" data-i18n="settings.sync.limits"><input type="checkbox" name="sync_limits" id="s_sync_limits"><span class="knob"></span>Share limits and time with my other PCs</label>
+        <div class="help" data-i18n="settings.sync.limits_help">Through Chrome sync: on each PC, sign one Chrome profile in to the same Google account, with sync on, and load the buZyist extension there. Time on Instagram here then counts on your other PCs too. Only the limits are shared; your other settings stay on each PC.</div>
+        <label class="switch" data-i18n="settings.sync.session"><input type="checkbox" name="sync_session" id="s_sync_session"><span class="knob"></span>Share the running task with my other PCs</label>
+        <div class="help" data-i18n="settings.sync.session_help">Another PC on the same BUSY Bar then shows the task you started here, instead of "Started on the bar". Turn it on on both PCs.</div>
         <div id="syncFields">
           <div class="field">
-            <label for="s_sync_owner">Chrome profile that shares</label>
+            <label for="s_sync_owner" data-i18n="settings.sync.owner">Chrome profile that shares</label>
             <select class="input" id="s_sync_owner"></select>
-            <div class="help">Pick the profile signed in to the account you use on your other PCs. Other profiles on this PC still enforce the limits and count time; they just don't share it.</div>
+            <div class="help" data-i18n="settings.sync.owner_help">Pick the profile signed in to the account you use on your other PCs. Other profiles on this PC still enforce the limits and count time; they just don't share it.</div>
           </div>
-          <div class="extension-status" id="syncStatus">Not synced yet</div>
+          <div class="extension-status" id="syncStatus" data-i18n="settings.sync.not_yet">Not synced yet</div>
         </div>
       </div>
     </div>
 
     <div class="section" role="tabpanel" id="p_stats" data-panel="stats">
-      <h4>Focus</h4>
+      <h4 data-i18n="stats.focus.title">Focus</h4>
       <div class="stat-tiles" id="focusTiles"></div>
       <div class="stat-streak" id="focusStreak"></div>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="streak_skip_weekends" id="s_streak_skip_weekends"><span class="knob"></span>Weekends don't break the streak</label>
+        <label class="switch" data-i18n="stats.focus.skip_weekends"><input type="checkbox" name="streak_skip_weekends" id="s_streak_skip_weekends"><span class="knob"></span>Weekends don't break the streak</label>
       </div>
       <div class="stat-chart" id="focusChart" role="img"></div>
-      <div class="stat-axis"><span id="focusFirst"></span><span>Today</span></div>
-      <h4>Focus by activity, last 30 days</h4>
+      <div class="stat-axis"><span id="focusFirst"></span><span data-i18n="stats.today">Today</span></div>
+      <h4 data-i18n="stats.focus.by_activity">Focus by activity, last 30 days</h4>
       <div class="stat-sites" id="focusActivities"></div>
-      <h4>Most focused tasks, last 30 days</h4>
+      <h4 data-i18n="stats.focus.top_tasks">Most focused tasks, last 30 days</h4>
       <div class="stat-sites" id="focusTasks"></div>
-      <div class="help">Focus time counts finished tomatoes. Sessions count once they have a finished tomato; tasks worked on got at least one tomato, tasks done were completed in buZyist.</div>
+      <div class="help" data-i18n="stats.focus.help">Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist.</div>
 
       <!-- Time in apps: see buzyist/app_time.py. app_time_on is saved at once, like the streak switch. -->
-      <h4>Time in apps</h4>
+      <h4 data-i18n="stats.apps.title">Time in apps</h4>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="app_time_on" id="s_app_time_on"><span class="knob"></span>Count the time I spend in each app</label>
+        <label class="switch" data-i18n="stats.apps.switch"><input type="checkbox" name="app_time_on" id="s_app_time_on"><span class="knob"></span>Count the time I spend in each app</label>
       </div>
       <div id="appTimeBody">
         <div class="stat-tiles" id="appTimeTiles"></div>
         <div class="stat-legend" aria-hidden="true">
-          <span><i class="stat-sw stat-f"></i>During focus</span><span><i class="stat-sw stat-l"></i>Outside focus</span>
+          <span data-i18n="stats.apps.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.apps.legend_other"><i class="stat-sw stat-l"></i>Outside focus</span>
         </div>
         <div class="stat-chart" id="appTimeChart" role="img"></div>
-        <div class="stat-axis"><span id="appTimeFirst"></span><span>Today</span></div>
-        <h4>Most used apps, last 30 days</h4>
+        <div class="stat-axis"><span id="appTimeFirst"></span><span data-i18n="stats.today">Today</span></div>
+        <h4 data-i18n="stats.apps.most_apps">Most used apps, last 30 days</h4>
         <div class="stat-sites" id="appTimeApps"></div>
         <button type="button" class="btn sm ghost hidden" id="appTimeMore"></button>
-        <h4>Most used websites, last 30 days</h4>
+        <h4 data-i18n="stats.apps.most_sites">Most used websites, last 30 days</h4>
         <div class="stat-sites" id="siteTimeSites"></div>
         <button type="button" class="btn sm ghost hidden" id="siteTimeMore"></button>
       </div>
-      <div class="help">The app in front gets the time, pomodoro or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json.</div>
+      <div class="help" data-i18n="stats.apps.help">The app in front gets the time, in focus or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json.</div>
 
-      <h4>Websites blocked</h4>
+      <h4 data-i18n="stats.blocks.title">Websites blocked</h4>
       <div class="stat-tiles" id="statTiles"></div>
       <div class="stat-legend" aria-hidden="true">
-        <span><i class="stat-sw stat-f"></i>During focus</span><span><i class="stat-sw stat-l"></i>Over a limit</span>
+        <span data-i18n="stats.blocks.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.blocks.legend_limit"><i class="stat-sw stat-l"></i>Over a limit</span>
       </div>
       <div class="stat-chart" id="statChart" role="img"></div>
-      <div class="stat-axis"><span id="statFirst"></span><span>Today</span></div>
-      <h4>Most blocked, last 30 days</h4>
+      <div class="stat-axis"><span id="statFirst"></span><span data-i18n="stats.today">Today</span></div>
+      <h4 data-i18n="stats.blocks.most">Most blocked, last 30 days</h4>
       <div class="stat-sites" id="statSites"></div>
-      <div class="help">Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts.</div>
+      <div class="help" data-i18n="stats.blocks.help">Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts.</div>
     </div>
 
     <div class="section" role="tabpanel" id="p_general" data-panel="general">
       <div class="field">
-        <label>Activities</label>
+        <label for="s_language" data-i18n="settings.general.language">Language</label>
+        <select class="input" id="s_language" name="language"></select>
+        <div class="help" data-i18n="settings.general.language_help">The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.</div>
+      </div>
+      <div class="field">
+        <label data-i18n="settings.general.activities">Activities</label>
         <div class="activity-list" id="activityList"></div>
         <div class="input-row">
-          <input class="input" id="addActivity" maxlength="30" spellcheck="false" placeholder="Add an activity, e.g. Planning">
-          <button type="button" class="btn" id="addActivityBtn">Add</button>
+          <input class="input" id="addActivity" maxlength="30" spellcheck="false" placeholder="Add an activity, e.g. Planning" data-i18n-placeholder="settings.general.add_activity">
+          <button type="button" class="btn" id="addActivityBtn" data-i18n="settings.add">Add</button>
         </div>
-        <div class="help">Offered under “What are you working on?” for a tomato with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.</div>
+        <div class="help" data-i18n="settings.general.activities_help">Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.</div>
       </div>
       <!-- Calls: see buzyist/calls.py. call_activity and call_ignore_apps are sent by the Save button. -->
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="call_detect" id="s_call_detect"><span class="knob"></span>Start a session when I'm on a call</label>
+        <label class="switch" data-i18n="settings.general.call_detect"><input type="checkbox" name="call_detect" id="s_call_detect"><span class="knob"></span>Start a session when I'm on a call</label>
       </div>
-      <div class="help">When an app has your microphone or camera on for 15 seconds, buZyist starts a session with no timer, and ends it when the call does. The call counts as focus under the activity below, and blocks the apps and websites that activity blocks. The app you're calling with is never closed.</div>
+      <div class="help" data-i18n="settings.general.call_help">When an app has your microphone or camera on for 15 seconds, buZyist starts a session with no timer, and ends it when the call does. The call counts as focus under the activity below, and blocks the apps and websites that activity blocks. The app you're calling with is never closed.</div>
       <div id="callFields">
         <div class="field">
-          <label for="s_call_activity">Count calls as</label>
+          <label for="s_call_activity" data-i18n="settings.general.call_activity">Count calls as</label>
           <select class="input" id="s_call_activity"></select>
         </div>
         <div class="field">
-          <label for="s_call_ignore">Not calls</label>
-          <input class="input" id="s_call_ignore" spellcheck="false" placeholder="e.g. Voicenotes.exe, NVIDIA Broadcast">
-          <div class="help">Apps that keep the microphone or camera on outside calls (dictation, voice effects), separated by commas; the ones running now are suggested as you type.</div>
+          <label for="s_call_ignore" data-i18n="settings.general.call_ignore">Not calls</label>
+          <input class="input" id="s_call_ignore" spellcheck="false" placeholder="e.g. Voicenotes.exe, NVIDIA Broadcast" data-i18n-placeholder="settings.general.call_ignore_placeholder">
+          <div class="help" data-i18n="settings.general.call_ignore_help">Apps that keep the microphone or camera on outside calls (dictation, voice effects), separated by commas; the ones running now are suggested as you type.</div>
         </div>
       </div>
       <div class="field">
-        <label for="s_hotkey">Global hotkey</label>
+        <label for="s_hotkey" data-i18n="settings.general.hotkey">Global hotkey</label>
         <input class="input" id="s_hotkey" name="hotkey" spellcheck="false" placeholder="ctrl+alt+p">
-        <div class="help">ctrl / alt / shift / win + a key, e.g. <code>ctrl+alt+p</code>. Empty for none.</div>
+        <div class="help" data-i18n-rich="settings.general.hotkey_help">ctrl / alt / shift / win + a key, e.g. <code>ctrl+alt+p</code>. Empty for none.</div>
       </div>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="notifications"><span class="knob"></span>Notify at breaks and when a session ends</label>
-        <label class="switch"><input type="checkbox" name="open_on_finish"><span class="knob"></span>Open this window when a session finishes</label>
-        <label class="switch"><input type="checkbox" name="launch_at_login"><span class="knob"></span>Start buZyist when I sign in to Windows</label>
-        <label class="switch" id="autoUpdateRow"><input type="checkbox" name="auto_update"><span class="knob"></span>Install updates automatically when no session is running</label>
+        <label class="switch" data-i18n="settings.general.notifications"><input type="checkbox" name="notifications"><span class="knob"></span>Notify at breaks and when a session ends</label>
+        <label class="switch" data-i18n="settings.general.open_on_finish"><input type="checkbox" name="open_on_finish"><span class="knob"></span>Open this window when a session finishes</label>
+        <label class="switch" data-i18n="settings.general.launch_at_login"><input type="checkbox" name="launch_at_login"><span class="knob"></span>Start buZyist when I sign in to Windows</label>
+        <label class="switch" id="autoUpdateRow" data-i18n="settings.general.auto_update"><input type="checkbox" name="auto_update"><span class="knob"></span>Install updates automatically when no session is running</label>
       </div>
     </div>
 
     <div class="section about" role="tabpanel" id="p_about" data-panel="about">
       <div class="brand"><img class="logo about-logo" src="img/logo.svg" alt="buZyist"></div>
-      <p class="help">One tomato at a time. You pick a task, start the tomato, and the rest of the world waits.</p>
-      <p class="help"><b id="aboutVersion">buZyist</b> · unofficial; not affiliated with BUSY or Todoist.</p>
+      <p class="help" data-i18n="settings.about.tagline">One pomodoro at a time. You pick a task, start a session, and the rest of the world waits.</p>
+      <p class="help"><b id="aboutVersion">buZyist</b> · <span data-i18n="settings.about.unofficial">unofficial; not affiliated with BUSY or Todoist.</span></p>
       <div class="input-row">
         <button type="button" class="btn primary hidden" id="installUpdate"></button>
-        <button type="button" class="btn" id="checkUpdate">Check for updates</button>
-        <button type="button" class="btn ghost hidden" id="releaseNotes">What's new</button>
+        <button type="button" class="btn" id="checkUpdate" data-i18n="settings.about.check">Check for updates</button>
+        <button type="button" class="btn ghost hidden" id="releaseNotes" data-i18n="settings.about.whats_new">What's new</button>
       </div>
       <div class="test-result" id="updateResult"></div>
       <div class="input-row">
-        <button type="button" class="btn" id="openData">Open data folder</button>
+        <button type="button" class="btn" id="openData" data-i18n="settings.about.open_data">Open data folder</button>
         <button type="button" class="btn ghost" id="openRepo">GitHub</button>
       </div>
-      <p class="help">Your settings, token and log live in <code id="aboutData"></code>.</p>
+      <p class="help"><span data-i18n="settings.about.data_dir">Your settings, token and log live in</span> <code id="aboutData"></code></p>
     </div>
   </form>
   <div class="drawer-foot">
-    <button class="btn ghost" id="cancelSettings">Cancel</button>
-    <button class="btn primary" id="saveSettings">Save</button>
+    <button class="btn ghost" id="cancelSettings" data-i18n="settings.cancel">Cancel</button>
+    <button class="btn primary" id="saveSettings" data-i18n="settings.save">Save</button>
   </div>
 </aside>
 
@@ -511,45 +516,46 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endedTitle">
     <span class="state-chip done-chip" id="endedChip">Done</span>
     <div class="tomatoes" id="endedTomatoes" role="img"></div>
-    <h3 id="endedTitle">Session complete</h3>
+    <h3 id="endedTitle">Done. Take a breather.</h3>
     <p class="task-name" id="endedTask"></p>
     <p id="endedSummary"></p>
     <div class="problems" id="endedProblems"></div>
     <div class="modal-actions">
-      <button class="btn good" id="endedComplete"><svg><use href="#i-check"/></svg>Complete task</button>
-      <button class="btn" id="endedAgain"><svg><use href="#i-play"/></svg>Another session</button>
-      <button class="btn ghost" id="endedClose">Close</button>
+      <button class="btn good" id="endedComplete" data-i18n="summary.complete"><svg><use href="#i-check"/></svg>Complete task</button>
+      <button class="btn" id="endedAgain" data-i18n="summary.again"><svg><use href="#i-play"/></svg>Another session</button>
+      <button class="btn ghost" id="endedClose" data-i18n="summary.close">Close</button>
     </div>
   </div>
 </div>
 
 <div class="modal-wrap" id="filterWrap">
   <form class="modal form-modal" id="filterForm" role="dialog" aria-modal="true" aria-labelledby="filterTitle" autocomplete="off">
-    <h3 id="filterTitle">New filter</h3>
+    <h3 id="filterTitle" data-i18n="main.filters.new">New filter</h3>
     <div class="field">
-      <label for="f_name">Name</label>
-      <input class="input" id="f_name" maxlength="40" spellcheck="false" placeholder="e.g. Deep work">
+      <label for="f_name" data-i18n="main.filters.name">Name</label>
+      <input class="input" id="f_name" maxlength="40" spellcheck="false" placeholder="e.g. Deep work" data-i18n-placeholder="main.filters.name_placeholder">
     </div>
     <div class="field">
-      <label for="f_query">Todoist filter query</label>
+      <label for="f_query" data-i18n="main.filters.query">Todoist filter query</label>
       <textarea class="input area" id="f_query" rows="3" spellcheck="false" placeholder="today | overdue"></textarea>
       <div class="examples" id="examples"></div>
-      <div class="help">Same syntax as Todoist's own filters: <code>&amp;</code> and, <code>|</code> or, <code>!</code> not, <code>#Project</code>, <code>@label</code>, <code>p1</code>, dates.</div>
+      <div class="help"><span data-i18n="main.filters.help">Same syntax as Todoist's own filters:</span> <code>&amp;</code> <span data-i18n="main.filters.help_and">and</span>, <code>|</code> <span data-i18n="main.filters.help_or">or</span>, <code>!</code> <span data-i18n="main.filters.help_not">not</span>, <code>#Project</code>, <code>@label</code>, <code>p1</code>, <span data-i18n="main.filters.help_dates">dates</span>.</div>
     </div>
     <div class="test-result" id="filterTest"></div>
     <div class="form-actions">
-      <button type="button" class="btn ghost danger" id="filterDelete">Delete</button>
-      <button type="button" class="icon-btn sm" id="filterLeft" title="Move left">&larr;</button>
-      <button type="button" class="icon-btn sm" id="filterRight" title="Move right">&rarr;</button>
+      <button type="button" class="btn ghost danger" id="filterDelete" data-i18n="main.filters.delete">Delete</button>
+      <button type="button" class="icon-btn sm" id="filterLeft" title="Move left" data-i18n-title="main.filters.left">&larr;</button>
+      <button type="button" class="icon-btn sm" id="filterRight" title="Move right" data-i18n-title="main.filters.right">&rarr;</button>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="filterPreview">Test</button>
-      <button type="button" class="btn ghost" id="filterCancel">Cancel</button>
-      <button type="submit" class="btn primary" id="filterSave">Save</button>
+      <button type="button" class="btn" id="filterPreview" data-i18n="main.filters.test">Test</button>
+      <button type="button" class="btn ghost" id="filterCancel" data-i18n="main.filters.cancel">Cancel</button>
+      <button type="submit" class="btn primary" id="filterSave" data-i18n="main.filters.save">Save</button>
     </div>
   </form>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="i18n.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

@@ -94,6 +94,24 @@ class WindowsMixin:
 
         threading.Thread(target=push, daemon=True, name="tell-visible").start()
 
+    def reload_windows(self) -> None:
+        """
+        Reload both pages (a new app language: they read the catalog at load).
+        From a thread, a moment later, so the save_settings call that asked
+        for it answers first; then each page is told again whether it is on
+        screen, since a reloaded page starts out polling as if it were.
+        """
+
+        def reload():
+            for window in (self.main, self.mini):
+                if window and not self.quitting:
+                    self._js(window, "location.reload()")
+            for which in ("main", "mini"):
+                for delay in (1.5, 4):
+                    threading.Timer(delay, self.tell_visible, args=(which,)).start()
+
+        threading.Timer(0.3, reload).start()
+
     @staticmethod
     def _js(window, script: str) -> None:
         try:

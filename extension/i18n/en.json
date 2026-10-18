@@ -1,0 +1,119 @@
+{
+  "_": "The extension's own texts (popup, block page, toolbar badge), in the app language buZyist sends. Same format as ui/i18n/*.json; every language has the same keys and placeholders (tests/test_extension_i18n.py).",
+  "time": {
+    "seconds": "{n} sec",
+    "minutes": "{n} min",
+    "hours": "{h} h",
+    "hours_minutes": "{h} h {m} min"
+  },
+  "limit": {
+    "_": "A budget's label, from buZyist's \"5 min per hour\": {minutes} is the budget, n the length of the period.",
+    "minute": {
+      "one": "{minutes} min per minute",
+      "other": "{minutes} min per {n} minutes"
+    },
+    "hour": {
+      "one": "{minutes} min per hour",
+      "other": "{minutes} min per {n} hours"
+    },
+    "day": {
+      "one": "{minutes} min per day",
+      "other": "{minutes} min per {n} days"
+    },
+    "week": {
+      "one": "{minutes} min per week",
+      "other": "{minutes} min per {n} weeks"
+    }
+  },
+  "badge": {
+    "_": "The toolbar badge holds about 4 characters.",
+    "seconds": "{n}s",
+    "minutes": "{n}m",
+    "hours": "{n}h",
+    "limit_title": "buZyist: {time} left on {sites} ({label})",
+    "focus_title": {
+      "one": "buZyist: focus, {n} min left",
+      "other": "buZyist: focus, {n} min left"
+    }
+  },
+  "popup": {
+    "checking": "Checking…",
+    "starting": "Starting…",
+    "connected": "Connected",
+    "not_running": "buZyist not running",
+    "focus_title": "Pomodoro",
+    "here_title": "This site",
+    "limits_title": "Website limits",
+    "blocks_title": "Blocked today",
+    "minutes_left": {
+      "one": "{n} min left",
+      "other": "{n} min left"
+    },
+    "in_focus": "In focus",
+    "focusing_on": "Focusing on {task}",
+    "work_running": "Work phase running",
+    "during_activity": "{activity}: {rules}",
+    "allow_mode": "Only your allowed websites open until it ends.",
+    "block_mode": {
+      "one": "{n} website is blocked until it ends.",
+      "other": "{n} websites are blocked until it ends."
+    },
+    "nothing_blocked": "No websites are blocked during focus.",
+    "unknown_yet": "Unknown: buZyist hasn't answered yet.",
+    "unknown_closed": "Unknown while buZyist is closed.",
+    "no_work": "No work phase running.",
+    "start_one": "Start one in buZyist to block distracting websites.",
+    "this_tab": "this tab",
+    "blocked_until": "Blocked until {when}",
+    "times_up_until": "Time's up, opens again at {when}",
+    "left_of": "{left} left · {label}",
+    "used_of": "{used} of {budget} min used, resets {when}",
+    "no_limit_now": "No limit applies right now.",
+    "blocked_span": "Blocked {start}–{end}",
+    "extra_until": "Extra time until {time}",
+    "blocked": "Blocked",
+    "times_up": "Time's up",
+    "left": "{left} left",
+    "no_time_limit": "No time limit right now.",
+    "times": {
+      "one": "{n} time",
+      "other": "{n} times"
+    },
+    "blocks_split": "{focus} during focus · {limit} over a limit",
+    "no_blocks": "Nothing blocked yet today.",
+    "help_offline": "buZyist isn't running.",
+    "help_offline_known": "Limits keep working from what it last said, and time is saved until it's back.",
+    "help_offline_unknown": "Nothing is blocked until it runs.",
+    "help_offline_start": "Start buZyist from the Start menu, or open it from its tray icon.",
+    "help_limits_off": "Website limits are off.",
+    "help_limits_off_how": "In buZyist, open Settings → Limits, add a website and turn on “Enforce website limits”.",
+    "help_limits_switched_off": "Website limits are switched off.",
+    "help_limits_switched_off_how": "Turn on “Enforce website limits” in buZyist → Settings → Limits.",
+    "help_no_limits": "No limits yet.",
+    "help_no_limits_how": "Open buZyist, then Settings → Limits → Add a website limit (for example 5 minutes per hour).",
+    "footer": "Change limits in {where}. Blocking during pomodoros is in the Websites tab, block counts in Stats.",
+    "footer_where": "buZyist → Settings → Limits",
+    "version": "Extension {version}"
+  },
+  "blocked": {
+    "page_title": "Back to work",
+    "focus": "Focus",
+    "focus_activity": "Blocked during {activity}",
+    "focus_title": "The feed can wait.",
+    "checking": "Checking focus…",
+    "focus_until": {
+      "one": "Focus until {time} · {n} min left",
+      "other": "Focus until {time} · {n} min left"
+    },
+    "limit": "Limit",
+    "window_title": "Blocked right now.",
+    "window_line": "{pattern} is blocked at this time.",
+    "budget_title": "That's enough for now.",
+    "budget_line": "You've used {used} of {budget} min on {pattern} ({label}).",
+    "opens_at": "Opens again at {when}",
+    "pass": {
+      "one": "Allow {n} more minute",
+      "other": "Allow {n} more minutes"
+    }
+  }
+}

@@ -20,6 +20,7 @@ from busylib.features.timer import THEMES_PATH
 from buzyist import paths
 from buzyist.bar_screens import OWN_THEME_PREFIX
 from buzyist.constants import APP, BAR_CYCLES_MIN, BAR_PROBE_S, USB_ADDR, AppError, now_ms
+from buzyist.i18n import app_error, english, t
 from buzyist.storage import read_json, write_json
 
 log = logging.getLogger(APP)
@@ -129,7 +130,7 @@ class Bar:
                 except Exception:
                     log.debug("closing a bar client failed", exc_info=True)
             self._clients.clear()
-            self.via = "This PC" if self.offline else None
+            self.via = t("notify.via_this_pc") if self.offline else None
             self._probe_at = 0  # new settings: look for the bar at once
             if self.is_local:
                 self.offline = False
@@ -153,14 +154,14 @@ class Bar:
         """fn(client) on the bar, or on the local clock; device=True asks the bar even while offline."""
         with self.lock:
             if device and self.is_local:
-                raise AppError("The BUSY Bar is turned off; the timer runs on this PC.")
+                raise app_error("errors.bar.off")
             if self.is_local or (self.offline and not device):
                 result = fn(self.local)
-                self.via = "This PC"
+                self.via = t("notify.via_this_pc")
                 return result
             routes = self.routes()
             if not routes:
-                raise AppError("Set the BUSY Bar's Wi-Fi address in Settings, or allow USB.")
+                raise app_error("errors.bar.no_route")
             problems = []
             for route in routes:
                 try:
@@ -171,10 +172,10 @@ class Bar:
                     problems.append(f"{route[0]}: {err}")
                 except exceptions.BusyBarAPIError as err:
                     if err.status_code in (401, 403):
-                        raise AppError("The bar refused the PIN (check Settings).")
-                    raise AppError(f"The bar answered: {err}")
-            self.via = "This PC" if self.offline else None
-            raise BarUnreachable("Can't reach the BUSY Bar. " + "; ".join(problems))
+                        raise app_error("errors.bar.bad_pin")
+                    raise app_error("errors.bar.answered", error=err)
+            self.via = t("notify.via_this_pc") if self.offline else None
+            raise app_error("errors.bar.unreachable", cls=BarUnreachable, problems="; ".join(problems))
 
     # ---------------------------------------------------------- standalone
 
@@ -198,7 +199,7 @@ class Bar:
                 self.local.busy_snapshot_set(_not_started())
             self._seed_stamp = self.local.busy_snapshot().snapshot_timestamp_ms
             self._probe_at = now_ms() + BAR_PROBE_S * 1000
-            self.offline, self.via = True, "This PC"
+            self.offline, self.via = True, t("notify.via_this_pc")
             return True
 
     def poll(self) -> types.BusySnapshot:
@@ -216,7 +217,7 @@ class Bar:
             try:
                 self.run(self._take_back, device=True)
             except AppError as err:
-                log.debug("the bar is still out of reach: %s", err)
+                log.debug("the bar is still out of reach: %s", english(err))
                 return
             self.offline = False
             self.local.busy_snapshot_set(_not_started())
@@ -350,7 +351,7 @@ class Bar:
             live = bar.busy_snapshot()
             variant = live.snapshot
             if isinstance(variant, types.BusySnapshotNotStarted):
-                raise AppError("No session is running.")
+                raise app_error("errors.bar.no_session")
             update: dict = {"is_paused": paused}
             if paused:
                 # Freeze what is actually left now, not what the stored
@@ -371,7 +372,7 @@ class Bar:
             live = bar.busy_snapshot()
             variant = live.snapshot
             if not isinstance(variant, types.BusySnapshotInterval):
-                raise AppError("No interval session is running.")
+                raise app_error("errors.bar.no_session")
             settings = variant.interval_settings
             following = (timer_state(live).interval or 0) + 1
             # Index cycles*2-1 is where a session ends; it is never run.

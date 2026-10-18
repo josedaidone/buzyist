@@ -124,7 +124,15 @@ MAX_FILTERS = 20
 
 
 class AppError(Exception):
-    """A problem worth showing to the person, in plain words."""
+    """
+    A problem worth showing to the person, in plain words: str() is the
+    message in the app language, `english` the same in English, for the log
+    (i18n.app_error makes both from a catalog key).
+    """
+
+    def __init__(self, message: str = "", english: str | None = None):
+        super().__init__(message)
+        self.english = message if english is None else english
 
 
 def now_ms() -> int:

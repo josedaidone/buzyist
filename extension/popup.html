@@ -10,32 +10,33 @@
   <header>
     <img class="logo" src="logo.svg" alt="buZyist">
     <span class="spacer"></span>
-    <span class="status" id="status">Checking&hellip;</span>
+    <span class="status" id="status" data-i18n="popup.checking">Checking&hellip;</span>
   </header>
 
   <section id="help" class="notice hidden"></section>
 
   <section class="card" id="focusCard">
-    <h2>Pomodoro</h2>
+    <h2 data-i18n="popup.focus_title">Pomodoro</h2>
     <div id="focus"></div>
   </section>
 
   <section class="card hidden" id="hereCard">
-    <h2>This site</h2>
+    <h2 data-i18n="popup.here_title">This site</h2>
     <div id="here"></div>
   </section>
 
   <section class="card" id="limitsCard">
-    <h2>Website limits</h2>
+    <h2 data-i18n="popup.limits_title">Website limits</h2>
     <div id="limits"></div>
   </section>
 
   <section class="card hidden" id="blocksCard">
-    <h2>Blocked today</h2>
+    <h2 data-i18n="popup.blocks_title">Blocked today</h2>
     <div id="blocks"></div>
   </section>
 
   <footer id="footer"></footer>
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

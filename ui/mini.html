@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>buZyist timer</title>
+<title data-i18n="mini.title">buZyist timer</title>
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 <style>
@@ -58,7 +58,7 @@
   <symbol id="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 </svg>
-<div class="mini pywebview-drag-region" id="mini" title="Drag to move · double-click to open buZyist">
+<div class="mini pywebview-drag-region" id="mini" title="Drag to move · double-click to open buZyist" data-i18n-title="mini.drag">
   <div class="m-ring">
     <svg viewBox="0 0 80 80">
       <circle class="track" cx="40" cy="40" r="33"/>
@@ -67,17 +67,18 @@
     <div class="m-time" id="mTime">--:--</div>
   </div>
   <div class="m-body">
-    <div class="m-phase"><span class="chip-s" id="mPhase">Focus</span><span class="sep" id="mRound"></span></div>
-    <div class="m-task" id="mTask">No task</div>
+    <div class="m-phase"><span class="chip-s" id="mPhase" data-i18n="common.phase.focus">Focus</span><span class="sep" id="mRound"></span></div>
+    <div class="m-task" id="mTask" data-i18n="mini.no_task">No task</div>
     <div class="m-project" id="mProject"></div>
   </div>
   <div class="m-actions">
-    <button id="mPause" title="Pause"><svg><use id="mPauseIcon" href="#i-pause"/></svg></button>
-    <button id="mStop" title="Stop"><svg><use href="#i-stop"/></svg></button>
-    <button id="mOpen" title="Open buZyist"><svg><use href="#i-open"/></svg></button>
-    <button id="mHide" title="Hide mini timer"><svg><use href="#i-x"/></svg></button>
+    <button id="mPause" title="Pause" data-i18n-title="mini.pause"><svg><use id="mPauseIcon" href="#i-pause"/></svg></button>
+    <button id="mStop" title="Stop" data-i18n-title="mini.stop"><svg><use href="#i-stop"/></svg></button>
+    <button id="mOpen" title="Open buZyist" data-i18n-title="mini.open"><svg><use href="#i-open"/></svg></button>
+    <button id="mHide" title="Hide mini timer" data-i18n-title="mini.hide"><svg><use href="#i-x"/></svg></button>
   </div>
 </div>
+<script src="i18n.js"></script>
 <script src="mini.js"></script>
 </body>
 </html>

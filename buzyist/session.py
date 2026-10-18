@@ -13,10 +13,11 @@ from datetime import date, datetime
 from busylib.features import timer_state
 
 from buzyist import paths
-from buzyist.activities import MAX_DETAIL, session_name
+from buzyist.activities import call_name, session_name
 from buzyist.bar import BarUnreachable
 from buzyist.constants import APP, HISTORY_KEEP, AppError, now_ms
 from buzyist.focus_stats import session_minutes
+from buzyist.i18n import app_error, english, t
 from buzyist.plan import plan_session
 from buzyist.storage import write_json
 
@@ -74,11 +75,19 @@ class SessionMixin:
                     if state.phase == "rest":
                         mins = inner.interval_settings.interval_rest_ms // 60000
                         notify = (
-                            "Nice work! Time for a break",
-                            f"Pomodoro {interval // 2 + 1} of {rounds} done. Enjoy your {mins} min break.",
+                            t("notify.break.title"),
+                            t("notify.break.text", round=interval // 2 + 1, rounds=rounds, minutes=mins),
                         )
                     else:
-                        notify = ("Back to it", f"Round {interval // 2 + 1} of {rounds}: {session['task']['content']}")
+                        notify = (
+                            t("notify.back.title"),
+                            t(
+                                "notify.back.text",
+                                round=interval // 2 + 1,
+                                rounds=rounds,
+                                task=session["task"]["content"],
+                            ),
+                        )
             if reason:
                 self.session = None
                 paths.SESSION_PATH.unlink(missing_ok=True)
@@ -90,7 +99,7 @@ class SessionMixin:
                 self.bar.stop()
                 self.wake.set()  # read the stopped bar back now
             except AppError as err:
-                log.warning("couldn't stop the bar after the last round: %s", err)
+                log.warning("couldn't stop the bar after the last round: %s", english(err))
         if notify:
             self.notify(*notify)
 
@@ -103,18 +112,17 @@ class SessionMixin:
         linked = bool(task["id"]) and self.todoist_on  # a free session has no task
         if linked and done and self.cfg["log_comments"]:
             try:
-                self.todoist.comment(
-                    task["id"],
-                    f"🍅 × {done} ({minutes} min focus){'' if session.get('local') else ' on BUSY Bar'}, "  # noqa: RUF001 - the multiplication sign is intended (Todoist comment)
-                    f"ended {datetime.now():%Y-%m-%d %H:%M}",
-                )
+                # Written once, in the language of the moment; never rewritten.
+                when = datetime.now().strftime(t("todoist.when"))
+                key = "todoist.comment_local" if session.get("local") else "todoist.comment_bar"
+                self.todoist.comment(task["id"], t(key, n=done, minutes=minutes, when=when))
             except AppError as err:
-                problems.append(f"Couldn't log the pomodoros: {err}")
+                problems.append(t("errors.session.comment_failed", error=err))
         if linked and session.get("label_added") and self.cfg["remove_label_on_end"]:
             try:
                 self.todoist.set_label(task["id"], session["label"], False)
             except AppError as err:
-                problems.append(f"Couldn't remove the label: {err}")
+                problems.append(t("errors.session.unlabel_failed", error=err))
         with self.lock:
             self.history.append(
                 {
@@ -136,7 +144,7 @@ class SessionMixin:
         if call:  # no summary to read: it started and ended on its own
             self.update_tray()
             self.hide_mini()
-            self.notify("Call over", f"{minutes} min on {task['content']}, counted as focus.")
+            self.notify(t("notify.call_over.title"), t("notify.call_over.text", n=minutes, task=task["content"]))
             return
         with self.lock:
             self.ended = {
@@ -149,7 +157,7 @@ class SessionMixin:
             }
         self.update_tray()
         if reason == "finished":
-            self.notify("Great focus!", f"Session complete: {done} pomodoro{'s' * (done != 1)} on {task['content']}.")
+            self.notify(t("notify.finished.title"), t("notify.finished.text", n=done, task=task["content"]))
             if self.cfg["open_on_finish"]:
                 self.show_main()
         self.hide_mini()
@@ -182,7 +190,7 @@ class SessionMixin:
             with self.lock:
                 task = self.tasks.get(task_id)
             if task is None:
-                raise AppError("That task is no longer in the list. Refresh and try again.")
+                raise app_error("errors.session.task_gone")
         cfg = self.cfg.view()
         planned = None if fixed else plan_session(task.get("minutes"), cfg)
         work_min, cycles = planned or (int(cfg["work_minutes"]), int(cfg["cycles"]))
@@ -246,7 +254,7 @@ class SessionMixin:
         found = next((a for a in cfg["activities"] if a["id"] == cfg["call_activity"]), None)
         detail = ", ".join(a["name"] for a in apps)
         activity = {"id": found["id"], "name": found["name"], "detail": detail} if found else None
-        content = session_name(found, detail) if found else f"Call · {detail}"[:MAX_DETAIL]
+        content = session_name(found, detail) if found else call_name(detail)
         with self.bar.lock:
             with self.lock:
                 if self.session or self.timer_view():
@@ -285,11 +293,7 @@ class SessionMixin:
             pass
         self.notify_focus()
         # Silent: it comes up while the call is starting, where Windows' chime would be heard.
-        self.notify(
-            "On a call",
-            f"Counting {content} as focus until it ends. Stop it from the timer if it isn't a call.",
-            quiet=True,
-        )
+        self.notify(t("notify.call.title"), t("notify.call.text", task=content), quiet=True)
         self.show_mini()
         return True
 
@@ -322,7 +326,7 @@ class SessionMixin:
             try:
                 self._on_bar(self.bar.stop)
             except AppError as err:
-                log.warning("couldn't stop the bar after the call: %s", err)
+                log.warning("couldn't stop the bar after the call: %s", english(err))
         threading.Thread(target=self.finish, args=(session, "finished", silent), daemon=True).start()
         self.wake.set()
         try:
@@ -363,7 +367,7 @@ class SessionMixin:
             if self.todoist.open_children(parent_id):
                 return {}
         except AppError as err:
-            log.warning("couldn't check the parent's other subtasks: %s", err)
+            log.warning("couldn't check the parent's other subtasks: %s", english(err))
             return {}
         return {"parent": {"id": parent_id, "content": task.get("parent", "")}}
 
@@ -378,7 +382,7 @@ class SessionMixin:
                 if self.session is session:
                     write_json(paths.SESSION_PATH, session)
         except AppError as err:
-            self.notify("Todoist didn't take the label", f"Couldn't add @{label}: {err}")
+            self.notify(t("notify.label_failed.title"), t("notify.label_failed.text", label=label, error=err))
 
     def _on_bar(self, call):
         """call() on the bar; if the bar is out of reach, once more on this PC (go_standalone)."""
@@ -393,7 +397,7 @@ class SessionMixin:
         with self.lock:
             on_call = bool(self.session and self.session.get("call"))
         if on_call and action != "stop":
-            raise AppError("A call has no pause or break: it ends with the call, or stop it.")
+            raise app_error("errors.session.call_control")
         try:
             if action == "stop":
                 self._on_bar(self.bar.stop)

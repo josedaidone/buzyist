@@ -35,7 +35,7 @@ a = Analysis(
     [str(ROOT / "busyist.py")],
     pathex=[str(ROOT)],
     datas=[
-        (str(ROOT / "ui"), "ui"),
+        (str(ROOT / "ui"), "ui"),  # with ui/i18n/, the catalogs buzyist/i18n.py reads too
         (str(ROOT / "extension"), "extension"),  # loaded unpacked in Chrome (issue #2)
         (str(ROOT / "busyist.ico"), "."),
         *collect_data_files("webview"),  # its JS and the WebView2 loader DLLs

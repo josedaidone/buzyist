@@ -206,7 +206,7 @@ def test_full_session_two_cycles(engine, deferred_threads, notes, clock):
     assert notes == [("Nice work! Time for a break", "Pomodoro 1 of 2 done. Enjoy your 5 min break.")]
     app.step(minutes=5)
     assert app.session["done"] == 1
-    assert notes[-1] == ("Back to it", "Round 2 of 2: Write the tests")
+    assert notes[-1] == ("Back to it", "Pomodoro 2 of 2: Write the tests")
     assert app.timer_view()["round"] == 2
     app.step(minutes=24)
     assert app.session is not None

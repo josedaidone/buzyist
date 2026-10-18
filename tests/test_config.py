@@ -171,6 +171,7 @@ def test_a_newer_config_keeps_its_version(start):
         ("use_todoist", "maybe"),
         ("blocked_sites", "youtube.com"),
         ("site_limits", {"not": "a list"}),
+        ("language", "fr"),
     ],
 )
 def test_an_invalid_key_falls_back_to_its_default(start, caplog, key, bad):
@@ -209,16 +210,16 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
     ("changes", "message"),
     [
         ({"work_minutes": "abc"}, "work minutes must be a number."),
-        ({"work_minutes": 4}, "Phases run 5 to 480 minutes."),
-        ({"rest_minutes": 481}, "Phases run 5 to 480 minutes."),
-        ({"cycles": 0}, "Sessions run 1 to 35 rounds."),
-        ({"cycles": 36}, "Sessions run 1 to 35 rounds."),
+        ({"work_minutes": 4}, "Pomodoros run 5 to 480 minutes."),
+        ({"rest_minutes": 481}, "Breaks run 5 to 480 minutes."),
+        ({"cycles": 0}, "Sessions have 1 to 35 pomodoros."),
+        ({"cycles": 36}, "Sessions have 1 to 35 pomodoros."),
         ({"poll_seconds": 1}, "Check the bar every 2 to 60 seconds."),
         ({"poll_seconds": "61"}, "Check the bar every 2 to 60 seconds."),
         ({"site_mode": "x"}, "Pick whether to block the listed websites or allow only them."),
         ({"sync_owner": "Bad Owner"}, "Pick the browser profile that shares the limits."),
         ({"blocked_sites": "youtube.com"}, "The site list didn't come through; try again."),
-        ({"blocked_sites": ["not a site"]}, "'not a site' isn't a website like youtube.com or *.google.com."),
+        ({"blocked_sites": ["not a site"]}, "“not a site” isn't a website like youtube.com or *.google.com."),
         ({"allowed_sites": [f"s{i}.com" for i in range(51)]}, "Keep the allowed sites under 50."),
         ({"blocked_apps": "x"}, "The app list didn't come through; try again."),
         (
@@ -228,8 +229,9 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
         ({"site_limits": [{"patterns": []}]}, "Add at least one website to the limit."),
         ({"hotkey": "ctrl+alt+nope"}, "buZyist doesn't know the key “nope”."),
         ({"hotkey": "p"}, "Add ctrl, alt, shift or win to the hotkey so it doesn't steal a normal key."),
-        ({"busybar_ip": "192.168.1.50/x"}, "'192.168.1.50/x' isn't the bar's address; type one like 192.168.1.50."),
+        ({"busybar_ip": "192.168.1.50/x"}, "“192.168.1.50/x” isn't the bar's address; type one like 192.168.1.50."),
         ({"focus_label": "x" * 61}, "Keep the label to 60 characters or fewer."),
+        ({"language": "fr"}, "Pick a language from the list."),
         # Several wrong: the first in the order save_settings always used.
         (
             {"cycles": 0, "work_minutes": 1, "site_mode": "x"},
