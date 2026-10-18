@@ -106,3 +106,11 @@ export function loadUiFunction(name, path = "ui/main.js") {
   vm.runInContext(functionSource(path, name), context, { filename: path });
   return context[name];
 }
+
+// A whole UI script that touches no page at its top level (ui/i18n.js) in a
+// fresh context; its function declarations are the context's globals.
+export function loadUiScript(path) {
+  const context = vm.createContext({ console });
+  vm.runInContext(readFileSync(join(ROOT, path), "utf8"), context, { filename: path });
+  return context;
+}

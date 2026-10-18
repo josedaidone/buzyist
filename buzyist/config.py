@@ -43,6 +43,7 @@ from buzyist.constants import (
     AppError,
 )
 from buzyist.hotkey import parse_hotkey
+from buzyist.i18n import languages, t
 from buzyist.secrets_dpapi import protect_secrets
 from buzyist.site_rules import _sanitize_site_limits, _sanitize_sites, clean_blocked_sites, clean_site_limits
 from buzyist.storage import write_bytes_atomic, write_json
@@ -86,6 +87,9 @@ DEFAULTS = {
     "launch_at_login": True,
     "open_on_finish": True,
     "auto_update": True,
+    # The app language (a catalog in ui/i18n/, see buzyist/i18n.py): English
+    # until someone picks another, never taken from Windows.
+    "language": "en",
     # The Stats tab's streak: a Saturday or Sunday without a tomato doesn't
     # break it (one with a tomato still counts).
     "streak_skip_weekends": False,
@@ -374,6 +378,7 @@ class Config(BaseModel):
     launch_at_login: bool = _default("launch_at_login")
     open_on_finish: bool = _default("open_on_finish")
     auto_update: bool = _default("auto_update")
+    language: str = _default("language")
     block_apps: bool = _default("block_apps")
     blocked_apps: list[dict] = _default("blocked_apps")
     block_sites: bool = _default("block_sites")
@@ -464,6 +469,13 @@ class Config(BaseModel):
     @classmethod
     def _call_ignore(cls, value):
         return _app_error(clean_call_ignore, value)
+
+    @field_validator("language")
+    @classmethod
+    def _language(cls, value: str) -> str:
+        if value not in languages():
+            raise PydanticCustomError("app", "{message}", {"message": t("errors.language")})
+        return value
 
     @field_validator("sync_owner")
     @classmethod

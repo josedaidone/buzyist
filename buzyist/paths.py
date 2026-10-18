@@ -23,6 +23,7 @@ RES_DIR = Path(getattr(sys, "_MEIPASS", SOURCE_DIR))
 UI = RES_DIR / "ui"
 EXTENSION_SRC = RES_DIR / "extension"  # the Chrome extension, loaded unpacked (issue #2)
 ICON_PATH = RES_DIR / "busyist.ico"
+I18N_DIR = UI / "i18n"  # one catalog per language, <code>.json, read by buzyist/i18n.py and the pages
 BAR_FONTS = UI / "fonts" / "bar"  # the pixel fonts the bar's text screens are drawn in (bar_display)
 # Everything the app writes is per user, never next to the program: an
 # installed app cannot write to its own folder.

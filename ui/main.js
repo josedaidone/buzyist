@@ -42,6 +42,13 @@ function icon(name) {
   return svg;
 }
 
+// [text before `part`, text after it] (all of it before when it isn't there),
+// to set part of a translated text apart, e.g. a number in bold.
+function splitAround(text, part) {
+  const i = text.indexOf(part);
+  return i < 0 ? [text, ""] : [text.slice(0, i), text.slice(i + part.length)];
+}
+
 function toast(message, bad) {
   const t = $("toast");
   t.textContent = message;
@@ -59,7 +66,7 @@ function clock(ms) {
 
 function duration(min) {
   const h = Math.floor(min / 60), m = min % 60;
-  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m} min`;
+  return t(h ? (m ? "common.duration.h_m" : "common.duration.h") : "common.duration.min", { h, m });
 }
 
 function isoDay(offset) {
@@ -263,27 +270,28 @@ function renderGuard() {
 function renderToday() {
   const today = state.today;
   const n = today.pomodoros;
-  const date = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const date = formatDate(new Date(), { weekday: "long", month: "long", day: "numeric" });
   if ($("todayDate").textContent !== date) $("todayDate").textContent = date;
-  $("sumTitle").textContent = n ? `${n} pomodoro${n === 1 ? "" : "s"} today` : "No pomodoros yet today";
+  $("sumTitle").textContent = n ? t("main.today.count", { n }) : t("main.today.none");
   const side = [];
-  if (today.minutes) side.push(duration(today.minutes) + " of focus");
-  if (today.completed) side.push(`${today.completed} done`);
+  if (today.minutes) side.push(t("main.today.focus", { duration: duration(today.minutes) }));
+  if (today.completed) side.push(t("main.today.completed", { n: today.completed }));
   $("sumSide").textContent = side.join(" · ");
   const box = $("sumTomatoes");
   const key = String(n);
   if (box.dataset.key !== key) {
     box.dataset.key = key;
     box.textContent = "";
-    if (!n) box.append(el("span", "none", "Pick a task. 25 minutes, just that."));
+    if (!n) box.append(el("span", "none", t("main.today.empty")));
     for (let i = 0; i < Math.min(n, 16); i++) box.append(tomato("done"));
     if (n > 16) box.append(el("span", "more", `+${n - 16}`));
-    box.setAttribute("aria-label", `${n} pomodoro${n === 1 ? "" : "s"} finished today`);
+    box.setAttribute("aria-label", t("main.today.finished", { n }));
   }
-  // Without the task list (no Todoist) the header chip carries the count.
+  // Without the task list (no Todoist) the header chip carries the count, in bold.
   const chip = $("today");
   chip.textContent = "";
-  chip.append(tomato("done", "t"), el("b", "", String(n)), n === 1 ? " pomodoro today" : " pomodoros today");
+  const [before, after] = splitAround(t("main.today.count", { n }), String(n));
+  chip.append(tomato("done", "t"), before, el("b", "", String(n)), after);
   if (today.minutes) chip.append(" · " + duration(today.minutes));
 }
 
@@ -329,20 +337,20 @@ function renderEnded() {
   $("scrim").classList.toggle("on", !!e || $("drawer").classList.contains("on") || editing !== undefined);
   if (!e) return;
   const finished = e.reason === "finished";
-  $("endedChip").textContent = finished ? "Done" : "Stopped";
+  $("endedChip").textContent = t(finished ? "summary.chip_done" : "summary.chip_stopped");
   $("endedChip").className = "state-chip " + (finished ? "done-chip" : "stopped-chip");
   const box = $("endedTomatoes");
   box.textContent = "";
   for (let i = 0; i < Math.min(e.done, 8); i++) box.append(tomato("done"));
   if (e.done > 8) box.append(el("span", "more", `+${e.done - 8}`));
   box.classList.toggle("hidden", !e.done);
-  box.setAttribute("aria-label", `${e.done} pomodoro${e.done === 1 ? "" : "s"}`);
-  $("endedTitle").textContent = finished ? "Done. Take a breather." : "Session stopped";
+  box.setAttribute("aria-label", t("summary.pomodoros", { n: e.done }));
+  $("endedTitle").textContent = t(finished ? "summary.title_done" : "summary.title_stopped");
   $("endedTask").textContent = e.task.content;
   $("endedComplete").classList.toggle("hidden", !e.task.id || !state.todoist);
   $("endedSummary").textContent = e.done
-    ? `${e.done} pomodoro${e.done === 1 ? "" : "s"} · ${duration(e.minutes)} of focus`
-    : "No full pomodoro this time. That's fine.";
+    ? t("summary.result", { n: e.done, duration: duration(e.minutes) })
+    : t("summary.none");
   $("endedProblems").textContent = (e.problems || []).join(" ");
 }
 
@@ -1257,7 +1265,7 @@ $("endedComplete").onclick = async () => {
   const e = state.ended;
   const result = await api.complete(e.task.id, true);
   if (!result.ok) return toast(result.error, true);
-  toast("Done in Todoist.");
+  toast(t("summary.completed"));
   // drop it at once, then reload so the filter shows what Todoist now has
   const gone = new Set([e.task.id]);
   const dropGone = () => {
@@ -1269,10 +1277,10 @@ $("endedComplete").onclick = async () => {
   await poll();
   // That was the last open subtask: offer to close its parent too.
   const parent = result.parent;
-  if (parent && confirm(`That was the last subtask of “${parent.content || "its parent"}”. Complete it too?`)) {
+  if (parent && confirm(t("summary.parent_confirm", { parent: parent.content || t("summary.parent_unnamed") }))) {
     const closed = await api.complete(parent.id, false, parent.content);
     if (!closed.ok) toast(closed.error, true);
-    else { toast("Both done in Todoist."); gone.add(parent.id); dropGone(); }
+    else { toast(t("summary.both_completed")); gone.add(parent.id); dropGone(); }
   }
   loadTasks(true);
 };
@@ -1281,7 +1289,7 @@ $("endedAgain").onclick = async () => {
   const task = findTask(e.task.id);
   await api.dismiss_ended();
   if (!e.task.id) return e.activity ? startFree(e.activity.detail, e.activity.id) : startFree(e.task.content);
-  if (!task) return toast("That task is no longer in the list.", true);
+  if (!task) return toast(t("summary.task_gone"), true);
   startTask(task, null, false, true);  // the same one again, no picker
 };
 
@@ -1499,6 +1507,7 @@ async function openSettings(tab) {
     else input.value = s[input.name] ?? "";
   }
   $("testResult").textContent = "";
+  showLanguages(s);
   showSecrets(s);
   blockedApps =(s.blocked_apps || []).map((a) => ({ ...a, exes: [...a.exes] }));
   $("addBlockedApp").value = "";
@@ -1549,6 +1558,19 @@ async function openSettings(tab) {
     if (s.use_todoist && !s.has_todoist_token) $("s_todoist_token").focus();
     else document.querySelector("#settingsTabs .stab.on").focus();
   }, 220);
+}
+
+// The app language, each in its own name; saving a new one reloads the windows.
+function showLanguages(s) {
+  const select = $("s_language");
+  select.textContent = "";
+  for (const { code, name } of s.languages || []) {
+    const option = el("option", "", name);
+    option.value = code;
+    option.lang = code;
+    select.append(option);
+  }
+  select.value = s.language || "en";
 }
 
 // The token and the PIN never come to the page (get_settings sends "" and
@@ -2945,7 +2967,7 @@ function closeSettings() {
 
 function formValues(names) {
   const out = {};
-  for (const input of $("settingsForm").querySelectorAll("input[name]")) {
+  for (const input of $("settingsForm").querySelectorAll("input[name], select[name]")) {
     if (names && !names.includes(input.name)) continue;
     if (input.type === "radio") { if (input.checked) out[input.name] = input.value; continue; }
     out[input.name] = input.type === "checkbox" ? input.checked : input.value;
@@ -2999,10 +3021,16 @@ $("saveSettings").onclick = async () => {
   addBlockedSite(); // same for a website typed but not yet added
   addActivity(); // and an activity
   if (limitDraft && !commitLimitDraft()) return; // a limit being edited counts too
+  // A new language reloads the page (Python does it): open Settings again after.
+  const relang = $("s_language").value !== I18N.lang;
+  if (relang) sessionStorage.setItem("reopenSettings", "general");
   const result = await api.save_settings({ ...formValues(), ...secretClears(), blocked_apps: blockedApps, blocked_sites: siteLists.block, allowed_sites: siteLists.allow, site_limits: LIMITS.site.rules, app_limits: LIMITS.app.rules, activities: activityRows, bar_screens: barScreens, call_activity: callActivity, call_ignore_apps: callIgnore(), sync_owner: syncOwner });
-  if (!result.ok) return toast(result.error, true);
+  if (!result.ok) {
+    sessionStorage.removeItem("reopenSettings");
+    return toast(result.error, true);
+  }
   closeSettings();
-  toast("Settings saved");
+  toast(t("settings.saved"));
   await poll();
   loadTasks();
 };
@@ -3118,7 +3146,14 @@ window.addEventListener("resize", () => poll());
 
 async function boot() {
   api = window.pywebview.api;
+  await loadI18n(api);
   await poll();
+  const reopen = sessionStorage.getItem("reopenSettings");  // reloaded for a new language
+  sessionStorage.removeItem("reopenSettings");
+  if (reopen && !state.needs_setup) {
+    openSettings(reopen);
+    toast(t("settings.saved"));
+  }
   if (state.needs_setup) {
     showEmpty("Welcome to buZyist", "Add your Todoist API token to see your tasks, or turn Todoist off in Settings to run sessions without tasks.", true);
     tasksWereOff = true;

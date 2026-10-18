@@ -146,7 +146,7 @@
         <div class="today-date" id="todayDate"></div>
         <div class="summary" id="summary">
           <div class="summary-top">
-            <div class="summary-title" id="sumTitle">No pomodoros yet</div>
+            <div class="summary-title" id="sumTitle">No pomodoros yet today</div>
             <div class="summary-side" id="sumSide"></div>
           </div>
           <div class="summary-tomatoes" id="sumTomatoes" role="img"></div>
@@ -447,6 +447,11 @@
 
     <div class="section" role="tabpanel" id="p_general" data-panel="general">
       <div class="field">
+        <label for="s_language" data-i18n="settings.general.language">Language</label>
+        <select class="input" id="s_language" name="language"></select>
+        <div class="help" data-i18n="settings.general.language_help">The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.</div>
+      </div>
+      <div class="field">
         <label>Activities</label>
         <div class="activity-list" id="activityList"></div>
         <div class="input-row">
@@ -511,14 +516,14 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endedTitle">
     <span class="state-chip done-chip" id="endedChip">Done</span>
     <div class="tomatoes" id="endedTomatoes" role="img"></div>
-    <h3 id="endedTitle">Session complete</h3>
+    <h3 id="endedTitle">Done. Take a breather.</h3>
     <p class="task-name" id="endedTask"></p>
     <p id="endedSummary"></p>
     <div class="problems" id="endedProblems"></div>
     <div class="modal-actions">
-      <button class="btn good" id="endedComplete"><svg><use href="#i-check"/></svg>Complete task</button>
-      <button class="btn" id="endedAgain"><svg><use href="#i-play"/></svg>Another session</button>
-      <button class="btn ghost" id="endedClose">Close</button>
+      <button class="btn good" id="endedComplete" data-i18n="summary.complete"><svg><use href="#i-check"/></svg>Complete task</button>
+      <button class="btn" id="endedAgain" data-i18n="summary.again"><svg><use href="#i-play"/></svg>Another session</button>
+      <button class="btn ghost" id="endedClose" data-i18n="summary.close">Close</button>
     </div>
   </div>
 </div>
@@ -550,6 +555,7 @@
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="i18n.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

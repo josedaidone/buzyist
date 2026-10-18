@@ -171,6 +171,7 @@ def test_a_newer_config_keeps_its_version(start):
         ("use_todoist", "maybe"),
         ("blocked_sites", "youtube.com"),
         ("site_limits", {"not": "a list"}),
+        ("language", "fr"),
     ],
 )
 def test_an_invalid_key_falls_back_to_its_default(start, caplog, key, bad):
@@ -230,6 +231,7 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
         ({"hotkey": "p"}, "Add ctrl, alt, shift or win to the hotkey so it doesn't steal a normal key."),
         ({"busybar_ip": "192.168.1.50/x"}, "'192.168.1.50/x' isn't the bar's address; type one like 192.168.1.50."),
         ({"focus_label": "x" * 61}, "Keep the label to 60 characters or fewer."),
+        ({"language": "fr"}, "Pick a language from the list."),
         # Several wrong: the first in the order save_settings always used.
         (
             {"cycles": 0, "work_minutes": 1, "site_mode": "x"},
