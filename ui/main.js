@@ -326,11 +326,12 @@ function renderUpdate() {
   btn.classList.toggle("hidden", !u);
   $("releaseNotes").classList.toggle("hidden", !u);
   if (!u) return;
-  btn.textContent = u.busy ? "Installing…" : u.installable ? `Install ${u.version}` : `Download ${u.version}`;
+  btn.textContent = u.busy ? t("settings.about.installing")
+    : t(u.installable ? "settings.about.install" : "settings.about.download", { version: u.version });
   btn.disabled = u.busy;
   const out = $("updateResult");
   out.className = "test-result " + (u.error ? "bad" : "ok");
-  out.textContent = u.error || (u.busy ? "Downloading the update…" : `buZyist ${u.version} is out. Installing it restarts buZyist.`);
+  out.textContent = u.error || (u.busy ? t("settings.about.downloading") : t("settings.about.out", { version: u.version }));
 }
 
 function renderEnded() {
@@ -1548,11 +1549,14 @@ async function openSettings(tab) {
   $("addBlockedSite").value = "";
   $("extDir").textContent = s.extension_dir || "extension";
   $("extDir").title = s.extension_dir || "";
-  for (const n of document.querySelectorAll(".browser-name")) n.textContent = s.extension_browser || "Chrome";
+  const browser = s.extension_browser || "Chrome";
+  for (const n of document.querySelectorAll(".browser-page")) n.textContent = t("settings.ext.open_page", { browser });
   renderBlockedSites();
   renderBlocking();
-  $("extOldVersion").textContent = s.extension_version ? "version " + s.extension_version : "an older version";
-  $("extNewVersion").textContent = s.extension_latest || "";
+  $("extOutdatedText").textContent = t("settings.ext.outdated", {
+    old: s.extension_version ? t("settings.ext.old_version", { version: s.extension_version }) : t("settings.ext.old_unknown"),
+    version: s.extension_latest || "",
+  });
   renderExtension(s.extension_connected, s.extension_outdated);
   barScreens = JSON.parse(JSON.stringify(s.bar_screens || {}));
   renderBarScreens();
@@ -1591,8 +1595,8 @@ function showLanguages(s) {
 // The token and the PIN never come to the page (get_settings sends "" and
 // has_*). An empty field keeps the saved one; Remove asks Python to clear it.
 const SECRETS = {
-  todoist_token: { input: "s_todoist_token", saved: "tokenSaved", lost: "tokenLost", remove: "removeToken", empty: "Paste your API token" },
-  busybar_pin: { input: "s_busybar_pin", saved: "pinSaved", lost: "pinLost", remove: "removePin", empty: "" },
+  todoist_token: { input: "s_todoist_token", saved: "tokenSaved", lost: "tokenLost", remove: "removeToken", empty: () => t("settings.todoist.token_placeholder") },
+  busybar_pin: { input: "s_busybar_pin", saved: "pinSaved", lost: "pinLost", remove: "removePin", empty: () => "" },
 };
 let secretsToClear = {};
 
@@ -1601,7 +1605,7 @@ function showSecrets(s) {
   for (const [key, x] of Object.entries(SECRETS)) {
     const has = !!s["has_" + key];
     $(x.input).value = "";
-    $(x.input).placeholder = has ? "•••••••• saved (type to replace)" : x.empty;
+    $(x.input).placeholder = has ? t("settings.secret_saved") : x.empty();
     $(x.saved).classList.toggle("hidden", !has);
     $(x.lost).classList.toggle("hidden", !s[key + "_lost"]);
   }
@@ -1618,7 +1622,7 @@ for (const [key, x] of Object.entries(SECRETS)) {
   $(x.remove).onclick = () => {
     secretsToClear[key] = true;
     $(x.input).value = "";
-    $(x.input).placeholder = x.empty;
+    $(x.input).placeholder = x.empty();
     $(x.saved).classList.add("hidden");
     $(x.input).focus();
   };
@@ -1654,14 +1658,15 @@ function showPlanFields() {
   const ok = c.plan_target >= 5 && c.plan_min >= 5 && c.plan_max >= 5 && c.plan_single_max >= 0
     && c.plan_min <= c.plan_target && c.plan_target <= c.plan_max;
   if (!ok) {
-    $("planExample").textContent = "Keep the pomodoro length between the shortest and the longest.";
+    $("planExample").textContent = t("settings.todoist.plan_bad");
     return;
   }
   c.plan_from_duration = true;
-  $("planExample").textContent = "For example: " + [15, 30, 45, 60, 90, 120].map((m) => {
+  $("planExample").textContent = t("settings.todoist.plan_example", { list: [15, 30, 45, 60, 90, 120].map((m) => {
     const [mins, rounds] = planSession(m, c);
-    return `${duration(m)} → ${rounds === 1 ? mins + " min" : rounds + " × " + mins}`;
-  }).join(" · ");
+    const plan = rounds === 1 ? t("settings.todoist.plan_one", { min: mins }) : t("settings.todoist.plan_many", { n: rounds, min: mins });
+    return `${duration(m)} → ${plan}`;
+  }).join(" · ") });
 }
 for (const name of ["plan_from_duration", "plan_single_max", "plan_target", "plan_min", "plan_max"]) {
   document.querySelector(`#settingsForm input[name="${name}"]`).addEventListener("input", showPlanFields);
@@ -1691,15 +1696,17 @@ const BAR_COLORS = {  // as SCREEN_COLORS in buzyist/bar_screens.py (a test chec
   black: ["#000000", "#FFFFFF"],
 };
 const MAX_SCREEN_TEXT = 60;  // as in buzyist/bar_screens.py
-const OWN_MODES = [["card", "The card's"], ["theme", "A theme"], ["text", "My text"]];
+// Modes as [value, catalog key under settings.bar.modes]; titles are keys too
+// (t() runs once the catalogs are in, not at load).
+const OWN_MODES = [["card", "card"], ["theme", "theme"], ["text", "text"]];
 const SCREEN_EDITS = {
-  focus: { title: "Focus", modes: OWN_MODES, words: ["task", "activity", "pomodoro", "pomodoros"], minutes: 18, text: "{task}", color: "tomate" },
-  call: { title: "Call", modes: OWN_MODES, words: ["task", "activity", "apps"], minutes: 12, text: "CALL", color: "molho" },
-  done: { title: "End of session", modes: [["text", "My text"], ["off", "Off"]], words: ["task", "activity", "pomodoros", "minutes"], minutes: null, text: "DONE", color: "folha" },
+  focus: { title: "focus", modes: OWN_MODES, words: ["task", "activity", "pomodoro", "pomodoros"], minutes: 18, text: "{task}", color: "tomate" },
+  call: { title: "call", modes: OWN_MODES, words: ["task", "activity", "apps"], minutes: 12, text: "CALL", color: "molho" },
+  done: { title: "done", modes: [["text", "text"], ["off", "off"]], words: ["task", "activity", "pomodoros", "minutes"], minutes: null, text: "DONE", color: "folha" },
 };
 let barScreens = {};
 let barThemes = [];  // the bar's own, the card's first; [] until read
-const prettyTheme = (t) => (t ? t[0].toUpperCase() + t.slice(1).replace(/_/g, " ") : "");
+const prettyTheme = (name) => (name ? name[0].toUpperCase() + name.slice(1).replace(/_/g, " ") : "");
 
 async function loadBarThemes() {
   const note = $("barThemesNote");
@@ -1707,7 +1714,7 @@ async function loadBarThemes() {
   if (!$("s_use_busybar").checked) return;
   const result = await api.bar_themes();
   if (!result.ok) {
-    note.textContent = `Couldn't read the bar's themes: ${result.error} The ones already picked stay.`;
+    note.textContent = t("settings.bar.themes_error", { error: result.error });
     return;
   }
   barThemes = result.themes;
@@ -1725,8 +1732,8 @@ function renderBarScreens() {
   // Calls count under callActivity, and have the Call screen above.
   const per = $("barActivityScreens");
   const rows = activityRows.filter((a) => a.id !== callActivity);
-  per.replaceChildren(...rows.map((a) => screenEditor(a, "bar", SCREEN_EDITS.focus, a.name.trim() || "Unnamed")));
-  if (!rows.length) per.append(el("div", "help", "No activities (Settings, General)."));
+  per.replaceChildren(...rows.map((a) => screenEditor(a, "bar", SCREEN_EDITS.focus, a.name.trim() || t("settings.unnamed"))));
+  if (!rows.length) per.append(el("div", "help", t("settings.bar.no_activities")));
   showBarScreenFields();
 }
 
@@ -1734,15 +1741,15 @@ function renderBarScreens() {
 // `name` (an activity's) adds "Same as Focus", which leaves holder[key] out.
 function screenEditor(holder, key, edit, name) {
   const value = holder[key] || { mode: "" };
-  const title = name || edit.title;
+  const title = name || t("settings.bar.screens." + edit.title);
   const box = el("div", "screen-edit");
   const head = el("div", "screen-head");
   head.append(el("span", "screen-name", title));
-  const modes = name ? [["", "Same as Focus"], ...edit.modes] : edit.modes;
-  head.append(segButtons(`${title} on the bar`, modes, value.mode || "", (mode) => {
+  const modes = (name ? [["", "same"], ...edit.modes] : edit.modes).map(([v, k]) => [v, t("settings.bar.modes." + k)]);
+  head.append(segButtons(t("settings.bar.on_bar", { screen: title }), modes, value.mode || "", (mode) => {
     if (!mode) delete holder[key];
     else {
-      const ownTheme = barThemes.find((t) => t === "on_call" && key === "call") || barThemes[1] || barThemes[0] || "";
+      const ownTheme = barThemes.find((th) => th === "on_call" && key === "call") || barThemes[1] || barThemes[0] || "";
       holder[key] = { mode, theme: value.theme || (mode === "theme" ? ownTheme : ""), text: value.text || edit.text, color: value.color || edit.color };
     }
     renderBarScreens();
@@ -1753,9 +1760,9 @@ function screenEditor(holder, key, edit, name) {
   const note = el("div", "bar-preview-note");
   if (mode === "theme") {
     const pick = el("select", "input");
-    pick.setAttribute("aria-label", `Theme for ${title}`);
+    pick.setAttribute("aria-label", t("settings.bar.theme_for", { screen: title }));
     const themes = barThemes.includes(value.theme) || !value.theme ? barThemes : [value.theme, ...barThemes];
-    pick.replaceChildren(...themes.map((t) => new Option(prettyTheme(t), t)));
+    pick.replaceChildren(...themes.map((th) => new Option(prettyTheme(th), th)));
     pick.value = value.theme;
     pick.onchange = () => { value.theme = pick.value; note.textContent = prettyTheme(pick.value).toUpperCase(); };
     const row = el("div", "screen-row");
@@ -1764,11 +1771,11 @@ function screenEditor(holder, key, edit, name) {
   }
   if (mode !== "text") {
     note.textContent = { card: "BUSY · 24:58 LEFT", theme: prettyTheme(value.theme).toUpperCase() || "…", off: "09:41" }[mode];
-    box.append(note, el("div", "help", {
-      card: "The card's own screen, with the time left.",
-      theme: barThemes.length ? "The theme's picture, as the bar draws it." : "The bar's themes show here once it answers.",
-      off: "The bar goes back to its clock.",
-    }[mode]));
+    box.append(note, el("div", "help", t({
+      card: "settings.bar.help_card",
+      theme: barThemes.length ? "settings.bar.help_theme" : "settings.bar.help_theme_wait",
+      off: "settings.bar.help_off",
+    }[mode])));
     return box;
   }
   const row = el("div", "screen-row");
@@ -1777,9 +1784,9 @@ function screenEditor(holder, key, edit, name) {
   input.maxLength = MAX_SCREEN_TEXT;
   input.spellcheck = false;
   input.value = value.text;
-  input.setAttribute("aria-label", `Text for ${title}`);
+  input.setAttribute("aria-label", t("settings.bar.text_for", { screen: title }));
   const img = el("img", "bar-preview");
-  img.alt = `How the bar shows ${title}`;
+  img.alt = t("settings.bar.preview_alt", { screen: title });
   let timer = 0;
   const refresh = () => {
     clearTimeout(timer);
@@ -1788,13 +1795,13 @@ function screenEditor(holder, key, edit, name) {
   input.oninput = () => { value.text = input.value; refresh(); };
   const swatches = el("div", "swatches");
   swatches.setAttribute("role", "group");
-  swatches.setAttribute("aria-label", `Colour for ${title}`);
+  swatches.setAttribute("aria-label", t("settings.bar.colour_for", { screen: title }));
   for (const [k, [back]] of Object.entries(BAR_COLORS)) {
     const b = el("button", "swatch");
     b.type = "button";
-    b.title = prettyTheme(k);
+    b.title = t("settings.bar.colors." + k);
     b.style.background = back;
-    b.setAttribute("aria-label", prettyTheme(k));
+    b.setAttribute("aria-label", b.title);
     b.setAttribute("aria-pressed", k === value.color);
     b.onclick = () => {
       value.color = k;
@@ -1808,7 +1815,7 @@ function screenEditor(holder, key, edit, name) {
   for (const w of edit.words) {
     const b = el("button", "", `{${w}}`);
     b.type = "button";
-    b.title = `Insert {${w}}`;
+    b.title = t("settings.bar.insert", { word: `{${w}}` });
     b.onclick = () => {
       const at = input.selectionStart ?? input.value.length;
       input.setRangeText(`{${w}}`, at, input.selectionEnd ?? at, "end");
@@ -1818,7 +1825,7 @@ function screenEditor(holder, key, edit, name) {
     words.append(b);
   }
   box.append(row, words, img);
-  if (key === "done") box.append(el("div", "help", "Shown until you close the summary."));
+  if (key === "done") box.append(el("div", "help", t("settings.bar.done_help")));
   barPreview(img, value.text, value.color, edit.minutes);
   return box;
 }
@@ -1853,8 +1860,8 @@ function renderActivities() {
     const row = el("div", "activity-row");
     const pick = el("button", "activity-icon");
     pick.type = "button";
-    pick.title = "Change the icon";
-    pick.setAttribute("aria-label", `Icon for ${a.name}`);
+    pick.title = t("settings.general.change_icon");
+    pick.setAttribute("aria-label", t("settings.general.icon_for", { name: a.name }));
     pick.setAttribute("aria-expanded", iconPicker === i);
     pick.append(activityIcon(a.icon));
     pick.onclick = () => { iconPicker = iconPicker === i ? -1 : i; renderActivities(); };
@@ -1864,7 +1871,7 @@ function renderActivities() {
     name.type = "text";
     name.maxLength = 30;
     name.spellcheck = false;
-    name.setAttribute("aria-label", "Activity name");
+    name.setAttribute("aria-label", t("settings.general.activity_name"));
     name.oninput = () => { a.name = name.value; renderScopes(); renderCallActivity(); renderBarScreens(); };
 
     const move = (d) => {
@@ -1877,19 +1884,19 @@ function renderActivities() {
     };
     const up = el("button", "remove up");
     up.type = "button";
-    up.title = "Move up";
+    up.title = t("settings.general.move_up");
     up.disabled = i === 0;
     up.append(icon("up"));
     up.onclick = () => move(-1);
     const down = el("button", "remove down");
     down.type = "button";
-    down.title = "Move down";
+    down.title = t("settings.general.move_down");
     down.disabled = i === activityRows.length - 1;
     down.append(icon("down"));
     down.onclick = () => move(1);
     const x = el("button", "remove", "×");
     x.type = "button";
-    x.title = "Remove " + a.name;
+    x.title = t("settings.remove_item", { name: a.name });
     x.onclick = () => { activityRows.splice(i, 1); iconPicker = -1; renderActivities(); };
 
     row.append(pick, name, up, down, x);
@@ -1897,7 +1904,7 @@ function renderActivities() {
     if (iconPicker === i) {
       const icons = el("div", "icon-grid");
       icons.setAttribute("role", "group");
-      icons.setAttribute("aria-label", `Icons for ${a.name}`);
+      icons.setAttribute("aria-label", t("settings.general.icons_for", { name: a.name }));
       for (const k of ACTIVITY_ICONS) {
         const b = el("button", "activity-icon" + (k === a.icon ? " on" : ""));
         b.type = "button";
@@ -1910,7 +1917,7 @@ function renderActivities() {
       list.append(icons);
     }
   });
-  if (!activityRows.length) list.append(el("div", "help", "No activities: the field takes only what you type."));
+  if (!activityRows.length) list.append(el("div", "help", t("settings.general.no_activities")));
   $("addActivity").disabled = $("addActivityBtn").disabled = activityRows.length >= MAX_ACTIVITIES;
   renderBlocking();  // the picker in Apps and Websites
   renderCallActivity();
@@ -1925,7 +1932,7 @@ function renderCallActivity() {
   const known = activityRows.some((a) => a.id === callActivity);
   pick.replaceChildren(
     ...activityRows.map((a) => new Option(a.name, a.id)),
-    ...(known ? [] : [new Option("No activity", callActivity)]),
+    ...(known ? [] : [new Option(t("settings.general.no_activity"), callActivity)]),
   );
   pick.value = callActivity;
 }
@@ -1942,7 +1949,7 @@ function addActivity() {
   const input = $("addActivity");
   const name = input.value.trim().replace(/\s+/g, " ");
   if (!name) return;
-  if (activityRows.some((a) => a.name.trim().toLowerCase() === name.toLowerCase())) return toast(`${name} is already in the list.`, true);
+  if (activityRows.some((a) => a.name.trim().toLowerCase() === name.toLowerCase())) return toast(t("settings.general.exists", { name }), true);
   const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20) || "activity";
   let id = base;
   for (let n = 2; activityRows.some((a) => a.id === id); n++) id = `${base}-${n}`;
@@ -1974,7 +1981,7 @@ function renderBlockedApps() {
     label.title = app.exes.join(", ");
 
     const action = el("select", "action");
-    for (const [value, text] of [["close", "Close"], ["hide", "Hide to tray"]]) {
+    for (const [value, text] of [["close", t("settings.apps.close")], ["hide", t("settings.apps.hide")]]) {
       const opt = el("option", "", text);
       opt.value = value;
       action.append(opt);
@@ -1986,7 +1993,7 @@ function renderBlockedApps() {
     if (app.custom) {
       const x = el("button", "remove", "×");
       x.type = "button";
-      x.title = "Remove " + app.name;
+      x.title = t("settings.remove_item", { name: app.name });
       x.onclick = () => { blockedApps.splice(i, 1); renderBlockedApps(); };
       row.append(x);
     } else {
@@ -2012,16 +2019,16 @@ function addBlockedApp() {
   const input = $("addBlockedApp");
   const name = input.value.trim();
   if (!name) return;
-  if (/[\\/]/.test(name)) return toast("App names are just the program, like WhatsApp.exe.", true);
+  if (/[\\/]/.test(name)) return toast(t("settings.apps.not_program"), true);
   const key = (n) => n.toLowerCase().replace(/\.exe$/, "");
   if (PROTECTED_EXES.has(key(name))) {
-    return toast(`buZyist won't close ${name}: Windows or your browser needs it.`, true);
+    return toast(t("settings.apps.protected", { app: name }), true);
   }
   const known = blockedApps.find((a) => a.exes.some((e) => key(e) === key(name)));
   input.value = "";
   if (known) { known.on = true; return renderBlockedApps(); }  // already listed: just switch it on
   if (blockedApps.filter((a) => a.custom).length >= MAX_BLOCKED_APPS) {
-    return toast(`Keep the added apps under ${MAX_BLOCKED_APPS}.`, true);
+    return toast(t("settings.apps.too_many", { n: MAX_BLOCKED_APPS }), true);
   }
   const exe = /\.exe$/i.test(name) ? name : name + ".exe";
   blockedApps.push({
@@ -2071,7 +2078,7 @@ function suggestApps(input, { multi = false, skip = () => false, picked = () => 
     box.replaceChildren(...items.map((a, i) => {
       const row = el("div", "suggest-item");
       row.setAttribute("role", "option");
-      row.append(el("span", "suggest-name", a.name), el("span", "suggest-exe", a.window ? a.exe : a.exe + " · in the background"));
+      row.append(el("span", "suggest-name", a.name), el("span", "suggest-exe", a.window ? a.exe : t("settings.apps.in_background", { exe: a.exe })));
       row.onmousedown = (e) => { e.preventDefault(); pick(i); };  // keep the focus in the input
       return row;
     }));
@@ -2136,19 +2143,16 @@ function renderBlockedSites() {
   const sites = siteLists[mode];
   const list = $("blockedSites");
   list.replaceChildren();
-  $("addBlockedSite").placeholder = mode === "allow"
-    ? "Add an allowed website, e.g. github.com or *.google.com"
-    : "Add a website, e.g. youtube.com or *.reddit.com";
-  $("sitesHelp").textContent = mode === "allow"
-    ? (sites.length ? "During work phases every other website shows a \"back to work\" page."
-                    : "The list is empty, so every website is blocked during work phases.")
-    : "These websites show a \"back to work\" page during work phases.";
+  $("addBlockedSite").placeholder = t(mode === "allow" ? "settings.sites.placeholder_allow" : "settings.sites.placeholder_block");
+  $("sitesHelp").textContent = t(mode === "allow"
+    ? (sites.length ? "settings.sites.help_allow" : "settings.sites.help_allow_empty")
+    : "settings.sites.help_block");
   sites.forEach((site, i) => {
     const row = el("div", "app-row");
     row.append(el("span", "site", site));
     const x = el("button", "remove", "\u00d7");
     x.type = "button";
-    x.title = "Remove " + site;
+    x.title = t("settings.remove_item", { name: site });
     x.onclick = () => { sites.splice(i, 1); renderBlockedSites(); };
     row.append(el("span"), x);
     list.append(row);
@@ -2162,8 +2166,8 @@ function renderBlockedSites() {
 function renderExtension(connected, outdated) {
   const status = $("extStatus");
   const good = connected && !outdated;
-  status.textContent = !connected ? "Browser extension: not connected"
-    : outdated ? "Browser extension: needs a reload" : "Browser extension: connected";
+  status.textContent = t(!connected ? "settings.ext.status_off"
+    : outdated ? "settings.ext.status_reload" : "settings.ext.status_on");
   status.classList.toggle("ok", good);
   status.classList.toggle("bad", !good);
   $("extSetup").classList.toggle("hidden", connected);
@@ -2177,10 +2181,10 @@ function addBlockedSite() {
   const site = cleanSitePattern(input.value);
   input.value = "";
   if (site === "") return;
-  if (site === null) return toast("Type a website like youtube.com or *.google.com.", true);
+  if (site === null) return toast(t("settings.sites.not_site"), true);
   const sites = siteLists[siteMode()];
   if (sites.includes(site)) return;
-  if (sites.length >= 50) return toast("Keep the list under 50 websites.", true);
+  if (sites.length >= 50) return toast(t("settings.sites.too_many", { n: 50 }), true);
   sites.push(site);
   renderBlockedSites();
 }
@@ -2210,7 +2214,7 @@ function cleanSitePattern(raw) {
 let blockScope = "";  // "" for the global settings, else an activity's id
 const scopeActivity = () => activityRows.find((a) => a.id === blockScope) || null;
 const appKey = (n) => n.trim().toLowerCase().replace(/\.exe$/, "");  // app_key in blocker.py
-const BLOCK_STATES = [["inherit", "Like global"], ["off", "Don't block"], ["on", "Block"]];
+const blockStates = () => [["inherit", t("settings.scope.inherit")], ["off", t("settings.scope.off")], ["on", t("settings.scope.on")]];
 const RULE_DEFAULTS = {
   apps: { state: "inherit", allow: [], block: [] },
   sites: { state: "inherit", mode: "", allow: [], block: [] },
@@ -2299,8 +2303,8 @@ function renderScopes() {
       };
       box.append(b);
     };
-    choice("", "Everything");
-    for (const a of activityRows) choice(a.id, a.name.trim() || "Unnamed", a.icon);
+    choice("", t("settings.scope.everything"));
+    for (const a of activityRows) choice(a.id, a.name.trim() || t("settings.unnamed"), a.icon);
   }
 }
 
@@ -2345,7 +2349,7 @@ function editableList(box, { title, label, help, items, placeholder, add, remove
   const list = el("div", "app-list");
   items.forEach((item, i) => {
     const row = el("div", "app-row");
-    row.append(el("span", "site", item), el("span"), removeButton(() => remove(i), "Remove " + item));
+    row.append(el("span", "site", item), el("span"), removeButton(() => remove(i), t("settings.remove_item", { name: item })));
     list.append(row);
   });
   const line = el("div", "input-row");
@@ -2353,7 +2357,7 @@ function editableList(box, { title, label, help, items, placeholder, add, remove
   input.spellcheck = false;
   input.placeholder = placeholder;
   input.setAttribute("aria-label", label);
-  const btn = el("button", "btn", "Add");
+  const btn = el("button", "btn", t("settings.add"));
   btn.type = "button";
   line.append(input, btn);
   box.append(list, line);
@@ -2390,7 +2394,7 @@ function inheritedRow(boxId, key, text, exe, kept, state, toggle) {
   return row;
 }
 
-const activityName = (a) => a.name.trim() || "this activity";
+const activityName = (a) => a.name.trim() || t("settings.scope.this_activity");
 
 function renderActivityApps(a) {
   const box = $("appsActivity");
@@ -2398,70 +2402,69 @@ function renderActivityApps(a) {
   const rules = activityRules(a, "apps");
   const name = activityName(a);
   const globalOn = $("s_block_apps").checked;
-  box.append(el("div", "help", `What work phases on ${name} do with apps. Todoist tasks and names you type use Everything.`));
-  box.append(segButtons(`Apps during ${name}`, BLOCK_STATES, rules.state, (v) => editActivityRules(a, "apps", (r) => { r.state = v; })));
-  box.append(el("div", "help", {
-    inherit: globalOn ? "Keeps away the apps of the global list, with the changes below."
-      : "The global switch is off, so no app is blocked. Pick Block to block these anyway.",
-    off: `Leaves every app alone during ${name}.`,
-    on: "Keeps these apps away even when the global switch is off.",
-  }[rules.state]));
+  box.append(el("div", "help", t("settings.apps.activity.intro", { name })));
+  box.append(segButtons(t("settings.apps.activity.during", { name }), blockStates(), rules.state, (v) => editActivityRules(a, "apps", (r) => { r.state = v; })));
+  box.append(el("div", "help", t({
+    inherit: globalOn ? "settings.apps.activity.inherit_on" : "settings.apps.activity.inherit_off",
+    off: "settings.apps.activity.off",
+    on: "settings.apps.activity.on",
+  }[rules.state], { name })));
   if (rules.state === "off") return;
   const fields = el("div", "activity-fields" + (rules.state === "inherit" && !globalOn ? " muted" : ""));
   box.append(fields);
 
-  fields.append(el("h4", "", "From the global list"));
+  fields.append(el("h4", "", t("settings.apps.activity.from_global")));
   const allowed = new Set(rules.allow.map(appKey));
   const shown = blockedApps.filter((e) => e.on);
   const list = el("div", "app-list");
   for (const entry of shown) {
     const kept = !entry.exes.some((e) => allowed.has(appKey(e)));
     list.append(inheritedRow("appsActivity", entry.id, entry.name, entry.exes[0], kept,
-      kept ? (entry.action === "hide" ? "Hidden" : "Closed") : "Let through",
+      t(kept ? (entry.action === "hide" ? "settings.apps.activity.hidden" : "settings.apps.activity.closed") : "settings.scope.let_through"),
       (keep) => editActivityRules(a, "apps", (r) => {
         const keys = new Set(entry.exes.map(appKey));
         r.allow = r.allow.filter((e) => !keys.has(appKey(e)));
         if (!keep) r.allow.push(...entry.exes);
       })));
   }
-  if (!shown.length) list.append(el("div", "help", "The global list blocks no app."));
+  if (!shown.length) list.append(el("div", "help", t("settings.apps.activity.global_none")));
   fields.append(list);
 
   const listed = new Set(shown.flatMap((e) => e.exes.map(appKey)));
   const extra = rules.allow.filter((e) => !listed.has(appKey(e)));
   editableList(fields, {
-    title: "Also let through", label: "Also let through (apps)",
-    help: "Left alone even if the global list blocks them later.",
-    items: extra, placeholder: "Add a program, e.g. Teams.exe",
+    title: t("settings.apps.activity.also_let"), label: t("settings.apps.activity.also_let_label"),
+    help: t("settings.apps.activity.also_let_help"),
+    items: extra, placeholder: t("settings.apps.activity.add_let"),
     add: (raw) => addActivityApp(a, "allow", raw),
     remove: (i) => editActivityRules(a, "apps", (r) => { r.allow = r.allow.filter((e) => e !== extra[i]); }),
     suggest: (app) => allowed.has(appKey(app.exe)),
   });
   editableList(fields, {
-    title: "Also block", label: "Also block (apps)",
-    help: `Closed during work phases on ${name}, on top of the global list.`,
-    items: rules.block, placeholder: "Add a program, e.g. Spotify.exe",
+    title: t("settings.apps.activity.also_block"), label: t("settings.apps.activity.also_block_label"),
+    help: t("settings.apps.activity.also_block_help", { name }),
+    items: rules.block, placeholder: t("settings.apps.activity.add_block"),
     add: (raw) => addActivityApp(a, "block", raw),
     remove: (i) => editActivityRules(a, "apps", (r) => { r.block.splice(i, 1); }),
     suggest: (app) => app.protected || rules.block.some((e) => appKey(e) === appKey(app.exe)),
   });
   const names = [...new Set(appBlocking(draftBlocking(), a.id).map((e) => e.name))];
   fields.append(el("div", "help preview", names.length
-    ? `During ${name}: ${names.join(", ")} ${names.length === 1 ? "is" : "are"} kept away.`
-    : `During ${name}: no app is blocked.`));
+    ? t("settings.apps.activity.summary", { n: names.length, name, apps: names.join(", ") })
+    : t("settings.apps.activity.summary_none", { name })));
 }
 
 function addActivityApp(a, field, raw) {
   const name = raw.trim().replace(/[,;\s]+$/, "");
   if (!name) return;
-  if (/[\\/]/.test(name)) return toast("App names are just the program, like WhatsApp.exe.", true);
+  if (/[\\/]/.test(name)) return toast(t("settings.apps.not_program"), true);
   if (field === "block" && PROTECTED_EXES.has(appKey(name))) {
-    return toast(`buZyist won't close ${name}: Windows or your browser needs it.`, true);
+    return toast(t("settings.apps.protected", { app: name }), true);
   }
   const rules = activityRules(a, "apps");
   if (rules[field].some((e) => appKey(e) === appKey(name))) return;
   if (rules[field].length >= MAX_BLOCKED_APPS) {
-    return toast(`Keep the ${field === "allow" ? "allowed" : "blocked"} apps under ${MAX_BLOCKED_APPS}.`, true);
+    return toast(t(field === "allow" ? "settings.apps.too_many_allowed" : "settings.apps.too_many_blocked", { n: MAX_BLOCKED_APPS }), true);
   }
   const exe = /\.exe$/i.test(name) ? name : name + ".exe";
   const other = field === "allow" ? "block" : "allow";
@@ -2478,78 +2481,80 @@ function renderActivitySites(a) {
   const name = activityName(a);
   const globalOn = $("s_block_sites").checked;
   const globalMode = siteMode();
-  box.append(el("div", "help", `What work phases on ${name} do with websites. Todoist tasks and names you type use Everything.`));
-  box.append(segButtons(`Websites during ${name}`, BLOCK_STATES, rules.state, (v) => editActivityRules(a, "sites", (r) => { r.state = v; })));
-  box.append(el("div", "help", {
-    inherit: globalOn ? "Uses the global websites, with the changes below."
-      : "The global switch is off, so no website is blocked. Pick Block to block these anyway.",
-    off: `Leaves every website open during ${name}.`,
-    on: "Limits these websites even when the global switch is off.",
-  }[rules.state]));
+  box.append(el("div", "help", t("settings.sites.activity.intro", { name })));
+  box.append(segButtons(t("settings.sites.activity.during", { name }), blockStates(), rules.state, (v) => editActivityRules(a, "sites", (r) => { r.state = v; })));
+  box.append(el("div", "help", t({
+    inherit: globalOn ? "settings.sites.activity.inherit_on" : "settings.sites.activity.inherit_off",
+    off: "settings.sites.activity.off",
+    on: "settings.sites.activity.on",
+  }[rules.state], { name })));
   if (rules.state === "off") return;
   const fields = el("div", "activity-fields" + (rules.state === "inherit" && !globalOn ? " muted" : ""));
   box.append(fields);
 
-  fields.append(segButtons(`Website mode during ${name}`, [["", `Like global (${globalMode === "allow" ? "allow only" : "block"})`], ["block", "Block these"], ["allow", "Allow only these"]],
-    rules.mode, (v) => editActivityRules(a, "sites", (r) => { r.mode = v; })));
+  fields.append(segButtons(t("settings.sites.activity.mode_during", { name }), [
+    ["", t(globalMode === "allow" ? "settings.sites.activity.like_global_allow" : "settings.sites.activity.like_global_block")],
+    ["block", t("settings.sites.activity.block_these")], ["allow", t("settings.sites.activity.allow_these")],
+  ], rules.mode, (v) => editActivityRules(a, "sites", (r) => { r.mode = v; })));
   const mode = rules.mode || globalMode;
   const carve = mode === "allow" ? "block" : "allow";  // site_blocking's `except`
   const inherited = mode === globalMode;
   if (inherited) {
-    fields.append(el("h4", "", mode === "allow" ? "Allowed by the global list" : "Blocked by the global list"));
+    fields.append(el("h4", "", t(mode === "allow" ? "settings.sites.activity.global_allowed" : "settings.sites.activity.global_blocked")));
     const list = el("div", "app-list");
     for (const site of siteLists[mode]) {
       const kept = !rules[carve].includes(site);
       list.append(inheritedRow("sitesActivity", site, site, "", kept,
-        mode === "allow" ? (kept ? "Allowed" : "Blocked") : (kept ? "Blocked" : "Let through"),
+        t(mode === "allow" ? (kept ? "settings.sites.activity.allowed" : "settings.sites.activity.blocked")
+          : (kept ? "settings.sites.activity.blocked" : "settings.scope.let_through")),
         (keep) => editActivityRules(a, "sites", (r) => {
           r[carve] = r[carve].filter((p) => p !== site);
           if (!keep) r[carve].push(site);
         })));
     }
     if (!siteLists[mode].length) {
-      list.append(el("div", "help", mode === "allow" ? "The global list allows no website." : "The global list blocks no website."));
+      list.append(el("div", "help", t(mode === "allow" ? "settings.sites.activity.global_none_allow" : "settings.sites.activity.global_none_block")));
     }
     fields.append(list);
   } else {
-    fields.append(el("div", "help", `The global setting ${globalMode === "allow" ? "allows only its list" : "blocks its list"}, so nothing is inherited: ${name} uses only the websites below.`));
+    fields.append(el("div", "help", t(globalMode === "allow" ? "settings.sites.activity.not_inherited_allow" : "settings.sites.activity.not_inherited_block", { name })));
   }
   editableList(fields, {
-    title: inherited ? (mode === "allow" ? "Also allow" : "Also block") : (mode === "allow" ? "Allow only these" : "Block these"),
-    label: (mode === "allow" ? "Allowed" : "Blocked") + " websites",
+    title: t(inherited ? (mode === "allow" ? "settings.sites.activity.also_allow" : "settings.sites.activity.also_block")
+      : (mode === "allow" ? "settings.sites.activity.allow_these" : "settings.sites.activity.block_these")),
+    label: t(mode === "allow" ? "settings.sites.activity.allowed_label" : "settings.sites.activity.blocked_label"),
     items: rules[mode],
-    placeholder: mode === "allow" ? "Add an allowed website, e.g. github.com" : "Add a website, e.g. youtube.com",
+    placeholder: t(mode === "allow" ? "settings.sites.activity.add_allowed" : "settings.sites.activity.add_blocked"),
     add: (raw) => addActivitySite(a, mode, raw),
     remove: (i) => editActivityRules(a, "sites", (r) => { r[mode].splice(i, 1); }),
   });
   const base = new Set(inherited ? siteLists[mode] : []);
   const extra = rules[carve].filter((p) => !base.has(p));
   editableList(fields, {
-    title: mode === "allow" ? "Still block" : "Let through",
-    label: (mode === "allow" ? "Still blocked" : "Let through") + " websites",
-    help: mode === "allow"
-      ? "Blocked even inside an allowed website, e.g. youtube.com/shorts/* inside youtube.com."
-      : "Open even inside a blocked website, e.g. mail.google.com inside *.google.com.",
+    title: t(mode === "allow" ? "settings.sites.activity.still_block" : "settings.sites.activity.let_through"),
+    label: t(mode === "allow" ? "settings.sites.activity.still_blocked_label" : "settings.sites.activity.let_through_label"),
+    help: t(mode === "allow" ? "settings.sites.activity.still_block_help" : "settings.sites.activity.let_through_help"),
     items: extra,
-    placeholder: mode === "allow" ? "e.g. youtube.com/shorts/*" : "e.g. mail.google.com",
+    placeholder: t(mode === "allow" ? "settings.sites.activity.still_block_placeholder" : "settings.sites.activity.let_through_placeholder"),
     add: (raw) => addActivitySite(a, carve, raw),
     remove: (i) => editActivityRules(a, "sites", (r) => { r[carve] = r[carve].filter((p) => p !== extra[i]); }),
   });
   const b = siteBlocking(draftBlocking(), a.id);
   const n = b.patterns.length;
   const m = b.except.length;
-  fields.append(el("div", "help preview", b.mode === "allow"
-    ? (n ? `During ${name}: only ${plural(n, "website")} open${m ? `, with ${m} blocked inside them` : ""}.` : `During ${name}: every website is blocked.`)
-    : (n ? `During ${name}: ${plural(n, "website")} blocked${m ? `, with ${m} let through inside them` : ""}.` : `During ${name}: no website is blocked.`)));
+  const summary = b.mode === "allow"
+    ? (n ? (m ? "allow_except" : "allow") : "allow_none")
+    : (n ? (m ? "block_except" : "block") : "block_none");
+  fields.append(el("div", "help preview", t("settings.sites.activity.summary." + summary, { n, m, name })));
 }
 
 function addActivitySite(a, field, raw) {
   const site = cleanSitePattern(raw);
   if (site === "") return;
-  if (site === null) return toast("Type a website like youtube.com or *.google.com.", true);
+  if (site === null) return toast(t("settings.sites.not_site"), true);
   const rules = activityRules(a, "sites");
   if (rules[field].includes(site)) return;
-  if (rules[field].length >= 50) return toast("Keep the list under 50 websites.", true);
+  if (rules[field].length >= 50) return toast(t("settings.sites.too_many", { n: 50 }), true);
   const other = field === "allow" ? "block" : "allow";
   editActivityRules(a, "sites", (r) => {
     r[other] = r[other].filter((p) => p !== site);  // one or the other
@@ -2571,22 +2576,25 @@ const LIMITS = {
          fields: "appLimitsFields", on: "s_app_limits_on", usageCall: "app_usage" },
 };
 let limitDraft = null;    // {kind, index, rule} while an editor is open
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];  // catalog keys under settings.limits.days
+const dayName = (d) => t("settings.limits.days." + DAYS[d]);
 
-const unitPlural = (every, unit) => (every === 1 ? unit : `${every} ${unit}s`);
-const budgetText = (b) => `${b.minutes} min per ${unitPlural(b.every, b.unit)}`
-  + (!b.days || b.days.length === 7 ? "" : ", " + daysText(b.days));
-const clockText = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+// "5 min per hour", "30 min per 2 days, Mon–Fri"
+function budgetText(b) {
+  const budget = t("settings.limits.budget." + b.unit, { n: b.every, minutes: b.minutes });
+  return !b.days || b.days.length === 7 ? budget : t("settings.limits.budget_days", { budget, days: daysText(b.days) });
+}
+const clockText = (ms) => formatTime(new Date(ms), { hour: "2-digit", minute: "2-digit" });
 const appLabel = (exe) => exe.replace(/\.exe$/i, "").split(".")[0] || exe;  // exe_label in blocker.py
 const limitNames = (kind, rule) => (kind === "site" ? rule.patterns : [...new Set(rule.apps.map(appLabel))]).join(", ");
 const REMIND_MIN = 1, REMIND_MAX = 120;  // APP_LIMIT_REMIND_MIN/MAX in buzyist/constants.py
 const beeps = (kind, rule) => kind === "app" && rule.action === "beep";
 
 function daysText(days) {
-  if (days.length === 7) return "every day";
-  if (days.join() === "0,1,2,3,4") return "Mon–Fri";
-  if (days.join() === "5,6") return "Sat–Sun";
-  return days.map((d) => DAY_NAMES[d]).join(", ");
+  if (days.length === 7) return t("settings.limits.every_day");
+  if (days.join() === "0,1,2,3,4") return t("settings.limits.weekdays");
+  if (days.join() === "5,6") return t("settings.limits.weekend");
+  return days.map(dayName).join(", ");
 }
 
 // One kind's list ("site" or "app"), or both without one.
@@ -2605,13 +2613,13 @@ function renderLimits(kind) {
     box.checked = rule.enabled;
     box.onchange = () => { rule.enabled = box.checked; renderLimits(kind); };
     sw.append(box, el("span", "knob"));
-    sw.title = rule.enabled ? "Turn this limit off" : "Turn this limit on";
-    const edit = el("button", "btn sm ghost", "Edit");
+    sw.title = t(rule.enabled ? "settings.limits.turn_off" : "settings.limits.turn_on");
+    const edit = el("button", "btn sm ghost", t("settings.limits.edit"));
     edit.type = "button";
     edit.onclick = () => openLimitEditor(kind, i);
     const x = el("button", "remove", "×");
     x.type = "button";
-    x.title = "Remove this limit";
+    x.title = t("settings.limits.remove");
     x.onclick = () => { k.rules.splice(i, 1); renderLimits(kind); };
     const name = el("span", "site", limitNames(kind, rule));
     if (kind === "app") name.title = rule.apps.join(", ");
@@ -2619,12 +2627,12 @@ function renderLimits(kind) {
     row.append(head);
     if (kind === "app") {
       row.append(el("div", "limit-line", rule.action === "beep"
-        ? `Beeps when reached, again every ${rule.remind || 5} min; the app stays open`
-        : "Closes the app when reached"));
+        ? t("settings.limits.app_beeps", { n: rule.remind || 5 })
+        : t("settings.limits.app_closes")));
     }
     if (status && status.blocked) {
-      const what = beeps(kind, rule) ? "Over the limit" : kind === "app" ? "Closed" : "Blocked";
-      row.append(el("div", "limit-tag", `${what} until ${clockText(status.until_ms)}`));
+      const what = beeps(kind, rule) ? "over_until" : kind === "app" ? "closed_until" : "blocked_until";
+      row.append(el("div", "limit-tag", t("settings.limits." + what, { time: clockText(status.until_ms) })));
     }
     rule.budgets.forEach((b, j) => {
       const line = el("div", "limit-line");
@@ -2633,7 +2641,7 @@ function renderLimits(kind) {
         const used = Math.min(live.used_s, live.budget_s);
         const text = el("div");
         text.append(el("b", "", budgetText(b)),
-          live.active ? ` · ${Math.floor(used / 60)} of ${b.minutes} min used` : " · not today");
+          " · " + (live.active ? t("settings.limits.used", { used: Math.floor(used / 60), minutes: b.minutes }) : t("settings.limits.not_today")));
         const bar = el("div", "limit-bar" + (live.remaining_s <= 0 ? " full" : ""));
         const fill = el("i");
         fill.style.width = Math.round((100 * used) / live.budget_s) + "%";
@@ -2646,7 +2654,8 @@ function renderLimits(kind) {
     });
     for (const w of rule.windows) {
       const line = el("div", "limit-line");
-      line.append(el("div", "", `${beeps(kind, rule) ? "Beeps" : "Blocked"} ${daysText(w.days)}, ${w.from}–${w.to}`));
+      line.append(el("div", "", t(beeps(kind, rule) ? "settings.limits.window_beeps" : "settings.limits.window_blocked",
+        { days: daysText(w.days), from: w.from, to: w.to })));
       row.append(line);
     }
     list.append(row);
@@ -2677,10 +2686,10 @@ let syncOwner = "";  // as picked here, saved with the rest
 
 const agoText = (ms) => {
   const min = Math.round((Date.now() - ms) / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
-  if (min < 48 * 60) return `${Math.round(min / 60)} h ago`;
-  return `${Math.round(min / 1440)} days ago`;
+  if (min < 1) return t("settings.sync.ago.now");
+  if (min < 60) return t("settings.sync.ago.min", { n: min });
+  if (min < 48 * 60) return t("settings.sync.ago.h", { n: Math.round(min / 60) });
+  return t("settings.sync.ago.days", { n: Math.round(min / 1440) });
 };
 
 function renderSync(info) {
@@ -2688,17 +2697,17 @@ function renderSync(info) {
   const select = $("s_sync_owner");
   if (document.activeElement !== select) {
     select.replaceChildren();
-    const auto = el("option", "", info.instances.length ? "The first profile to connect" : "Waiting for the extension\u2026");
+    const auto = el("option", "", t(info.instances.length ? "settings.sync.first_profile" : "settings.sync.waiting_extension"));
     auto.value = "";
     select.append(auto);
     for (const inst of info.instances) {
-      const name = inst.email || `A profile not signed in to Chrome (${inst.id.slice(0, 4)})`;
-      const opt = el("option", "", name + (inst.connected ? "" : ` \u00b7 last seen ${agoText(inst.seen_ms)}`));
+      const name = inst.email || t("settings.sync.unsigned_profile", { id: inst.id.slice(0, 4) });
+      const opt = el("option", "", inst.connected ? name : t("settings.sync.last_seen", { name, ago: agoText(inst.seen_ms) }));
       opt.value = inst.id;
       select.append(opt);
     }
     if (syncOwner && !info.instances.some((i) => i.id === syncOwner)) {
-      const gone = el("option", "", "A profile not seen lately");
+      const gone = el("option", "", t("settings.sync.not_seen"));
       gone.value = syncOwner;
       select.append(gone);
     }
@@ -2706,13 +2715,14 @@ function renderSync(info) {
   }
   const owner = info.instances.find((i) => i.id === syncOwner);
   const status = $("syncStatus");
-  const others = info.devices.map((d) => `${d.name} (${agoText(d.t)})`).join(", ");
+  const others = info.devices.map((d) => t("settings.sync.device", { name: d.name, ago: agoText(d.t) })).join(", ");
   const synced = !!info.last_sync_ms;
   let text;
-  if (!owner) text = "Not shared yet: load the extension in Chrome";
-  else if (!owner.email) text = "This profile isn't signed in to Chrome, so nothing leaves this PC";
-  else if (!synced) text = "Waiting for Chrome sync\u2026";
-  else text = `Synced ${agoText(info.last_sync_ms)}` + (others ? ` \u00b7 also counting ${others}` : " \u00b7 no other PC yet");
+  if (!owner) text = t("settings.sync.no_owner");
+  else if (!owner.email) text = t("settings.sync.unsigned");
+  else if (!synced) text = t("settings.sync.waiting_sync");
+  else if (others) text = t("settings.sync.synced_others", { ago: agoText(info.last_sync_ms), others });
+  else text = t("settings.sync.synced_alone", { ago: agoText(info.last_sync_ms) });
   status.textContent = text;
   const good = !!(owner && owner.email && synced);
   status.classList.toggle("ok", good);
@@ -2768,8 +2778,8 @@ function removeButton(onclick, title) {
 function dayButtons(item) {
   if (!item.days) item.days = [0, 1, 2, 3, 4, 5, 6];
   const wrap = el("div", "limit-days");
-  DAY_NAMES.forEach((name, d) => {
-    const b = el("button", "day", name);
+  DAYS.forEach((_, d) => {
+    const b = el("button", "day", dayName(d));
     b.type = "button";
     b.setAttribute("aria-pressed", item.days.includes(d));
     b.onclick = () => {
@@ -2792,12 +2802,10 @@ function renderLimitEditor() {
   const names = el("input", "input");
   names.id = kind === "site" ? "limitSite" : "limitApps";
   names.spellcheck = false;
-  names.placeholder = kind === "site" ? "Websites, e.g. instagram.com, facebook.com" : "Apps, e.g. WhatsApp.exe, Slack.exe";
+  names.placeholder = t(kind === "site" ? "settings.limits.editor.sites_placeholder" : "settings.limits.editor.apps_placeholder");
   names.value = namesText;
   names.oninput = () => { namesText = names.value; };
-  box.append(names, el("div", "help", kind === "site"
-    ? "Several websites can share one limit: the time adds up across all of them."
-    : "Program names, as Task Manager's Details tab shows them, separated by commas; the ones running now are suggested as you type. Several apps can share one limit: the time adds up across all of them."));
+  box.append(names, el("div", "help", t(kind === "site" ? "settings.limits.editor.sites_help" : "settings.limits.editor.apps_help")));
   if (kind === "app") suggestApps(names, { multi: true, skip: (a) => a.protected && rule.action === "close" });
   box.onkeydown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "BUTTON" && e.target.tagName !== "SELECT") {
@@ -2808,13 +2816,13 @@ function renderLimitEditor() {
   const hoursHead = el("h4");
   const addWindow = el("button", "btn sm");
   const hoursText = () => {
-    hoursHead.textContent = beeps(kind, rule) ? "Hours it beeps in" : "Blocked hours";
-    addWindow.textContent = beeps(kind, rule) ? "Add hours" : "Add blocked hours";
+    hoursHead.textContent = t(beeps(kind, rule) ? "settings.limits.editor.hours_beep" : "settings.limits.editor.hours_blocked");
+    addWindow.textContent = t(beeps(kind, rule) ? "settings.limits.editor.add_hours" : "settings.limits.editor.add_blocked_hours");
   };
   if (kind === "app") {
     const row = el("div", "limit-sub");
     const action = el("select", "input");
-    for (const [value, text] of [["close", "Close the app"], ["beep", "Beep, keep it open"]]) {
+    for (const [value, text] of [["close", t("settings.limits.editor.action_close")], ["beep", t("settings.limits.editor.action_beep")]]) {
       const o = el("option", "", text);
       o.value = value;
       action.append(o);
@@ -2822,38 +2830,38 @@ function renderLimitEditor() {
     action.value = rule.action;
     if (!rule.remind) rule.remind = 5;
     const remind = el("span", "limit-sub");
-    remind.append("again every", numberInput(rule.remind, REMIND_MIN, (n) => { rule.remind = n; }), "min");
+    remind.append(t("settings.limits.editor.again_every"), numberInput(rule.remind, REMIND_MIN, (n) => { rule.remind = n; }), t("settings.min"));
     remind.classList.toggle("hidden", rule.action !== "beep");
     action.onchange = () => {
       rule.action = action.value;
       remind.classList.toggle("hidden", rule.action !== "beep");
       hoursText();
     };
-    row.append("When a limit is reached:", action, remind);
+    row.append(t("settings.limits.editor.when_reached"), action, remind);
     box.append(row);
   }
 
-  box.append(el("h4", "", "Time allowed"));
+  box.append(el("h4", "", t("settings.limits.editor.time_allowed")));
   rule.budgets.forEach((b, i) => {
     const row = el("div", "limit-sub");
     row.append(dayButtons(b));
     const amount = el("div", "limit-sub");
     const unit = el("select", "input");
     for (const u of ["minute", "hour", "day", "week"]) {
-      const o = el("option", "", u + "s");
+      const o = el("option", "", t("settings.limits.units." + u));
       o.value = u;
       o.selected = u === b.unit;
       unit.append(o);
     }
     unit.onchange = () => { b.unit = unit.value; };
-    amount.append(numberInput(b.minutes, 1, (n) => { b.minutes = n; }), "min every",
+    amount.append(numberInput(b.minutes, 1, (n) => { b.minutes = n; }), t("settings.limits.editor.min_every"),
                   numberInput(b.every, 1, (n) => { b.every = n; }), unit,
-                  removeButton(() => { rule.budgets.splice(i, 1); renderLimitEditor(); }, "Remove this limit"));
+                  removeButton(() => { rule.budgets.splice(i, 1); renderLimitEditor(); }, t("settings.limits.editor.remove_budget")));
     const group = el("div", "limit-group");
     group.append(amount, row);
     box.append(group);
   });
-  const addBudget = el("button", "btn sm", "Add a time limit");
+  const addBudget = el("button", "btn sm", t("settings.limits.editor.add_budget"));
   addBudget.type = "button";
   addBudget.onclick = () => { rule.budgets.push({ minutes: 30, every: 1, unit: "day", days: [0, 1, 2, 3, 4, 5, 6] }); renderLimitEditor(); };
   box.append(addBudget);
@@ -2870,20 +2878,20 @@ function renderLimitEditor() {
     to.type = "time";
     to.value = w.to;
     to.oninput = () => { w.to = to.value; };
-    row.append(from, "to", to, removeButton(() => { rule.windows.splice(i, 1); renderLimitEditor(); }, "Remove these hours"));
+    row.append(from, t("settings.limits.editor.to"), to, removeButton(() => { rule.windows.splice(i, 1); renderLimitEditor(); }, t("settings.limits.editor.remove_hours")));
     box.append(row);
   });
   addWindow.type = "button";
   addWindow.onclick = () => { rule.windows.push({ days: [0, 1, 2, 3, 4], from: "08:00", to: "17:00" }); renderLimitEditor(); };
   hoursText();
   box.append(addWindow);
-  box.append(el("div", "help", "Hours ending before they start run past midnight (22:00 to 06:00). 00:00 to 00:00 is the whole day."));
+  box.append(el("div", "help", t("settings.limits.editor.hours_help")));
 
   const actions = el("div", "limit-actions");
-  const cancel = el("button", "btn ghost", "Cancel");
+  const cancel = el("button", "btn ghost", t("settings.cancel"));
   cancel.type = "button";
   cancel.onclick = closeLimitEditor;
-  const done = el("button", "btn primary", limitDraft.index === undefined ? "Add limit" : "Done");
+  const done = el("button", "btn primary", t(limitDraft.index === undefined ? "settings.limits.editor.add_limit" : "settings.limits.editor.done"));
   done.type = "button";
   done.onclick = commitLimitDraft;
   actions.append(cancel, done);
@@ -2896,16 +2904,16 @@ function draftApps(action) {
   const key = (n) => n.toLowerCase().replace(/\.exe$/, "");
   const apps = [];
   for (const part of namesText.split(/[,;\n]+/).map((p) => p.trim().replace(/^"|"$/g, "")).filter(Boolean)) {
-    if (/[\\/]/.test(part)) { toast("App names are just the program, like WhatsApp.exe.", true); return null; }
+    if (/[\\/]/.test(part)) { toast(t("settings.apps.not_program"), true); return null; }
     const exe = /\.exe$/i.test(part) ? part : part + ".exe";
     if (action === "close" && PROTECTED_EXES.has(key(exe))) {
-      toast(`buZyist won't close ${exe}: Windows or your browser needs it. Make that limit beep.`, true);
+      toast(t("settings.limits.check.protected", { app: exe }), true);
       return null;
     }
     if (!apps.some((a) => key(a) === key(exe))) apps.push(exe);
   }
-  if (!apps.length) { toast("Type an app like WhatsApp.exe.", true); return null; }
-  if (apps.length > 20) { toast("Keep a limit to 20 apps or fewer.", true); return null; }
+  if (!apps.length) { toast(t("settings.limits.check.no_app"), true); return null; }
+  if (apps.length > 20) { toast(t("settings.limits.check.too_many_apps", { n: 20 }), true); return null; }
   return apps;
 }
 
@@ -2914,11 +2922,11 @@ function draftSites() {
   const patterns = [];
   for (const part of namesText.split(/[\s,;]+/).filter(Boolean)) {
     const pattern = cleanSitePattern(part);
-    if (pattern === null) { toast(`"${part}" isn't a website like instagram.com or *.reddit.com.`, true); return null; }
+    if (pattern === null) { toast(t("settings.limits.check.not_site", { text: part }), true); return null; }
     if (pattern && !patterns.includes(pattern)) patterns.push(pattern);
   }
-  if (!patterns.length) { toast("Type a website like instagram.com or *.reddit.com.", true); return null; }
-  if (patterns.length > 20) { toast("Keep a limit to 20 websites or fewer.", true); return null; }
+  if (!patterns.length) { toast(t("settings.limits.check.no_site"), true); return null; }
+  if (patterns.length > 20) { toast(t("settings.limits.check.too_many_sites", { n: 20 }), true); return null; }
   return patterns;
 }
 
@@ -2929,15 +2937,15 @@ function commitLimitDraft() {
   const names = kind === "site" ? draftSites() : draftApps(rule.action);
   if (!names) return false;
   if (beeps(kind, rule) && !(rule.remind >= REMIND_MIN && rule.remind <= REMIND_MAX)) {
-    toast(`Beep again every ${REMIND_MIN} to ${REMIND_MAX} minutes.`, true);
+    toast(t("settings.limits.check.remind", { min: REMIND_MIN, max: REMIND_MAX }), true);
     return false;
   }
-  if (!rule.budgets.length && !rule.windows.length) { toast("Add a time limit or blocked hours.", true); return false; }
-  if (rule.budgets.some((b) => !b.days.length)) { toast("Pick at least one day for each time limit.", true); return false; }
-  if (rule.budgets.some((b) => b.minutes < 1 || b.every < 1)) { toast("Time limits need at least 1 minute and a period of at least 1.", true); return false; }
-  if (rule.windows.some((w) => !w.days.length || !w.from || !w.to)) { toast("Blocked hours need days and times.", true); return false; }
+  if (!rule.budgets.length && !rule.windows.length) { toast(t("settings.limits.check.empty"), true); return false; }
+  if (rule.budgets.some((b) => !b.days.length)) { toast(t("settings.limits.check.budget_days"), true); return false; }
+  if (rule.budgets.some((b) => b.minutes < 1 || b.every < 1)) { toast(t("settings.limits.check.budget_minutes"), true); return false; }
+  if (rule.windows.some((w) => !w.days.length || !w.from || !w.to)) { toast(t("settings.limits.check.hours"), true); return false; }
   if (k.rules.length >= 30 && index === undefined) {
-    toast(`Keep the ${kind === "site" ? "website" : "app"} limits under 30.`, true);
+    toast(t(kind === "site" ? "settings.limits.check.too_many_site_limits" : "settings.limits.check.too_many_app_limits", { n: 30 }), true);
     return false;
   }
   if (kind === "site") rule.patterns = names;
@@ -2965,14 +2973,14 @@ $("openExtensionsPage").onclick = () => $("installExtension").click();
 $("openExtensionFolder").onclick = () => api.open_extension_folder();
 $("copyExtensionPath").onclick = async () => {
   const r = await api.copy_extension_path();
-  toast(r.ok ? "Folder path copied" : "Couldn't reach the clipboard; copy the path by hand.", !r.ok);
+  toast(t(r.ok ? "settings.ext.copied" : "settings.ext.copy_failed"), !r.ok);
 };
 $("installExtension").onclick = async () => {
   const r = await api.install_extension();
   if (!r.ok) return toast(r.error, true);
-  const copied = r.copied ? " The folder path is on your clipboard." : "";
-  if (r.browser) toast(`Opened ${r.browser}'s extensions page.${copied}`);
-  else toast(`Couldn't find Chrome. Open chrome://extensions in your browser.${copied}`, true);
+  const copied = r.copied ? "_copied" : "";
+  if (r.browser) toast(t("settings.ext.opened" + copied, { browser: r.browser }));
+  else toast(t("settings.ext.not_found" + copied), true);
 };
 
 function closeSettings() {
@@ -3000,25 +3008,25 @@ $("updateChip").onclick = async () => {
 $("checkUpdate").onclick = async () => {
   const out = $("updateResult");
   out.className = "test-result";
-  out.textContent = "Checking GitHub…";
+  out.textContent = t("settings.about.checking");
   $("checkUpdate").disabled = true;
   const result = await api.check_update();
   $("checkUpdate").disabled = false;
   if (!result.ok) { out.className = "test-result bad"; out.textContent = result.error; return; }
   await poll();
-  if (!result.update) { out.className = "test-result ok"; out.textContent = "You have the latest version."; }
+  if (!result.update) { out.className = "test-result ok"; out.textContent = t("settings.about.latest"); }
 };
 $("installUpdate").onclick = async () => {
   const u = state && state.update;
   if (!u) return;
   if (!u.installable) return api.open_url(u.url);
-  const where = state.bar.local || state.bar.offline ? "" : " on the bar";
-  if (state.session && !confirm(`buZyist restarts to update. The session keeps running${where} and picks up again after the restart. Update now?`)) return;
+  const ask = state.bar.local || state.bar.offline ? "settings.about.confirm" : "settings.about.confirm_bar";
+  if (state.session && !confirm(t(ask))) return;
   $("installUpdate").disabled = true;
-  $("installUpdate").textContent = "Installing…";
+  $("installUpdate").textContent = t("settings.about.installing");
   const result = await api.install_update();
   if (!result.ok) { await poll(); return toast(result.error, true); }
-  toast(`Installing buZyist ${u.version}. It restarts by itself.`);
+  toast(t("settings.about.installing_toast", { version: u.version }));
 };
 $("releaseNotes").onclick = () => state && state.update && api.open_url(state.update.url);
 $("cancelSettings").onclick = closeSettings;
@@ -3052,13 +3060,14 @@ $("saveSettings").onclick = async () => {
 $("testBar").onclick = async () => {
   const out = $("testResult");
   out.className = "test-result";
-  out.textContent = "Testing…";
+  out.textContent = t("settings.bar.testing");
   const { clear_busybar_pin } = secretClears();
   const saved = await api.save_settings({ ...formValues(["use_busybar", "busybar_ip", "busybar_pin", "usb_fallback"]), clear_busybar_pin });
   if (!saved.ok) { out.className = "test-result bad"; out.textContent = saved.error; return; }
   const result = await api.test_bar();
   out.className = "test-result " + (result.ok ? "ok" : "bad");
-  out.textContent = result.ok ? `Connected over ${result.via}${result.version ? " · firmware " + result.version : ""}` : result.error;
+  out.textContent = !result.ok ? result.error
+    : t(result.version ? "settings.bar.connected_firmware" : "settings.bar.connected", { via: result.via, version: result.version });
 };
 
 // ------------------------------------------------------------- keyboard
