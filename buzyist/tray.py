@@ -98,7 +98,7 @@ class TrayMixin:
                 title += f"\n{task}"
         elif view:
             phase = "Paused" if view["paused"] else ("Focus" if view["phase"] == "work" else "Break")
-            title = f"{phase} · {view['minutes']} min left · round {view['round']}/{view['rounds']}"
+            title = f"{phase} · {view['minutes']} min left · pomodoro {view['round']}/{view['rounds']}"
             if task:
                 title += f"\n{task}"
         else:
