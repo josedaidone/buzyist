@@ -10,7 +10,8 @@ import os
 import time
 from pathlib import Path
 
-from buzyist.constants import APP, AppError
+from buzyist.constants import APP
+from buzyist.i18n import app_error
 from buzyist.win32 import (
     FILE_ATTRIBUTE_NORMAL,
     FILE_SHARE_READ,
@@ -52,4 +53,4 @@ def open_locked(path: Path, attempts: int = LOCK_ATTEMPTS, delay: float = 0.5):
         log.info("couldn't lock %s (Windows error %s), attempt %d", path, error, attempt + 1)
         if attempt + 1 < attempts:
             time.sleep(delay)
-    raise AppError(f"Couldn't lock the downloaded installer (Windows error {error}); not installing it.")
+    raise app_error("errors.update.lock_failed", error=error)

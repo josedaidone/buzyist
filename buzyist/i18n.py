@@ -23,7 +23,7 @@ import re
 from functools import cache
 
 from buzyist import paths
-from buzyist.constants import APP
+from buzyist.constants import APP, AppError
 
 log = logging.getLogger(APP)
 
@@ -132,3 +132,17 @@ def translate(lang: str, key: str, values: dict | None = None) -> str:
 def t(key: str, /, **values) -> str:
     """`key` in the app language: t("summary.result", n=3, duration="1h 15m")."""
     return translate(language(), key, values)
+
+
+def app_error(key: str, /, cls=AppError, **values) -> AppError:
+    """
+    An AppError (or `cls`) saying `key` in the app language, and in English
+    as its `english`, for the log (values that are AppErrors give theirs).
+    """
+    english = {k: getattr(v, "english", v) if isinstance(v, AppError) else v for k, v in values.items()}
+    return cls(t(key, **values), translate(ENGLISH, key, english))
+
+
+def english(err: BaseException) -> str:
+    """What an exception says, in English when it is an AppError: for log lines."""
+    return getattr(err, "english", None) or str(err)

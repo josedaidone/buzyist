@@ -11,11 +11,13 @@ site_blocking (site_rules.py).
 
 from __future__ import annotations
 
+import copy
 import re
 
 from buzyist.bar_screens import clean_activity_screen
 from buzyist.blocker import MAX_BLOCKED_APPS, PROTECTED_EXES, app_key
 from buzyist.constants import AppError
+from buzyist.i18n import ENGLISH, app_error, languages, t, translate
 from buzyist.site_rules import clean_blocked_sites
 
 # The icons an activity can have: `#a-<icon>` symbols in ui/main.html, and
@@ -38,6 +40,8 @@ MAX_ACTIVITIES = 12
 MAX_ACTIVITY_NAME = 30  # mirrored by maxlength in ui/main.js
 MAX_DETAIL = 80  # the free field's maxlength, also the session name's limit
 
+# The defaults with their English names; default_activities() gives them in
+# a language (defaults.activities.<id> in the catalogs), when they're created.
 DEFAULT_ACTIVITIES = [
     {
         "id": "email",
@@ -78,6 +82,19 @@ DEFAULT_ACTIVITIES = [
     {"id": "reading", "name": "Reading", "icon": "book"},
 ]
 
+
+def default_activities(lang: str | None = None) -> list[dict]:
+    """
+    The default activities named in `lang` (English when None or not shipped),
+    with the same fixed ids: for a config that has none yet. Activities once
+    saved keep the names they were given.
+    """
+    out = copy.deepcopy(DEFAULT_ACTIVITIES)
+    for item in out:
+        item["name"] = translate(str(lang or ENGLISH), f"defaults.activities.{item['id']}")
+    return out
+
+
 _ID = re.compile(r"[a-z0-9_-]{1,24}")
 
 # What an activity does with the global switch (block_apps, block_sites):
@@ -95,22 +112,22 @@ def clean_activities(value, tidy: bool = False) -> list[dict]:
     `tidy` (config.json at start-up) unusable entries are dropped instead.
     """
     if not isinstance(value, list):
-        raise AppError("The activities must be a list.")
+        raise app_error("errors.activities.not_list")
     out, ids, names = [], set(), set()
     for item in value:
         try:
             if not isinstance(item, dict):
-                raise AppError("An activity is missing its name.")
+                raise app_error("errors.activities.missing_name")
             name = " ".join(str(item.get("name") or "").split())
             if not name:
-                raise AppError("Give every activity a name.")
+                raise app_error("errors.activities.no_name")
             if len(name) > MAX_ACTIVITY_NAME:
-                raise AppError(f"Keep activity names to {MAX_ACTIVITY_NAME} characters or fewer.")
+                raise app_error("errors.activities.name_long", max=MAX_ACTIVITY_NAME)
             if name.casefold() in names:
-                raise AppError(f"There are two activities called {name!r}.")
+                raise app_error("errors.activities.duplicate", name=name)
             ident = str(item.get("id") or "")
             if not _ID.fullmatch(ident) or ident in ids:
-                raise AppError(f"The activity {name!r} has a bad id.")
+                raise app_error("errors.activities.bad_id", name=name)
             icon = item.get("icon") if item.get("icon") in ACTIVITY_ICONS else "dot"
         except AppError:
             if tidy:
@@ -124,13 +141,13 @@ def clean_activities(value, tidy: bool = False) -> list[dict]:
                 entry[key] = clean(item[key])
             except AppError as e:
                 if not tidy:
-                    raise AppError(f"{name}: {e}") from None
+                    raise app_error("errors.named", name=name, error=e) from None
                 # A broken rule set at start-up: the activity stays, on the global settings.
         try:
             screen = clean_activity_screen(item.get("bar"))
         except AppError as e:
             if not tidy:
-                raise AppError(f"{name}: {e}") from None
+                raise app_error("errors.named", name=name, error=e) from None
             screen = {}  # on the global focus screen
         if screen:
             entry["bar"] = screen
@@ -139,27 +156,28 @@ def clean_activities(value, tidy: bool = False) -> list[dict]:
         out.append(entry)
     if len(out) > MAX_ACTIVITIES:
         if not tidy:
-            raise AppError(f"Keep to {MAX_ACTIVITIES} activities or fewer.")
+            raise app_error("errors.activities.too_many", max=MAX_ACTIVITIES)
         out = out[:MAX_ACTIVITIES]
     return out
 
 
 def _clean_exes(values, field: str) -> list[str]:
     if not isinstance(values, list):
-        raise AppError("The app list didn't come through; try again.")
+        raise app_error("errors.apps.list")
     out: list[str] = []
     for raw in values:
         exe = raw.strip() if isinstance(raw, str) else ""
         if not exe:
-            raise AppError("Type the program name, like Slack.exe.")
+            raise app_error("errors.apps.type_name")
         if "/" in exe or "\\" in exe:
-            raise AppError("App names are just the program, like WhatsApp.exe.")
+            raise app_error("errors.apps.just_program")
         if field == "block" and app_key(exe) in PROTECTED_EXES:
-            raise AppError(f"buZyist won't close {exe}: Windows or your browser needs it.")
+            raise app_error("errors.apps.protected", exe=exe)
         if app_key(exe) not in {app_key(e) for e in out}:
             out.append(exe)
     if len(out) > MAX_BLOCKED_APPS:
-        raise AppError(f"Keep the {'allowed' if field == 'allow' else 'blocked'} apps under {MAX_BLOCKED_APPS}.")
+        key = "errors.activities.allowed_apps_max" if field == "allow" else "errors.activities.blocked_apps_max"
+        raise app_error(key, max=MAX_BLOCKED_APPS)
     return out
 
 
@@ -171,10 +189,10 @@ def clean_app_rules(value) -> dict:
         AppError with Settings' message if it's wrong.
     """
     if not isinstance(value, dict):
-        raise AppError("The activity's apps didn't come through; try again.")
+        raise app_error("errors.activities.apps_missing")
     state = value.get("state", "inherit")
     if state not in BLOCK_STATES:
-        raise AppError("Pick whether the activity blocks apps.")
+        raise app_error("errors.activities.apps_state")
     return {
         "state": state,
         "allow": _clean_exes(value.get("allow", []), "allow"),
@@ -190,13 +208,13 @@ def clean_site_rules(value) -> dict:
         AppError with Settings' message if it's wrong.
     """
     if not isinstance(value, dict):
-        raise AppError("The activity's websites didn't come through; try again.")
+        raise app_error("errors.activities.sites_missing")
     state = value.get("state", "inherit")
     if state not in BLOCK_STATES:
-        raise AppError("Pick whether the activity blocks websites.")
+        raise app_error("errors.activities.sites_state")
     mode = value.get("mode") or ""
     if mode not in SITE_MODES:
-        raise AppError("Pick whether to block the listed websites or allow only them.")
+        raise app_error("errors.sites.mode")
     return {
         "state": state,
         "mode": mode,
@@ -206,8 +224,21 @@ def clean_site_rules(value) -> dict:
 
 
 def session_name(activity: dict | None, detail: str) -> str:
-    """What a free session is called: "Email · Q4 budget", "Email", the detail, or "Focus session"."""
+    """
+    What a free session is called: "Email · Q4 budget", "Email", the detail,
+    or "Focus session" in the app language (kept as written in the history).
+    """
     detail = " ".join((detail or "").split())
     if activity:
         return (f"{activity['name']} · {detail}" if detail else activity["name"])[:MAX_DETAIL]
-    return detail[:MAX_DETAIL] or "Focus session"
+    return detail[:MAX_DETAIL] or t("defaults.session_name")
+
+
+def call_name(apps: str) -> str:
+    """A call's name when its activity is gone: "Call · Zoom", in the app language."""
+    return t("defaults.call_name", apps=apps)[:MAX_DETAIL]
+
+
+def is_unnamed(name: str) -> bool:
+    """`name` is the name of an unnamed session ("Focus session") in any shipped language."""
+    return name in {translate(code, "defaults.session_name") for code in languages()}

@@ -106,6 +106,14 @@
     {"lang": "en", "key": "main.start.go_planned_bar", "values": {"n": 1, "work": 50}, "out": "Go. 1 pomodoro of 50 min, from the task's duration (on the bar)."},
     {"lang": "pt-BR", "key": "main.start.go_planned", "values": {"n": 2, "work": 30}, "out": "Vamos lá. 2 pomodoros de 30 min, pela duração da tarefa."},
     {"lang": "pt-BR", "key": "common.phase.break", "out": "Intervalo"},
-    {"lang": "pt-BR", "key": "mini.round", "values": {"round": 2, "rounds": 4}, "out": "Pomodoro 2 de 4"}
+    {"lang": "pt-BR", "key": "mini.round", "values": {"round": 2, "rounds": 4}, "out": "Pomodoro 2 de 4"},
+    {"lang": "en", "key": "notify.finished.text", "values": {"n": 1, "task": "Report"}, "out": "Session complete: 1 pomodoro on Report."},
+    {"lang": "en", "key": "notify.finished.text", "values": {"n": 3, "task": "Report"}, "out": "Session complete: 3 pomodoros on Report."},
+    {"lang": "pt-BR", "key": "notify.finished.text", "values": {"n": 0, "task": "Relatório"}, "out": "Sessão concluída: 0 pomodoro em Relatório."},
+    {"lang": "pt-BR", "key": "notify.finished.text", "values": {"n": 2, "task": "Relatório"}, "out": "Sessão concluída: 2 pomodoros em Relatório."},
+    {"lang": "pt-BR", "key": "errors.limits.doesnt_fit", "values": {"name": "x.com", "n": 90, "period": 60}, "out": "x.com: 90 minutos não cabem num período de 60 minutos."},
+    {"lang": "pt-BR", "key": "todoist.comment_local", "values": {"n": 2, "minutes": 50, "when": "17/10/2026 14:30"}, "out": "🍅 × 2 (50 min de foco), encerrada em 17/10/2026 14:30"},
+    {"lang": "pt-BR", "key": "defaults.session_name", "out": "Sessão de foco"},
+    {"lang": "pt-BR", "key": "tray.title_focus", "values": {"n": 12, "round": 2, "rounds": 4}, "out": "Foco · faltam 12 min · pomodoro 2/4"}
   ]
 }

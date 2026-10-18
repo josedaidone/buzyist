@@ -7,7 +7,7 @@ import ctypes.wintypes
 import re
 import threading
 
-from buzyist.constants import AppError
+from buzyist.i18n import app_error
 from buzyist.win32 import WM_APP, WM_HOTKEY, WM_QUIT, kernel32, user32
 
 # ------------------------------------------------------------- hotkey ---
@@ -69,7 +69,7 @@ def parse_hotkey(combo: str) -> tuple[int, int]:
         else:
             keys.append(part)
     if len(keys) != 1:
-        raise AppError(f"“{combo}” isn't a hotkey; use something like ctrl+alt+p.")
+        raise app_error("errors.hotkey.invalid", combo=combo)
     key = keys[0]
     if len(key) == 1 and key.isascii() and key.isalnum():
         vk = ord(key.upper())
@@ -78,9 +78,9 @@ def parse_hotkey(combo: str) -> tuple[int, int]:
     elif key in NAMED_KEYS:
         vk = NAMED_KEYS[key]
     else:
-        raise AppError(f"buZyist doesn't know the key “{key}”.")
+        raise app_error("errors.hotkey.unknown_key", key=key)
     if not mods and not 0x70 <= vk <= 0x87:
-        raise AppError("Add ctrl, alt, shift or win to the hotkey so it doesn't steal a normal key.")
+        raise app_error("errors.hotkey.no_modifier")
     return mods, vk
 
 
@@ -136,9 +136,9 @@ class GlobalHotkey:
             self._done.clear()
             user32.PostThreadMessageW(self._thread_id, self.WM_SET, 0, 0)
             if not self._done.wait(5):
-                raise AppError("The hotkey didn't register in time; try again.")
+                raise app_error("errors.hotkey.timeout")
             if not self._ok:
-                raise AppError(f"{combo} is already taken by another app; pick another hotkey.")
+                raise app_error("errors.hotkey.taken", combo=combo)
 
     def stop(self) -> None:
         user32.PostThreadMessageW(self._thread_id, self.WM_QUIT, 0, 0)

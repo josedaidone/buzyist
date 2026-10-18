@@ -8,6 +8,7 @@ from busylib.features import timer_state
 
 from buzyist import paths
 from buzyist.constants import APP, DEVICE_NAME, MAX_SITE_LIMITS, TOMBSTONE_DAYS, AppError, now_ms
+from buzyist.i18n import t
 from buzyist.site_rules import clean_site_limit
 from buzyist.storage import write_json
 from buzyist.sync import clean_remote_sessions, clean_remote_usage
@@ -62,7 +63,7 @@ class SyncMixin:
     def _remote_view(self) -> dict | None:
         """remote_session() for the UI; call with self.lock held."""
         s = self.remote_session()
-        return s and {"task": s["task"], "started_at": s["started_at"], "by": s["name"] or "another PC"}
+        return s and {"task": s["task"], "started_at": s["started_at"], "by": s["name"] or t("notify.another_pc")}
 
     def shared_session(self) -> dict | None:
         """This PC's running session, as other PCs on the same bar get it (see remote_session)."""
@@ -336,7 +337,7 @@ class SyncMixin:
                     key=lambda e: -e["seen_ms"],
                 ),
                 "devices": sorted(
-                    ({"name": d["name"] or "Another PC", "t": d["t"]} for d in sh["remote"].values()),
+                    ({"name": d["name"] or t("notify.another_pc_name"), "t": d["t"]} for d in sh["remote"].values()),
                     key=lambda d: -d["t"],
                 ),
                 "last_sync_ms": sh["last_sync"],

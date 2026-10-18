@@ -219,7 +219,7 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
         ({"site_mode": "x"}, "Pick whether to block the listed websites or allow only them."),
         ({"sync_owner": "Bad Owner"}, "Pick the browser profile that shares the limits."),
         ({"blocked_sites": "youtube.com"}, "The site list didn't come through; try again."),
-        ({"blocked_sites": ["not a site"]}, "'not a site' isn't a website like youtube.com or *.google.com."),
+        ({"blocked_sites": ["not a site"]}, "“not a site” isn't a website like youtube.com or *.google.com."),
         ({"allowed_sites": [f"s{i}.com" for i in range(51)]}, "Keep the allowed sites under 50."),
         ({"blocked_apps": "x"}, "The app list didn't come through; try again."),
         (
@@ -229,7 +229,7 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
         ({"site_limits": [{"patterns": []}]}, "Add at least one website to the limit."),
         ({"hotkey": "ctrl+alt+nope"}, "buZyist doesn't know the key “nope”."),
         ({"hotkey": "p"}, "Add ctrl, alt, shift or win to the hotkey so it doesn't steal a normal key."),
-        ({"busybar_ip": "192.168.1.50/x"}, "'192.168.1.50/x' isn't the bar's address; type one like 192.168.1.50."),
+        ({"busybar_ip": "192.168.1.50/x"}, "“192.168.1.50/x” isn't the bar's address; type one like 192.168.1.50."),
         ({"focus_label": "x" * 61}, "Keep the label to 60 characters or fewer."),
         ({"language": "fr"}, "Pick a language from the list."),
         # Several wrong: the first in the order save_settings always used.

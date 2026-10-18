@@ -22,6 +22,7 @@ from busylib import types
 from busylib.features import timer_state
 
 from buzyist import i18n, paths
+from buzyist.activities import is_unnamed
 from buzyist.api import Api
 from buzyist.app_limits import AppLimiter
 from buzyist.app_sites import SitesMixin
@@ -52,6 +53,7 @@ from buzyist.constants import (
 from buzyist.focus_server import FocusServer
 from buzyist.focus_stats import SESSION_REASONS, focus_stats, session_minutes
 from buzyist.hotkey import GlobalHotkey
+from buzyist.i18n import app_error, english, t
 from buzyist.plan import plan_session
 from buzyist.secrets_dpapi import SECRET_KEYS, unprotect_secrets
 from buzyist.session import SessionMixin
@@ -172,10 +174,10 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         if name is not None and name != self.cfg["active_filter"]:
             with self.cfg.edit() as c:
                 if not any(f["name"] == name for f in c["filters"]):
-                    raise AppError(f"There is no filter called {name!r}.")
+                    raise app_error("errors.filters.unknown", name=name)
                 c["active_filter"] = name
         if not self.cfg.get("use_todoist"):
-            raise AppError("Todoist is turned off in Settings.")
+            raise app_error("errors.todoist.off")
         active = self.active_filter()
         cfg = self.cfg.view()
         if tasks is None:
@@ -199,26 +201,26 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         """The tasks a query finds; also proves Todoist accepts it."""
         query = query.strip()
         if not query:
-            raise AppError("Type a Todoist filter query.")
+            raise app_error("errors.filters.no_query")
         try:
             return self.todoist.tasks(query)
         except AppError as err:
-            if "answered 400" in str(err):
-                raise AppError(f"Todoist didn't accept that filter: {str(err).split(': ', 1)[-1]}")
+            if getattr(err, "status", None) == 400:  # a TodoistError
+                raise app_error("errors.filters.refused", detail=err.detail)
             raise
 
     def save_filter(self, old_name: str | None, name: str, query: str) -> dict:
         name, query = name.strip(), query.strip()
         if not name:
-            raise AppError("Give the filter a name.")
+            raise app_error("errors.filters.no_name")
         if len(name) > 40:
-            raise AppError("Keep the name under 40 characters.")
+            raise app_error("errors.filters.name_long", max=40)
 
         def check(filters):
             if any(f["name"].lower() == name.lower() and f["name"] != old_name for f in filters):
-                raise AppError(f"There is already a filter called {name!r}.")
+                raise app_error("errors.filters.duplicate", name=name)
             if old_name is None and len(filters) >= MAX_FILTERS:
-                raise AppError(f"That's {MAX_FILTERS} filters already; delete one first.")
+                raise app_error("errors.filters.too_many", max=MAX_FILTERS)
 
         check(self.cfg["filters"])
         tasks = self.check_query(query)  # over the network: outside the edit
@@ -237,7 +239,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
     def delete_filter(self, name: str) -> dict:
         with self.cfg.edit() as c:
             if len(c["filters"]) <= 1:
-                raise AppError("Keep at least one filter.")
+                raise app_error("errors.filters.keep_one")
             c["filters"] = [f for f in c["filters"] if f["name"] != name]
             if c["active_filter"] == name:
                 c["active_filter"] = c["filters"][0]["name"]
@@ -248,7 +250,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             filters = c["filters"]
             i = next((i for i, f in enumerate(filters) if f["name"] == name), None)
             if i is None:
-                raise AppError(f"There is no filter called {name!r}.")
+                raise app_error("errors.filters.unknown", name=name)
             j = max(0, min(len(filters) - 1, i + delta))
             filters.insert(j, filters.pop(i))
         return {"filters": self.cfg["filters"], "active": self.active_filter()["name"]}
@@ -358,7 +360,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             else:
                 item = {"activity": "", "detail": str(h.get("content") or "")}
             key = (item["activity"], item["detail"].casefold())
-            if not item["detail"] or item["detail"] == "Focus session" or key in seen:
+            if not item["detail"] or is_unnamed(item["detail"]) or key in seen:
                 continue
             seen.add(key)
             out.append(item)
@@ -519,7 +521,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             with self.lock:
                 self.snap, self.bar_ok, self.bar_error, self.bar_fails = snap, True, "", 0
             if offline and not self.bar.offline:
-                self.notify("BUSY Bar is back", "The timer is on the bar again.")
+                self.notify(t("notify.bar_back.title"), t("notify.bar_back.text"))
         except BarUnreachable as err:
             with self.lock:
                 self.bar_ok, self.bar_error = False, str(err)
@@ -534,7 +536,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         except Exception as err:  # never let the loop die
             log.exception("bar poll")
             with self.lock:
-                self.bar_ok, self.bar_error = False, f"Unexpected: {err!r}"
+                self.bar_ok, self.bar_error = False, t("errors.unexpected", error=repr(err))
                 self.bar_fails += 1
         try:
             self.follow_session()
@@ -567,7 +569,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         except AppError:
             return True
         if running:
-            self.notify("BUSY Bar out of reach", "Your session carries on on this PC.")
+            self.notify(t("notify.bar_gone.title"), t("notify.bar_gone.text"))
         return True
 
     def pause_reminder(self) -> None:
@@ -643,7 +645,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
                 try:
                     value = int(value)
                 except (TypeError, ValueError):
-                    raise AppError(f"{key.replace('_', ' ')} must be a number.")
+                    raise app_error("errors.settings.not_number", name=key.replace("_", " "))
             elif kind not in (list, dict):
                 value = str(value).strip()
             clean[key] = value
@@ -658,7 +660,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
                 c.get(k) != merged.get(k) for k in ("use_busybar", "busybar_ip", "busybar_pin", "usb_fallback")
             )
             if merged["use_busybar"] != c["use_busybar"] and self.session:
-                raise AppError("Stop the running session before switching between the bar and this PC.")
+                raise app_error("errors.settings.switch_running")
             if merged["hotkey"] != old_hotkey:
                 try:
                     self.bind_hotkey(merged["hotkey"])
@@ -689,17 +691,18 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.app_limiter.poke()
         self.calls.poke()
         self.bar_screens.poke()
-        if self.tray:
-            self.tray.update_menu()
         if language_changed:
+            self.retranslate_tray()  # the menu and the tooltip, in the new language now
             self.reload_windows()  # the pages take their text from the catalog at load
+        elif self.tray:
+            self.tray.update_menu()
 
     def apply_launch_at_login(self) -> None:
         """Make the Windows sign-in entry match the setting."""
         try:
             set_launch_at_login(bool(self.cfg["launch_at_login"]))
         except OSError as err:
-            raise AppError(f"Couldn't change the Windows startup entry: {err}")
+            raise app_error("errors.settings.startup_entry", error=err)
 
     def bind_hotkey(self, combo: str | None = None) -> None:
         if self.hotkey:
@@ -746,7 +749,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             # Also refreshes the entry's path if the app moved.
             self.apply_launch_at_login()
         except AppError as err:
-            log.warning("%s", err)
+            log.warning("%s", english(err))
 
         self.tray = self.make_tray()
         threading.Thread(target=self.tray.run, daemon=True, name="tray").start()
@@ -754,8 +757,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         try:
             self.bind_hotkey()
         except AppError as err:
-            log.warning("%s", err)
-            self.notify("Your hotkey isn't set", f"{err} Pick another in Settings → General.")
+            log.warning("%s", english(err))
+            self.notify(t("notify.hotkey_unset.title"), t("notify.hotkey_unset.text", error=err))
         threading.Thread(target=self.engine, daemon=True).start()
         self.blocker.start()
         self.app_limiter.start()

@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from buzyist import paths
 from buzyist.constants import APP, APP_NAME, AppError
+from buzyist.i18n import t
 from buzyist.updater import UPDATABLE
 from buzyist.win32 import NIF_INFO, NIIF_NOSOUND, NIM_MODIFY
 
@@ -58,6 +59,20 @@ def tray_image(view: dict | None) -> Image.Image:
     return img
 
 
+def tray_title(view: dict | None, task: str | None) -> str:
+    """The tray icon's tooltip, in the app language: what runs and its task, or the app's name."""
+    if not view:
+        return t("tray.title_idle", app=APP_NAME)[:127]
+    if view["phase"] == "call":
+        title = t("tray.title_call", n=view["minutes"])
+    else:
+        phase = "paused" if view["paused"] else ("focus" if view["phase"] == "work" else "break")
+        title = t(f"tray.title_{phase}", n=view["minutes"], round=view["round"], rounds=view["rounds"])
+    if task:
+        title += f"\n{task}"
+    return title[:127]
+
+
 class TrayMixin:
     """App's tray icon: notifications, the icon and title kept current, the menu."""
 
@@ -92,20 +107,22 @@ class TrayMixin:
             self._tray_key = key
             self.tray.icon = tray_image(view)
             self.tray.update_menu()
-        if view and view["phase"] == "call":
-            title = f"On a call · {view['minutes']} min"
-            if task:
-                title += f"\n{task}"
-        elif view:
-            phase = "Paused" if view["paused"] else ("Focus" if view["phase"] == "work" else "Break")
-            title = f"{phase} · {view['minutes']} min left · pomodoro {view['round']}/{view['rounds']}"
-            if task:
-                title += f"\n{task}"
-        else:
-            title = APP_NAME + " · pick a task"
-        self.tray.title = title[:127]
+        self.tray.title = tray_title(view, task)
+
+    def retranslate_tray(self) -> None:
+        """A new app language: rebuild the menu (pystray redraws it) and the tooltip at once."""
+        if not self.tray:
+            return
+        self.tray.menu = self.tray_menu()
+        self._tray_key = None  # draw the icon and the title again too
+        self.update_tray()
 
     def make_tray(self) -> pystray.Icon:
+        return pystray.Icon("busyist", tray_image(None), APP_NAME, self.tray_menu())
+
+    def tray_menu(self) -> pystray.Menu:
+        """The tray menu; its texts are read in the app language each time Windows shows it."""
+
         def running(_=None):
             return self.timer_view() is not None
 
@@ -123,7 +140,7 @@ class TrayMixin:
                 try:
                     self.control(action)
                 except AppError as err:
-                    self.notify("That didn't work", str(err))
+                    self.notify(t("notify.failed"), str(err))
 
             return handler
 
@@ -137,7 +154,7 @@ class TrayMixin:
                 remote = self.remote_session()
                 if remote:
                     return "▶  " + remote["task"]["content"][:60]
-            return "No task in focus"
+            return t("tray.no_task")
 
         def nothing(icon, item):
             pass
@@ -145,7 +162,7 @@ class TrayMixin:
         def update_line(item):
             with self.lock:
                 version = self.update and self.update["version"]
-            return f"Install update {version}" if UPDATABLE else f"Download update {version}"
+            return t("tray.install_update" if UPDATABLE else "tray.download_update", version=version)
 
         def get_update(icon, item):
             if not UPDATABLE:
@@ -156,22 +173,26 @@ class TrayMixin:
                 try:
                     self.install_update()
                 except AppError as err:
-                    self.notify("That didn't work", str(err))
+                    self.notify(t("notify.failed"), str(err))
 
             threading.Thread(target=go, daemon=True).start()
 
-        menu = pystray.Menu(
-            pystray.MenuItem("Open buZyist", lambda i, it: self.show_main(), default=True),
-            pystray.MenuItem(lambda it: f"Pick a task ({self.cfg['hotkey']})", lambda i, it: self.show_main(True)),
+        def text(key):
+            return lambda item: t(key, app=APP_NAME)
+
+        return pystray.Menu(
+            pystray.MenuItem(text("tray.open"), lambda i, it: self.show_main(), default=True),
+            pystray.MenuItem(
+                lambda it: t("tray.pick_task", hotkey=self.cfg["hotkey"]), lambda i, it: self.show_main(True)
+            ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(now_line, nothing, enabled=False),
-            pystray.MenuItem("Pause", act("pause"), visible=lambda it: timed() and not paused()),
-            pystray.MenuItem("Resume", act("resume"), visible=lambda it: paused()),
-            pystray.MenuItem("Skip to next phase", act("skip"), visible=lambda it: timed()),
-            pystray.MenuItem("Stop", act("stop"), visible=lambda it: running()),
-            pystray.MenuItem("Mini timer", toggle_mini, checked=lambda it: self.mini_shown),
+            pystray.MenuItem(text("tray.pause"), act("pause"), visible=lambda it: timed() and not paused()),
+            pystray.MenuItem(text("tray.resume"), act("resume"), visible=lambda it: paused()),
+            pystray.MenuItem(text("tray.skip"), act("skip"), visible=lambda it: timed()),
+            pystray.MenuItem(text("tray.stop"), act("stop"), visible=lambda it: running()),
+            pystray.MenuItem(text("tray.mini"), toggle_mini, checked=lambda it: self.mini_shown),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(update_line, get_update, visible=lambda it: bool(self.update) and not self.updating),
-            pystray.MenuItem("Quit", lambda i, it: self.quit()),
+            pystray.MenuItem(text("tray.quit"), lambda i, it: self.quit()),
         )
-        return pystray.Icon("busyist", tray_image(None), APP_NAME, menu)
