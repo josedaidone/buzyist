@@ -8,6 +8,14 @@
       "h_m": "{h}h {m}m",
       "h": "{h}h",
       "min": "{m} min"
+    },
+    "phase": {
+      "_": "The timer's state, on the main window and the mini timer.",
+      "ready": "Ready",
+      "paused": "Paused",
+      "focus": "Focus",
+      "break": "Break",
+      "call": "Call"
     }
   },
   "summary": {
@@ -50,9 +58,280 @@
         "one": "{n} pomodoro finished today",
         "other": "{n} pomodoros finished today"
       }
+    },
+    "header": {
+      "today_title": "Pomodoros finished today",
+      "update_title": "A new version of buZyist is out",
+      "update": "Update {version}",
+      "updating": "Updating…",
+      "ext_title": "The browser extension is out of date",
+      "ext": "Reload extension",
+      "settings": "Settings"
+    },
+    "bar": {
+      "looking": "Looking for the bar",
+      "local": "Timer on this PC",
+      "offline": "Bar out of reach · timer on this PC",
+      "offline_title": "The BUSY Bar can't be reached. The timer runs here and goes back to the bar once it answers.",
+      "via": "BUSY Bar · {via}",
+      "unreachable": "Bar offline"
+    },
+    "timer": {
+      "aria": "Timer",
+      "per_pomodoro": "per pomodoro",
+      "left": "left",
+      "paused": "paused",
+      "aria_left": "{time} left",
+      "aria_per_pomodoro": "{time} per pomodoro",
+      "round": "Pomodoro {round} of {rounds}",
+      "rounds": {
+        "one": "{n} pomodoro",
+        "other": "{n} pomodoros"
+      },
+      "plan": {
+        "one": "{n} pomodoro of {work} min, no break",
+        "other": "{n} pomodoros of {work} min, {rest} min breaks"
+      },
+      "break_next": "Break · pomodoro {next} of {rounds} next",
+      "last": "Pomodoro {round} of {rounds} · the last one",
+      "break_after": "Pomodoro {round} of {rounds} · {rest} min break after",
+      "call": "on a call",
+      "call_aria": "{time} on a call",
+      "call_rounds": "A call, with no pomodoros",
+      "call_line": "Ends when the call does · counted as focus"
+    },
+    "current": {
+      "call": "On a call · since {time}",
+      "break": "Break time. Since {time}",
+      "paused": "Paused · since {time}",
+      "focus": "Just this · since {time}",
+      "wrapping_up": "Wrapping up…",
+      "open_todoist": "Open in Todoist",
+      "remote": "Started on {by}",
+      "remote_since": "Started on {by} · since {time}",
+      "no_task": "No task linked",
+      "bar_no_task": "Started on the bar, no task linked",
+      "timer_running": "Timer running",
+      "pick_to_focus": "Pick a task to put it in focus",
+      "idle": "One pomodoro at a time.",
+      "idle_solo": "Name it if you like, then go.",
+      "pick": "Pick a task to start",
+      "ready": "Ready when you are"
+    },
+    "controls": {
+      "stop": "Stop session",
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip to next phase"
+    },
+    "guard": {
+      "apps": {
+        "one": "{n} app",
+        "other": "{n} apps"
+      },
+      "sites": {
+        "one": "{n} site",
+        "other": "{n} sites"
+      },
+      "allowlist": "allowlist",
+      "limits": {
+        "one": "{n} limit",
+        "other": "{n} limits"
+      },
+      "off": "Focus guard off · set it up",
+      "on": {
+        "one": "Focus guard on · {n} block active",
+        "other": "Focus guard on · {n} blocks active"
+      },
+      "ready": {
+        "one": "Focus guard ready · {n} block",
+        "other": "Focus guard ready · {n} blocks"
+      },
+      "title": "What stays blocked during focus: {list}",
+      "title_off": "Block distracting apps and websites during focus"
+    },
+    "setup": {
+      "title": "Session settings",
+      "hint_idle": "Used for the next session",
+      "hint_running": "Applies to the next session",
+      "focus": "Focus",
+      "break": "Break",
+      "pomodoros": "Pomodoros",
+      "min": "min",
+      "per_session": "per session",
+      "less_focus": "Less focus time",
+      "more_focus": "More focus time",
+      "focus_minutes": "Focus minutes",
+      "shorter_break": "Shorter break",
+      "longer_break": "Longer break",
+      "break_minutes": "Break minutes",
+      "fewer_pomodoros": "Fewer pomodoros",
+      "more_pomodoros": "More pomodoros",
+      "pomodoros_per_session": "Pomodoros per session",
+      "autostart": "Auto-start next phase",
+      "total": "{duration} · ends ~{time}",
+      "preset": "{name}: {cycles} × {work} min focus, {rest} min breaks",
+      "presets": {
+        "classic": "Classic",
+        "short": "Short",
+        "long": "Long",
+        "deep": "Deep"
+      }
+    },
+    "free": {
+      "label": "What are you working on?",
+      "placeholder": "What are you working on? (optional)",
+      "detail": "Add a detail (optional)",
+      "remove": "Remove the activity",
+      "activities": "Activities",
+      "show": "Show the activities",
+      "start": "Start a session",
+      "recent_of": "Recent {activity}",
+      "switch_to": "Switch to",
+      "recent": "Recent",
+      "custom": "Start “{text}”",
+      "edit": "Edit activities…"
+    },
+    "start": {
+      "already": "That task is already in focus.",
+      "replace": "Replace the current session on “{task}”?",
+      "go": "Go. {work} minutes, just this.",
+      "go_bar": "Go. {work} minutes, just this (on the bar).",
+      "go_planned": {
+        "one": "Go. {n} pomodoro of {work} min, from the task's duration.",
+        "other": "Go. {n} pomodoros of {work} min, from the task's duration."
+      },
+      "go_planned_bar": {
+        "one": "Go. {n} pomodoro of {work} min, from the task's duration (on the bar).",
+        "other": "Go. {n} pomodoros of {work} min, from the task's duration (on the bar)."
+      }
+    },
+    "tasks": {
+      "aria": "Tasks",
+      "search": "Search tasks",
+      "refresh": "Reload from Todoist",
+      "off": "Todoist is off",
+      "needs_token": "Add your Todoist API token to see your tasks.",
+      "turn_on": "Turn it on in Settings to pick tasks.",
+      "load_failed": "Couldn't load tasks",
+      "open_settings": "Open settings",
+      "welcome": "Welcome to buZyist",
+      "welcome_text": "Add your Todoist API token to see your tasks, or turn Todoist off in Settings to run sessions without tasks.",
+      "count": "{shown} of {total}",
+      "count_planned": "{shown} of {total} · {duration}",
+      "count_title": "{duration} of Todoist durations in this filter",
+      "empty": "All clear",
+      "empty_text": "Nothing in this filter. Enjoy it.",
+      "no_match": "No match",
+      "no_match_text": "No task contains “{text}”.",
+      "overdue": "Overdue · {day}",
+      "tomorrow": "Tomorrow",
+      "tomorrow_at": "Tomorrow {time}",
+      "plan": {
+        "one": "{work} min",
+        "other": "{n} × {work} min"
+      },
+      "plan_title": {
+        "one": "{minutes} min in Todoist: {n} pomodoro of {work} min. Shift+click play for your usual settings.",
+        "other": "{minutes} min in Todoist: {n} pomodoros of {work} min. Shift+click play for your usual settings."
+      },
+      "subtasks": {
+        "one": "{n} subtask",
+        "other": "{n} subtasks"
+      },
+      "subtasks_title": "Play lets you pick one of them, or the whole task",
+      "priority": {
+        "p1": "Urgent",
+        "p2": "High",
+        "p3": "Medium"
+      },
+      "priority_title": "Priority {p} in Todoist",
+      "start": "Start a session",
+      "start_on": "Start a session on: {task}",
+      "done": "Mark as done",
+      "done_on": "Mark as done: {task}",
+      "done_on_priority": "Mark as done: {task} (priority {p})",
+      "more": "more",
+      "less": "less",
+      "badge": {
+        "wrapping_up": "Wrapping up",
+        "call": "On a call",
+        "paused": "Paused",
+        "break": "Break",
+        "focus": "In focus"
+      },
+      "pomodoros_done": {
+        "one": "{n} pomodoro done",
+        "other": "{n} pomodoros done"
+      },
+      "complete_in_focus": "“{task}” is in focus. Stop the session and mark it as done?",
+      "completed": "Done in Todoist.",
+      "keys_choose": "↑ ↓ choose",
+      "keys_start": "Enter start",
+      "keys_filter": "Ctrl+1–9 filter",
+      "keys_hide": "Esc hide"
+    },
+    "menu": {
+      "start": "Start session",
+      "start_usual": "Start with your usual {work}-min pomodoros",
+      "done": "Mark as done",
+      "todoist": "See on Todoist"
+    },
+    "picker": {
+      "aria": "Start on",
+      "head": "Start on…",
+      "whole": "The whole task",
+      "plan": {
+        "one": "{work} min",
+        "other": "{n} × {work}"
+      }
+    },
+    "filters": {
+      "aria": "Saved filters",
+      "edit": "Edit this filter",
+      "new": "New filter",
+      "edit_title": "Edit filter",
+      "name": "Name",
+      "name_placeholder": "e.g. Deep work",
+      "query": "Todoist filter query",
+      "help": "Same syntax as Todoist's own filters:",
+      "help_and": "and",
+      "help_or": "or",
+      "help_not": "not",
+      "help_dates": "dates",
+      "add_to_query": "Add to the query",
+      "delete": "Delete",
+      "left": "Move left",
+      "right": "Move right",
+      "test": "Test",
+      "cancel": "Cancel",
+      "save": "Save",
+      "asking": "Asking Todoist…",
+      "checking": "Checking the filter with Todoist…",
+      "matches": {
+        "one": "{n} task matches",
+        "other": "{n} tasks match"
+      },
+      "saved": "Filter “{name}” saved",
+      "delete_confirm": "Delete the filter “{name}”?",
+      "deleted": "Filter deleted"
     }
   },
   "mini": {
+    "title": "buZyist timer",
+    "drag": "Drag to move · double-click to open buZyist",
+    "until_end": "until it ends",
+    "round": "Pomodoro {round} of {rounds}",
+    "no_task": "No task",
+    "no_session": "No session",
+    "timer_running": "Timer running",
+    "on_bar": "Running on the bar",
+    "by": "on {by}",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "open": "Open buZyist",
+    "hide": "Hide mini timer"
   },
   "settings": {
     "saved": "Settings saved",
