@@ -55,21 +55,21 @@
     <div class="brand" role="img" aria-label="buZyist">
       <img class="logo" src="img/logo.svg" alt="" height="30">
     </div>
-    <span class="chip solo-only" id="today" title="Pomodoros finished today"></span>
+    <span class="chip solo-only" id="today" title="Pomodoros finished today" data-i18n-title="main.header.today_title"></span>
     <div class="spacer"></div>
-    <button class="chip update hidden" id="updateChip" title="A new version of buZyist is out"></button>
-    <button class="chip update hidden" id="extChip" title="The browser extension is out of date">Reload extension</button>
-    <span class="chip" id="barChip"><span class="led"></span><span id="barText">Looking for the bar</span></span>
-    <button class="icon-btn" id="openSettings" title="Settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+    <button class="chip update hidden" id="updateChip" title="A new version of buZyist is out" data-i18n-title="main.header.update_title"></button>
+    <button class="chip update hidden" id="extChip" title="The browser extension is out of date" data-i18n-title="main.header.ext_title" data-i18n="main.header.ext">Reload extension</button>
+    <span class="chip" id="barChip"><span class="led"></span><span id="barText" data-i18n="main.bar.looking">Looking for the bar</span></span>
+    <button class="icon-btn" id="openSettings" title="Settings" aria-label="Settings" data-i18n-title="main.header.settings" data-i18n-aria-label="main.header.settings"><svg><use href="#i-gear"/></svg></button>
   </header>
 
   <div class="body">
-    <section class="panel focus" aria-label="Timer">
-      <span class="state-chip" id="phaseTag">Ready</span>
+    <section class="panel focus" aria-label="Timer" data-i18n-aria-label="main.timer.aria">
+      <span class="state-chip" id="phaseTag" data-i18n="common.phase.ready">Ready</span>
 
       <div class="current idle" id="current">
-        <h2 id="curTask">Pick a task to start</h2>
-        <div class="eyebrow" id="curEyebrow">One pomodoro at a time.</div>
+        <h2 id="curTask" data-i18n="main.current.pick">Pick a task to start</h2>
+        <div class="eyebrow" id="curEyebrow" data-i18n="main.current.idle">One pomodoro at a time.</div>
         <div class="cur-meta" id="curMeta"></div>
       </div>
 
@@ -83,7 +83,7 @@
         </svg>
         <div class="ring-center" role="timer" id="timerBox">
           <div class="time" id="time">25:00</div>
-          <div class="time-label" id="timeLabel">per pomodoro</div>
+          <div class="time-label" id="timeLabel" data-i18n="main.timer.per_pomodoro">per pomodoro</div>
         </div>
       </div>
 
@@ -96,57 +96,57 @@
         <!-- Pick an activity (it becomes a chip, then type a detail after it) or type anything: see the combobox in ui/main.js. -->
         <div class="combo" id="freeCombo">
           <div class="combo-field" id="freeField">
-            <span class="combo-chip hidden" id="freeChip"><svg><use id="freeChipIcon" href="#a-dot"/></svg><span id="freeChipName"></span><button type="button" id="freeChipX" tabindex="-1" title="Remove the activity" aria-label="Remove the activity"><svg><use href="#i-x"/></svg></button></span>
-            <input type="text" id="freeName" maxlength="80" placeholder="What are you working on? (optional)" autocomplete="off" spellcheck="false"
-                   role="combobox" aria-expanded="false" aria-controls="freeList" aria-autocomplete="list" aria-label="What are you working on?">
-            <button type="button" class="combo-toggle" id="freeToggle" tabindex="-1" title="Activities" aria-label="Show the activities"><svg><use href="#i-chevron"/></svg></button>
+            <span class="combo-chip hidden" id="freeChip"><svg><use id="freeChipIcon" href="#a-dot"/></svg><span id="freeChipName"></span><button type="button" id="freeChipX" tabindex="-1" title="Remove the activity" aria-label="Remove the activity" data-i18n-title="main.free.remove" data-i18n-aria-label="main.free.remove"><svg><use href="#i-x"/></svg></button></span>
+            <input type="text" id="freeName" maxlength="80" placeholder="What are you working on? (optional)" data-i18n-placeholder="main.free.placeholder" autocomplete="off" spellcheck="false"
+                   role="combobox" aria-expanded="false" aria-controls="freeList" aria-autocomplete="list" aria-label="What are you working on?" data-i18n-aria-label="main.free.label">
+            <button type="button" class="combo-toggle" id="freeToggle" tabindex="-1" title="Activities" aria-label="Show the activities" data-i18n-title="main.free.activities" data-i18n-aria-label="main.free.show"><svg><use href="#i-chevron"/></svg></button>
           </div>
-          <div class="combo-list hidden" id="freeList" role="listbox" aria-label="Activities"></div>
+          <div class="combo-list hidden" id="freeList" role="listbox" aria-label="Activities" data-i18n-aria-label="main.free.activities"></div>
         </div>
-        <button class="btn primary lg" id="startFree"><svg><use href="#i-play"/></svg>Start a session</button>
+        <button class="btn primary lg" id="startFree" data-i18n="main.free.start"><svg><use href="#i-play"/></svg>Start a session</button>
       </div>
 
       <div class="controls hidden" id="controls">
-        <button class="round-btn" id="btnStop" title="Stop session" aria-label="Stop session"><svg><use href="#i-stop"/></svg></button>
-        <button class="round-btn big" id="btnPause" title="Pause" aria-label="Pause"><svg><use href="#i-pause" id="pauseIcon"/></svg></button>
-        <button class="round-btn" id="btnSkip" title="Skip to next phase" aria-label="Skip to next phase"><svg><use href="#i-skip"/></svg></button>
+        <button class="round-btn" id="btnStop" title="Stop session" aria-label="Stop session" data-i18n-title="main.controls.stop" data-i18n-aria-label="main.controls.stop"><svg><use href="#i-stop"/></svg></button>
+        <button class="round-btn big" id="btnPause" title="Pause" aria-label="Pause" data-i18n-title="main.controls.pause" data-i18n-aria-label="main.controls.pause"><svg><use href="#i-pause" id="pauseIcon"/></svg></button>
+        <button class="round-btn" id="btnSkip" title="Skip to next phase" aria-label="Skip to next phase" data-i18n-title="main.controls.skip" data-i18n-aria-label="main.controls.skip"><svg><use href="#i-skip"/></svg></button>
       </div>
 
-      <button class="guard" id="guard" type="button"><svg><use href="#i-shield" id="guardIcon"/></svg><span id="guardText">Focus guard off</span></button>
+      <button class="guard" id="guard" type="button"><svg><use href="#i-shield" id="guardIcon"/></svg><span id="guardText"></span></button>
 
       <details class="setup" id="setup">
-        <summary><span>Session settings</span><span class="hint" id="setupHint">Used for the next session</span></summary>
+        <summary><span data-i18n="main.setup.title">Session settings</span><span class="hint" id="setupHint" data-i18n="main.setup.hint_idle">Used for the next session</span></summary>
         <div class="presets" id="presets"></div>
         <div class="steppers">
           <div class="stepper" data-key="work_minutes" data-step="5" data-min="5" data-max="480">
-            <label>Focus</label>
-            <div class="row"><button data-d="-1" aria-label="Less focus time">−</button><input type="number" inputmode="numeric" aria-label="Focus minutes"><button data-d="1" aria-label="More focus time">+</button></div>
+            <label data-i18n="main.setup.focus">Focus</label>
+            <div class="row"><button data-d="-1" aria-label="Less focus time" data-i18n-aria-label="main.setup.less_focus">−</button><input type="number" inputmode="numeric" aria-label="Focus minutes" data-i18n-aria-label="main.setup.focus_minutes"><button data-d="1" aria-label="More focus time" data-i18n-aria-label="main.setup.more_focus">+</button></div>
             <small>min</small>
           </div>
           <div class="stepper" data-key="rest_minutes" data-step="1" data-min="5" data-max="480">
-            <label>Break</label>
-            <div class="row"><button data-d="-1" aria-label="Shorter break">−</button><input type="number" inputmode="numeric" aria-label="Break minutes"><button data-d="1" aria-label="Longer break">+</button></div>
+            <label data-i18n="main.setup.break">Break</label>
+            <div class="row"><button data-d="-1" aria-label="Shorter break" data-i18n-aria-label="main.setup.shorter_break">−</button><input type="number" inputmode="numeric" aria-label="Break minutes" data-i18n-aria-label="main.setup.break_minutes"><button data-d="1" aria-label="Longer break" data-i18n-aria-label="main.setup.longer_break">+</button></div>
             <small>min</small>
           </div>
           <div class="stepper" data-key="cycles" data-step="1" data-min="1" data-max="35">
-            <label>Pomodoros</label>
-            <div class="row"><button data-d="-1" aria-label="Fewer pomodoros">−</button><input type="number" inputmode="numeric" aria-label="Pomodoros per session"><button data-d="1" aria-label="More pomodoros">+</button></div>
-            <small>per session</small>
+            <label data-i18n="main.setup.pomodoros">Pomodoros</label>
+            <div class="row"><button data-d="-1" aria-label="Fewer pomodoros" data-i18n-aria-label="main.setup.fewer_pomodoros">−</button><input type="number" inputmode="numeric" aria-label="Pomodoros per session" data-i18n-aria-label="main.setup.pomodoros_per_session"><button data-d="1" aria-label="More pomodoros" data-i18n-aria-label="main.setup.more_pomodoros">+</button></div>
+            <small data-i18n="main.setup.per_session">per session</small>
           </div>
         </div>
         <div class="setup-foot">
-          <label class="switch"><input type="checkbox" id="autostart" role="switch"><span class="knob"></span>Auto-start next phase</label>
+          <label class="switch" data-i18n="main.setup.autostart"><input type="checkbox" id="autostart" role="switch"><span class="knob"></span>Auto-start next phase</label>
           <span class="total" id="total"></span>
         </div>
       </details>
     </section>
 
-    <section class="tasks" id="tasksCard" aria-label="Tasks">
+    <section class="tasks" id="tasksCard" aria-label="Tasks" data-i18n-aria-label="main.tasks.aria">
       <div class="today-head">
         <div class="today-date" id="todayDate"></div>
         <div class="summary" id="summary">
           <div class="summary-top">
-            <div class="summary-title" id="sumTitle">No pomodoros yet today</div>
+            <div class="summary-title" id="sumTitle" data-i18n="main.today.none">No pomodoros yet today</div>
             <div class="summary-side" id="sumSide"></div>
           </div>
           <div class="summary-tomatoes" id="sumTomatoes" role="img"></div>
@@ -155,19 +155,19 @@
       <div class="tasks-head">
         <label class="search">
           <svg><use href="#i-search"/></svg>
-          <input id="search" placeholder="Search tasks" autocomplete="off" spellcheck="false">
+          <input id="search" placeholder="Search tasks" data-i18n-placeholder="main.tasks.search" autocomplete="off" spellcheck="false">
           <kbd id="hotkeyHint"></kbd>
         </label>
-        <button class="icon-btn" id="refresh" title="Reload from Todoist" aria-label="Reload from Todoist"><svg><use href="#i-refresh"/></svg></button>
+        <button class="icon-btn" id="refresh" title="Reload from Todoist" aria-label="Reload from Todoist" data-i18n-title="main.tasks.refresh" data-i18n-aria-label="main.tasks.refresh"><svg><use href="#i-refresh"/></svg></button>
       </div>
       <div class="filters">
-        <div class="filter-tabs" id="filterTabs" role="tablist" aria-label="Saved filters"></div>
-        <button class="icon-btn sm" id="editFilter" title="Edit this filter" aria-label="Edit this filter"><svg><use href="#i-pencil"/></svg></button>
-        <button class="icon-btn sm" id="addFilter" title="New filter" aria-label="New filter"><svg><use href="#i-plus"/></svg></button>
+        <div class="filter-tabs" id="filterTabs" role="tablist" aria-label="Saved filters" data-i18n-aria-label="main.filters.aria"></div>
+        <button class="icon-btn sm" id="editFilter" title="Edit this filter" aria-label="Edit this filter" data-i18n-title="main.filters.edit" data-i18n-aria-label="main.filters.edit"><svg><use href="#i-pencil"/></svg></button>
+        <button class="icon-btn sm" id="addFilter" title="New filter" aria-label="New filter" data-i18n-title="main.filters.new" data-i18n-aria-label="main.filters.new"><svg><use href="#i-plus"/></svg></button>
       </div>
       <div class="filter-line"><code id="filterText"></code><span id="count"></span></div>
       <ul class="list" id="list"></ul>
-      <div class="list-foot"><span>↑ ↓ choose</span><span>Enter start</span><span>Ctrl+1–9 filter</span><span>Esc hide</span></div>
+      <div class="list-foot"><span data-i18n="main.tasks.keys_choose">↑ ↓ choose</span><span data-i18n="main.tasks.keys_start">Enter start</span><span data-i18n="main.tasks.keys_filter">Ctrl+1–9 filter</span><span data-i18n="main.tasks.keys_hide">Esc hide</span></div>
     </section>
   </div>
 </div>
@@ -530,26 +530,26 @@
 
 <div class="modal-wrap" id="filterWrap">
   <form class="modal form-modal" id="filterForm" role="dialog" aria-modal="true" aria-labelledby="filterTitle" autocomplete="off">
-    <h3 id="filterTitle">New filter</h3>
+    <h3 id="filterTitle" data-i18n="main.filters.new">New filter</h3>
     <div class="field">
-      <label for="f_name">Name</label>
-      <input class="input" id="f_name" maxlength="40" spellcheck="false" placeholder="e.g. Deep work">
+      <label for="f_name" data-i18n="main.filters.name">Name</label>
+      <input class="input" id="f_name" maxlength="40" spellcheck="false" placeholder="e.g. Deep work" data-i18n-placeholder="main.filters.name_placeholder">
     </div>
     <div class="field">
-      <label for="f_query">Todoist filter query</label>
+      <label for="f_query" data-i18n="main.filters.query">Todoist filter query</label>
       <textarea class="input area" id="f_query" rows="3" spellcheck="false" placeholder="today | overdue"></textarea>
       <div class="examples" id="examples"></div>
-      <div class="help">Same syntax as Todoist's own filters: <code>&amp;</code> and, <code>|</code> or, <code>!</code> not, <code>#Project</code>, <code>@label</code>, <code>p1</code>, dates.</div>
+      <div class="help"><span data-i18n="main.filters.help">Same syntax as Todoist's own filters:</span> <code>&amp;</code> <span data-i18n="main.filters.help_and">and</span>, <code>|</code> <span data-i18n="main.filters.help_or">or</span>, <code>!</code> <span data-i18n="main.filters.help_not">not</span>, <code>#Project</code>, <code>@label</code>, <code>p1</code>, <span data-i18n="main.filters.help_dates">dates</span>.</div>
     </div>
     <div class="test-result" id="filterTest"></div>
     <div class="form-actions">
-      <button type="button" class="btn ghost danger" id="filterDelete">Delete</button>
-      <button type="button" class="icon-btn sm" id="filterLeft" title="Move left">&larr;</button>
-      <button type="button" class="icon-btn sm" id="filterRight" title="Move right">&rarr;</button>
+      <button type="button" class="btn ghost danger" id="filterDelete" data-i18n="main.filters.delete">Delete</button>
+      <button type="button" class="icon-btn sm" id="filterLeft" title="Move left" data-i18n-title="main.filters.left">&larr;</button>
+      <button type="button" class="icon-btn sm" id="filterRight" title="Move right" data-i18n-title="main.filters.right">&rarr;</button>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="filterPreview">Test</button>
-      <button type="button" class="btn ghost" id="filterCancel">Cancel</button>
-      <button type="submit" class="btn primary" id="filterSave">Save</button>
+      <button type="button" class="btn" id="filterPreview" data-i18n="main.filters.test">Test</button>
+      <button type="button" class="btn ghost" id="filterCancel" data-i18n="main.filters.cancel">Cancel</button>
+      <button type="submit" class="btn primary" id="filterSave" data-i18n="main.filters.save">Save</button>
     </div>
   </form>
 </div>

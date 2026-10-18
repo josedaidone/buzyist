@@ -2,11 +2,11 @@
 
 const $ = (id) => document.getElementById(id);
 const RING = 2 * Math.PI * 120;  // the ring's r in ui/main.html
-const PRESETS = [
-  { name: "Classic", work_minutes: 25, rest_minutes: 5, cycles: 4 },
-  { name: "Short", work_minutes: 15, rest_minutes: 5, cycles: 4 },
-  { name: "Long", work_minutes: 50, rest_minutes: 10, cycles: 3 },
-  { name: "Deep", work_minutes: 90, rest_minutes: 15, cycles: 2 },
+const PRESETS = [  // name: main.setup.presets.<name>
+  { name: "classic", work_minutes: 25, rest_minutes: 5, cycles: 4 },
+  { name: "short", work_minutes: 15, rest_minutes: 5, cycles: 4 },
+  { name: "long", work_minutes: 50, rest_minutes: 10, cycles: 3 },
+  { name: "deep", work_minutes: 90, rest_minutes: 15, cycles: 2 },
 ];
 
 let api = null;
@@ -50,11 +50,11 @@ function splitAround(text, part) {
 }
 
 function toast(message, bad) {
-  const t = $("toast");
-  t.textContent = message;
-  t.className = "on" + (bad ? " bad" : "");
+  const box = $("toast");
+  box.textContent = message;
+  box.className = "on" + (bad ? " bad" : "");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (t.className = ""), bad ? 7000 : 3200);
+  toastTimer = setTimeout(() => (box.className = ""), bad ? 7000 : 3200);
 }
 
 function clock(ms) {
@@ -77,20 +77,20 @@ function isoDay(offset) {
 
 function niceDay(iso) {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDate(new Date(y, m - 1, d), { month: "short", day: "numeric" });
 }
 
-function dueText(t) {
-  if (!t.day) return "";
-  if (t.overdue) return "Overdue · " + niceDay(t.day);
-  if (t.day === isoDay(0)) return t.time || "";
-  if (t.day === isoDay(1)) return "Tomorrow" + (t.time ? " " + t.time : "");
-  return niceDay(t.day) + (t.time ? " " + t.time : "");
+function dueText(task) {
+  if (!task.day) return "";
+  if (task.overdue) return t("main.tasks.overdue", { day: niceDay(task.day) });
+  if (task.day === isoDay(0)) return task.time || "";
+  if (task.day === isoDay(1)) return task.time ? t("main.tasks.tomorrow_at", { time: task.time }) : t("main.tasks.tomorrow");
+  return niceDay(task.day) + (task.time ? " " + task.time : "");
 }
 
+// Todoist's priorities (its API counts 4 as P1), with a word (main.tasks.priority.p1...)
+// so the colour is never the only cue.
 const prioClass = (p) => ({ 4: "p1", 3: "p2", 2: "p3" })[p] || "";
-// Todoist's priorities (its API counts 4 as P1), with a word so the colour is never the only cue.
-const PRIO_WORD = { p1: "Urgent", p2: "High", p3: "Medium" };
 
 // One of the three tomatinhos: "done" (full), "now" (ring with a core), "plan" (outline).
 function tomato(kind, cls) {
@@ -115,33 +115,36 @@ function timeLeft() {
 // A call (phase "call") has no timer: it counts up from when it began.
 const callTime = (t) => t.elapsed_ms + (Date.now() - state.now);
 
+// The phase chip's text: common.phase.<key>.
+const PHASE_KEYS = { idle: "ready", paused: "paused", work: "focus", rest: "break", call: "call" };
+
 function renderTimer() {
   if (!state) return;
-  const t = state.timer, s = state.session;
-  const phase = !t ? "idle" : t.phase === "call" ? "call" : t.paused ? "paused" : t.phase === "work" ? "work" : "rest";
+  const tm = state.timer, s = state.session;
+  const phase = !tm ? "idle" : tm.phase === "call" ? "call" : tm.paused ? "paused" : tm.phase === "work" ? "work" : "rest";
   document.body.dataset.phase = phase;
   const p = pomo || state.pomodoro;
-  if (phase === "call") return renderCall(t, s);
+  if (phase === "call") return renderCall(tm, s);
 
   // ring + time: the ring shows the time left and empties as it passes
   let left, total;
-  if (t) {
+  if (tm) {
     left = Math.max(0, timeLeft());
-    total = t.total_ms;
+    total = tm.total_ms;
   } else {
     left = total = p.work_minutes * 60000;
   }
   $("time").textContent = clock(left);
   $("ringProgress").style.strokeDasharray = RING;
-  $("ringProgress").style.strokeDashoffset = t ? RING * (1 - left / total) : 0;
-  $("timeLabel").textContent = !t ? "per pomodoro" : t.paused ? "paused" : "left";
-  $("timerBox").setAttribute("aria-label", `${clock(left)} ${t ? "left" : "per pomodoro"}`);
-  $("phaseTag").textContent = { idle: "Ready", paused: "Paused", work: "Focus", rest: "Break" }[phase];
+  $("ringProgress").style.strokeDashoffset = tm ? RING * (1 - left / total) : 0;
+  $("timeLabel").textContent = t(!tm ? "main.timer.per_pomodoro" : tm.paused ? "main.timer.paused" : "main.timer.left");
+  $("timerBox").setAttribute("aria-label", t(tm ? "main.timer.aria_left" : "main.timer.aria_per_pomodoro", { time: clock(left) }));
+  $("phaseTag").textContent = t("common.phase." + PHASE_KEYS[phase]);
 
   // this session's pomodoros: done, now, planned
-  const rounds = t ? t.rounds : p.cycles;
-  const done = !t ? 0 : t.round - (t.phase === "rest" ? 0 : 1);
-  const now = t && t.phase === "work" ? t.round : 0;
+  const rounds = tm ? tm.rounds : p.cycles;
+  const done = !tm ? 0 : tm.round - (tm.phase === "rest" ? 0 : 1);
+  const now = tm && tm.phase === "work" ? tm.round : 0;
   const key = `${rounds}/${done}/${now}`;
   const dots = $("rounds");
   if (dots.dataset.key !== key) {
@@ -150,51 +153,52 @@ function renderTimer() {
     if (rounds <= 12) {
       for (let n = 1; n <= rounds; n++) dots.append(tomato(n <= done ? "done" : n === now ? "now" : "plan"));
     }
-    dots.setAttribute("aria-label", t ? `Pomodoro ${Math.min(t.round, rounds)} of ${rounds}` : `${rounds} pomodoro${rounds === 1 ? "" : "s"}`);
+    dots.setAttribute("aria-label", tm ? t("main.timer.round", { round: Math.min(tm.round, rounds), rounds })
+      : t("main.timer.rounds", { n: rounds }));
   }
-  const restMin = Math.round((t ? t.rest_ms : p.rest_minutes * 60000) / 60000);
+  const restMin = Math.round((tm ? tm.rest_ms : p.rest_minutes * 60000) / 60000);
   let line;
-  if (!t) line = p.cycles === 1 ? `1 pomodoro of ${p.work_minutes} min, no break`
-    : `${p.cycles} pomodoros of ${p.work_minutes} min, ${p.rest_minutes} min breaks`;
-  else if (t.phase === "rest") line = `Break · pomodoro ${t.round + 1} of ${t.rounds} next`;
-  else if (t.round >= t.rounds) line = `Pomodoro ${t.round} of ${t.rounds} · the last one`;
-  else line = `Pomodoro ${t.round} of ${t.rounds} · ${restMin} min break after`;
+  if (!tm) line = t("main.timer.plan", { n: p.cycles, work: p.work_minutes, rest: p.rest_minutes });
+  else if (tm.phase === "rest") line = t("main.timer.break_next", { next: tm.round + 1, rounds: tm.rounds });
+  else if (tm.round >= tm.rounds) line = t("main.timer.last", { round: tm.round, rounds: tm.rounds });
+  else line = t("main.timer.break_after", { round: tm.round, rounds: tm.rounds, rest: restMin });
   $("roundsText").textContent = line;
-  document.title = t ? `${clock(left)} · ${s ? s.task.content : "buZyist"}` : "buZyist";
+  document.title = tm ? `${clock(left)} · ${s ? s.task.content : "buZyist"}` : "buZyist";
 }
 
 // A call shows the time so far on a full ring, and no pomodoros.
-function renderCall(t, s) {
-  const so = clock(callTime(t));
+function renderCall(tm, s) {
+  const so = clock(callTime(tm));
   $("time").textContent = so;
   $("ringProgress").style.strokeDasharray = RING;
   $("ringProgress").style.strokeDashoffset = 0;
-  $("timeLabel").textContent = "on a call";
-  $("timerBox").setAttribute("aria-label", `${so} on a call`);
-  $("phaseTag").textContent = "Call";
+  $("timeLabel").textContent = t("main.timer.call");
+  $("timerBox").setAttribute("aria-label", t("main.timer.call_aria", { time: so }));
+  $("phaseTag").textContent = t("common.phase.call");
   const dots = $("rounds");
   if (dots.dataset.key !== "call") {
     dots.dataset.key = "call";
     dots.textContent = "";
-    dots.setAttribute("aria-label", "A call, with no pomodoros");
+    dots.setAttribute("aria-label", t("main.timer.call_rounds"));
   }
-  $("roundsText").textContent = "Ends when the call does · counted as focus";
+  $("roundsText").textContent = t("main.timer.call_line");
   document.title = `${so} · ${s ? s.task.content : "buZyist"}`;
 }
 
 let wasRunning = null;
 function renderCurrent() {
-  const t = state.timer, s = state.session;
+  const tm = state.timer, s = state.session;
   const box = $("current");
   const meta = $("curMeta");
   meta.textContent = "";
   box.classList.toggle("idle", !s);
-  $("controls").classList.toggle("hidden", !t);
+  $("controls").classList.toggle("hidden", !tm);
   if (s) {
-    $("curEyebrow").textContent = t && t.phase === "call" ? `On a call · since ${s.started_at}`
-      : t
-      ? (t.phase === "rest" ? `Break time. Since ${s.started_at}` : `${t.paused ? "Paused" : "Just this"} · since ${s.started_at}`)
-      : "Wrapping up…";
+    const time = s.started_at;
+    $("curEyebrow").textContent = tm && tm.phase === "call" ? t("main.current.call", { time })
+      : tm
+      ? t(tm.phase === "rest" ? "main.current.break" : tm.paused ? "main.current.paused" : "main.current.focus", { time })
+      : t("main.current.wrapping_up");
     $("curTask").textContent = s.task.content;
     if (s.task.project) {
       const proj = el("span", "", s.task.project);
@@ -202,45 +206,46 @@ function renderCurrent() {
     }
     if (s.label_added && state.label) meta.append(el("span", "", "@" + state.label));
     if (s.task.url) {
-      const open = el("button", "link", "Open in Todoist");
+      const open = el("button", "link", t("main.current.open_todoist"));
       open.onclick = () => api.open_url(s.task.url);
       meta.append(open);
     }
-  } else if (t && state.remote) {
+  } else if (tm && state.remote) {
     // Started on another PC, which shared its task through Chrome sync.
     const r = state.remote;
-    $("curEyebrow").textContent = `Started on ${r.by}` + (r.started_at ? ` · since ${r.started_at}` : "");
+    $("curEyebrow").textContent = r.started_at ? t("main.current.remote_since", { by: r.by, time: r.started_at })
+      : t("main.current.remote", { by: r.by });
     $("curTask").textContent = r.task.content;
     if (r.task.project) meta.append(el("span", "", r.task.project));
     if (r.task.url) {
-      const open = el("button", "link", "Open in Todoist");
+      const open = el("button", "link", t("main.current.open_todoist"));
       open.onclick = () => api.open_url(r.task.url);
       meta.append(open);
     }
-  } else if (t) {
-    $("curEyebrow").textContent = state.bar.local || state.bar.offline ? "No task linked" : "Started on the bar, no task linked";
-    $("curTask").textContent = "Timer running";
-    meta.append(el("span", "", state.todoist ? "Pick a task to put it in focus" : ""));
+  } else if (tm) {
+    $("curEyebrow").textContent = t(state.bar.local || state.bar.offline ? "main.current.no_task" : "main.current.bar_no_task");
+    $("curTask").textContent = t("main.current.timer_running");
+    meta.append(el("span", "", state.todoist ? t("main.current.pick_to_focus") : ""));
   } else {
-    $("curEyebrow").textContent = state.todoist ? "One pomodoro at a time." : "Name it if you like, then go.";
-    $("curTask").textContent = state.todoist ? "Pick a task to start" : "Ready when you are";
+    $("curEyebrow").textContent = t(state.todoist ? "main.current.idle" : "main.current.idle_solo");
+    $("curTask").textContent = t(state.todoist ? "main.current.pick" : "main.current.ready");
   }
-  $("freeBox").classList.toggle("hidden", !!t || !!s);
+  $("freeBox").classList.toggle("hidden", !!tm || !!s);
   syncFreeActivity();
-  if (t || s) closeFreeList();
+  if (tm || s) closeFreeList();
   // One Tomate button per screen: with a task list, its play buttons are the main action.
   $("startFree").classList.toggle("primary", !state.todoist);
   // A call has no pause or skip: it ends with the call, or with Stop.
-  $("btnPause").classList.toggle("hidden", !!t && t.phase === "call");
-  $("btnSkip").classList.toggle("hidden", !!t && t.phase === "call");
-  if (t) {
-    $("pauseIcon").setAttribute("href", t.paused ? "#i-play" : "#i-pause");
-    $("btnPause").title = t.paused ? "Resume" : "Pause";
+  $("btnPause").classList.toggle("hidden", !!tm && tm.phase === "call");
+  $("btnSkip").classList.toggle("hidden", !!tm && tm.phase === "call");
+  if (tm) {
+    $("pauseIcon").setAttribute("href", tm.paused ? "#i-play" : "#i-pause");
+    $("btnPause").title = t(tm.paused ? "main.controls.resume" : "main.controls.pause");
     $("btnPause").setAttribute("aria-label", $("btnPause").title);
   }
-  $("setupHint").textContent = t ? "Applies to the next session" : "Used for the next session";
+  $("setupHint").textContent = t(tm ? "main.setup.hint_running" : "main.setup.hint_idle");
   // Settings stay open while idle and fold away once a timer runs.
-  const running = !!t;
+  const running = !!tm;
   if (running !== wasRunning) $("setup").open = !running;
   wasRunning = running;
 }
@@ -249,21 +254,19 @@ function renderGuard() {
   const b = state.blocks;
   if (!b) return;
   const parts = [];
-  if (b.apps) parts.push(`${b.apps} app${b.apps === 1 ? "" : "s"}`);
-  if (b.sites_on) parts.push(b.site_mode === "allow" ? "allowlist" : `${b.sites} site${b.sites === 1 ? "" : "s"}`);
-  if (b.limits) parts.push(`${b.limits} limit${b.limits === 1 ? "" : "s"}`);
+  if (b.apps) parts.push(t("main.guard.apps", { n: b.apps }));
+  if (b.sites_on) parts.push(b.site_mode === "allow" ? t("main.guard.allowlist") : t("main.guard.sites", { n: b.sites }));
+  if (b.limits) parts.push(t("main.guard.limits", { n: b.limits }));
   const count = (b.apps || 0) + (b.limits || 0) + (!b.sites_on ? 0 : b.site_mode === "allow" ? 1 : b.sites);
-  const blocks = `${count} block${count === 1 ? "" : "s"}`;
   const guard = $("guard");
   let text;
-  if (!parts.length) text = "Focus guard off · set it up";
-  else if (b.active) text = `Focus guard on · ${blocks} active`;
-  else text = `Focus guard ready · ${blocks}`;
+  if (!parts.length) text = t("main.guard.off");
+  else text = t(b.active ? "main.guard.on" : "main.guard.ready", { n: count });
   if ($("guardText").textContent !== text) $("guardText").textContent = text;
   guard.classList.toggle("on", parts.length > 0);
   guard.classList.toggle("active", !!b.active);
   $("guardIcon").setAttribute("href", b.active ? "#i-shield-check" : "#i-shield");
-  guard.title = parts.length ? "What stays blocked during focus: " + parts.join(", ") : "Block distracting apps and websites during focus";
+  guard.title = parts.length ? t("main.guard.title", { list: parts.join(", ") }) : t("main.guard.title_off");
   guard.dataset.tab = b.apps || !b.sites_on ? "apps" : "sites";
 }
 
@@ -301,16 +304,15 @@ function renderChrome() {
 
   const bar = state.bar;
   $("barChip").className = "chip" + (bar.offline ? "" : bar.ok === true ? " ok" : bar.ok === false ? " bad" : "");
-  $("barText").textContent = bar.local ? "Timer on this PC"
-    : bar.offline ? "Bar out of reach · timer on this PC"
-    : bar.ok === true ? `BUSY Bar · ${bar.via}` : bar.ok === false ? "Bar offline" : "Looking for the bar";
-  $("barChip").title = bar.offline ? "The BUSY Bar can't be reached. The timer runs here and goes back to the bar once it answers."
-    : bar.ok === false ? bar.error : "";
+  $("barText").textContent = bar.local ? t("main.bar.local")
+    : bar.offline ? t("main.bar.offline")
+    : bar.ok === true ? t("main.bar.via", { via: bar.via }) : bar.ok === false ? t("main.bar.unreachable") : t("main.bar.looking");
+  $("barChip").title = bar.offline ? t("main.bar.offline_title") : bar.ok === false ? bar.error : "";
   $("hotkeyHint").textContent = state.hotkey ? state.hotkey.replace(/\b\w/g, (c) => c.toUpperCase()) : "";
 
   const u = state.update;
   $("updateChip").classList.toggle("hidden", !u);
-  if (u) $("updateChip").textContent = u.busy ? "Updating…" : `Update ${u.version}`;
+  if (u) $("updateChip").textContent = u.busy ? t("main.header.updating") : t("main.header.update", { version: u.version });
   $("extChip").classList.toggle("hidden", !state.extension_outdated);
   if ($("drawer").classList.contains("on")) {
     renderUpdate();
@@ -394,8 +396,7 @@ function renderTasksEnabled() {
     tasks = [];
     $("filterTabs").textContent = "";
     $("filterText").textContent = "";
-    showEmpty("Todoist is off",
-      state.needs_setup ? "Add your Todoist API token to see your tasks." : "Turn it on in Settings to pick tasks.");
+    showEmpty(t("main.tasks.off"), t(state.needs_setup ? "main.tasks.needs_token" : "main.tasks.turn_on"));
   }
   if (!off && tasksWereOff) loadTasks();
   tasksWereOff = off;
@@ -454,7 +455,7 @@ function applyTaskResult(result) {
   if (!result.ok) {
     tasks = [];
     renderFilters();
-    showEmpty("Couldn't load tasks", result.error, /token/i.test(result.error));
+    showEmpty(t("main.tasks.load_failed"), result.error, /token/i.test(result.error));
     return;
   }
   tasks = result.tasks;
@@ -500,7 +501,7 @@ const EXAMPLES = ["today | overdue", "7 days", "p1 | p2", "#Inbox", "@waiting", 
 function openFilterEditor(name) {
   const f = name ? filters.find((x) => x.name === name) : null;
   editing = f ? f.name : null;
-  $("filterTitle").textContent = f ? "Edit filter" : "New filter";
+  $("filterTitle").textContent = t(f ? "main.filters.edit_title" : "main.filters.new");
   $("f_name").value = f ? f.name : "";
   $("f_query").value = f ? f.query : "";
   $("filterTest").textContent = "";
@@ -513,7 +514,7 @@ function openFilterEditor(name) {
   for (const q of EXAMPLES) {
     const b = el("button", "", q);
     b.type = "button";
-    b.title = "Add to the query";
+    b.title = t("main.filters.add_to_query");
     b.onclick = () => {
       const area = $("f_query");
       const cur = area.value.trim();
@@ -547,16 +548,16 @@ $("editFilter").onclick = () => openFilterEditor(activeFilter);
 $("filterCancel").onclick = closeFilterEditor;
 $("filterPreview").onclick = async () => {
   filterBusy(true);
-  filterMessage("Asking Todoist…", true);
+  filterMessage(t("main.filters.asking"), true);
   const r = await api.preview_filter($("f_query").value);
   filterBusy(false);
-  if (r.ok) filterMessage(`${r.count} task${r.count === 1 ? "" : "s"} match`, true);
+  if (r.ok) filterMessage(t("main.filters.matches", { n: r.count }), true);
   else filterMessage(r.error, false);
 };
 $("filterForm").onsubmit = async (e) => {
   e.preventDefault();
   filterBusy(true);
-  filterMessage("Checking the filter with Todoist…", true);
+  filterMessage(t("main.filters.checking"), true);
   const r = await api.save_filter(editing, $("f_name").value, $("f_query").value);
   filterBusy(false);
   if (!r.ok) return filterMessage(r.error, false);
@@ -564,10 +565,10 @@ $("filterForm").onsubmit = async (e) => {
   closeFilterEditor();
   sel = 0;
   applyTaskResult(r);
-  toast(`Filter “${r.active}” saved`);
+  toast(t("main.filters.saved", { name: r.active }));
 };
 $("filterDelete").onclick = async () => {
-  if (!confirm(`Delete the filter “${editing}”?`)) return;
+  if (!confirm(t("main.filters.delete_confirm", { name: editing }))) return;
   filterBusy(true);
   const r = await api.delete_filter(editing);
   filterBusy(false);
@@ -575,7 +576,7 @@ $("filterDelete").onclick = async () => {
   ++loadSeq;
   closeFilterEditor();
   applyTaskResult(r);
-  toast("Filter deleted");
+  toast(t("main.filters.deleted"));
 };
 async function moveFilter(delta) {
   const r = await api.move_filter(editing, delta);
@@ -596,7 +597,7 @@ function showEmpty(title, text, withSettings) {
   const li = el("li", "empty");
   li.append(el("b", "", title), el("span", "", text));
   if (withSettings) {
-    const b = el("button", "btn", "Open settings");
+    const b = el("button", "btn", t("main.tasks.open_settings"));
     b.style.marginTop = "14px";
     b.onclick = () => openSettings("todoist");
     li.append(el("br"), b);
@@ -607,90 +608,92 @@ function showEmpty(title, text, withSettings) {
 
 function renderTasks() {
   const q = $("search").value.trim().toLowerCase();
-  shown = !q ? tasks : tasks.filter((t) =>
-    [t.content, t.parent, t.project, ...t.labels].join(" ").toLowerCase().includes(q));
+  shown = !q ? tasks : tasks.filter((task) =>
+    [task.content, task.parent, task.project, ...task.labels].join(" ").toLowerCase().includes(q));
   sel = Math.min(sel, Math.max(0, shown.length - 1));
   // The filter's Todoist durations added up (tasks without one count nothing).
-  const planned = tasks.reduce((sum, t) => sum + (t.minutes || 0), 0);
-  $("count").textContent = `${shown.length} of ${tasks.length}` + (planned ? ` · ${duration(planned)}` : "");
-  $("count").title = planned ? `${duration(planned)} of Todoist durations in this filter` : "";
+  const planned = tasks.reduce((sum, task) => sum + (task.minutes || 0), 0);
+  $("count").textContent = planned
+    ? t("main.tasks.count_planned", { shown: shown.length, total: tasks.length, duration: duration(planned) })
+    : t("main.tasks.count", { shown: shown.length, total: tasks.length });
+  $("count").title = planned ? t("main.tasks.count_title", { duration: duration(planned) }) : "";
   const list = $("list");
   list.textContent = "";
-  if (!tasks.length) return showEmpty("All clear", "Nothing in this filter. Enjoy it.");
-  if (!shown.length) return showEmpty("No match", `No task contains “${$("search").value}”.`);
+  if (!tasks.length) return showEmpty(t("main.tasks.empty"), t("main.tasks.empty_text"));
+  if (!shown.length) return showEmpty(t("main.tasks.no_match"), t("main.tasks.no_match_text", { text: $("search").value }));
 
-  shown.forEach((t, i) => {
+  shown.forEach((task, i) => {
     const li = el("li", "task");
-    li.dataset.id = t.id;
+    li.dataset.id = task.id;
     const body = el("div", "t-body");
     const title = el("div", "t-title");
     // A subtask carries its parent's name in front: "parent › subtask".
-    if (t.parent) title.append(el("span", "t-parent", t.parent + " › "));
-    title.append(t.content);
-    title.title = t.parent ? `${t.parent} › ${t.content}` : t.content;
+    if (task.parent) title.append(el("span", "t-parent", task.parent + " › "));
+    title.append(task.content);
+    title.title = task.parent ? `${task.parent} › ${task.content}` : task.content;
     body.append(title);
-    if (t.description) body.append(taskDescription(t));
+    if (task.description) body.append(taskDescription(task));
     const meta = el("div", "t-meta");
-    if (t.project && !t.inbox) {
+    if (task.project && !task.inbox) {
       const proj = el("span", "proj");
       const sw = el("i");
-      sw.style.background = t.color;
-      proj.append(sw, t.project);
+      sw.style.background = task.color;
+      proj.append(sw, task.project);
       meta.append(proj);
     }
-    const due = dueText(t);
-    if (due) meta.append(el("span", t.overdue ? "late" : "", due));
-    if (t.plan) {
+    const due = dueText(task);
+    if (due) meta.append(el("span", task.overdue ? "late" : "", due));
+    if (task.plan) {
       // Its Todoist duration sets the pomodoros (buzyist/plan.py).
-      const [mins, rounds] = t.plan;
+      const [mins, rounds] = task.plan;
       const chip = el("span", "plan");
-      chip.title = `${t.minutes} min in Todoist: ${rounds} pomodoro${rounds === 1 ? "" : "s"} of ${mins} min. Shift+click play for your usual settings.`;
-      chip.append(icon("recent"), rounds === 1 ? `${mins} min` : `${rounds} × ${mins} min`);
+      chip.title = t("main.tasks.plan_title", { minutes: task.minutes, n: rounds, work: mins });
+      chip.append(icon("recent"), t("main.tasks.plan", { n: rounds, work: mins }));
       meta.append(chip);
     }
-    for (const l of t.labels) meta.append(el("span", "lbl" + (l === state?.label ? " mine" : ""), "@" + l));
-    if (t.subtasks && t.subtasks.length) {
+    for (const l of task.labels) meta.append(el("span", "lbl" + (l === state?.label ? " mine" : ""), "@" + l));
+    if (task.subtasks && task.subtasks.length) {
       // Play asks which one to start on (openSubtaskPicker).
-      const n = t.subtasks.length;
-      const chip = el("span", "subs", `${n} subtask${n === 1 ? "" : "s"}`);
-      chip.title = "Play lets you pick one of them, or the whole task";
+      const chip = el("span", "subs", t("main.tasks.subtasks", { n: task.subtasks.length }));
+      chip.title = t("main.tasks.subtasks_title");
       meta.append(chip);
-      li.dataset.subs = t.subtasks.map((s) => s.id).join(" ");
+      li.dataset.subs = task.subtasks.map((s) => s.id).join(" ");
     }
     const dots = el("span", "t-dots");
     meta.prepend(dots);
     // Priority: a pill (filled flag, P1-P3 and a word) first in the meta line,
     // and the checkbox takes the same colour, like in Todoist.
-    const prio = prioClass(t.priority);
+    const prio = prioClass(task.priority);
     if (prio) {
       li.classList.add(prio);
       const pill = el("span", "prio-pill " + prio);
-      pill.title = `Priority ${prio.slice(1)} in Todoist`;
-      pill.append(icon("flag-fill"), el("b", "", prio.toUpperCase()), PRIO_WORD[prio]);
+      pill.title = t("main.tasks.priority_title", { p: prio.slice(1) });
+      pill.append(icon("flag-fill"), el("b", "", prio.toUpperCase()), t("main.tasks.priority." + prio));
       meta.prepend(pill);
     }
     body.append(meta);
     const play = el("button", "play");
     play.append(icon("play"));
-    play.title = "Start a session";
-    play.setAttribute("aria-label", "Start a session on: " + t.content);
+    play.title = t("main.tasks.start");
+    play.setAttribute("aria-label", t("main.tasks.start_on", { task: task.content }));
     play.tabIndex = -1;
     const check = el("button", "prio");
-    check.title = "Mark as done";
-    check.setAttribute("aria-label", "Mark as done: " + t.content + (prio ? ` (priority ${prio.slice(1)})` : ""));
+    check.title = t("main.tasks.done");
+    check.setAttribute("aria-label", prio ? t("main.tasks.done_on_priority", { task: task.content, p: prio.slice(1) })
+      : t("main.tasks.done_on", { task: task.content }));
     check.tabIndex = -1;
     const box = el("span", "box");
     box.append(icon("check"));
     check.append(box);
-    check.onclick = (e) => { e.stopPropagation(); completeTask(t, li); };
+    check.onclick = (e) => { e.stopPropagation(); completeTask(task, li); };
     li.append(check, body, play);
-    play.onclick = (e) => { e.stopPropagation(); startTask(t, li, e.shiftKey); };
-    li.onclick = (e) => { sel = i; markSelection(false); openTaskMenu(t, li, e.clientX, e.clientY); };
+    play.onclick = (e) => { e.stopPropagation(); startTask(task, li, e.shiftKey); };
+    li.onclick = (e) => { sel = i; markSelection(false); openTaskMenu(task, li, e.clientX, e.clientY); };
     li.oncontextmenu = (e) => {
       e.preventDefault();
       sel = i;
       markSelection(false);
-      openTaskMenu(t, li, e.clientX, e.clientY);
+      openTaskMenu(task, li, e.clientX, e.clientY);
     };
     li.onmousemove = () => { if (sel !== i) { sel = i; markSelection(false); } };
     list.append(li);
@@ -702,24 +705,24 @@ function renderTasks() {
 // The description under the title, cut to two lines; "more" opens it (the row's
 // click still opens the task menu, so the toggle stops it).
 const openDescriptions = new Set();
-function taskDescription(t) {
+function taskDescription(task) {
   const wrap = el("div", "t-desc");
-  const text = el("div", "t-desc-text", t.description);
+  const text = el("div", "t-desc-text", task.description);
   const more = el("button", "t-more");
   more.type = "button";
   more.tabIndex = -1;
   const set = (open) => {
     wrap.classList.toggle("open", open);
-    more.textContent = open ? "less" : "more";
+    more.textContent = t(open ? "main.tasks.less" : "main.tasks.more");
     more.setAttribute("aria-expanded", open);
   };
   more.onclick = (e) => {
     e.stopPropagation();
     const open = !wrap.classList.contains("open");
-    if (open) openDescriptions.add(t.id); else openDescriptions.delete(t.id);
+    if (open) openDescriptions.add(task.id); else openDescriptions.delete(task.id);
     set(open);
   };
-  set(openDescriptions.has(t.id));
+  set(openDescriptions.has(task.id));
   wrap.append(text, more);
   // Only long texts get the toggle: measured once the row is on the page.
   requestAnimationFrame(() => {
@@ -739,8 +742,9 @@ function markSelection(scroll) {
 // one small tomato per pomodoro done on it.
 function markCurrentTask() {
   const id = state && state.session && state.session.task.id;
-  const t = state && state.timer;
-  const word = !t ? "Wrapping up" : t.phase === "call" ? "On a call" : t.paused ? "Paused" : t.phase === "rest" ? "Break" : "In focus";
+  const tm = state && state.timer;
+  const word = t("main.tasks.badge." + (!tm ? "wrapping_up" : tm.phase === "call" ? "call" : tm.paused ? "paused"
+    : tm.phase === "rest" ? "break" : "focus"));
   const counts = (state && state.task_tomatoes) || {};
   for (const li of $("list").querySelectorAll(".task")) {
     // a session on one of its subtasks marks the row too
@@ -763,7 +767,7 @@ function markCurrentTask() {
       if (n > 8) dots.append(el("span", "", "+" + (n - 8)));
       dots.classList.toggle("hidden", !n);
       dots.setAttribute("role", "img");
-      dots.setAttribute("aria-label", `${n} pomodoro${n === 1 ? "" : "s"} done`);
+      dots.setAttribute("aria-label", t("main.tasks.pomodoros_done", { n }));
     }
   }
 }
@@ -774,19 +778,19 @@ function markCurrentTask() {
 async function startTask(task, li, fixed, direct, at) {
   if (!direct && task.subtasks && task.subtasks.length) return openSubtaskPicker(task, li, fixed, at);
   if (state && state.session && state.session.task.id === task.id) {
-    toast("That task is already in focus.");
+    toast(t("main.start.already"));
     return;
   }
-  if (state && state.session && !confirm(`Replace the current session on “${state.session.task.content}”?`)) return;
+  if (state && state.session && !confirm(t("main.start.replace", { task: state.session.task.content }))) return;
   if (li) li.classList.add("busy");
   flushPomodoro();
   const result = await api.start(task.id, "", "", !!fixed);
   if (li) li.classList.remove("busy");
   if (!result.ok) return toast(result.error, true);
-  const where = state && (state.bar.local || state.bar.offline) ? "" : " (on the bar)";
+  const onBar = !(state && (state.bar.local || state.bar.offline));
   toast(result.planned
-    ? `Go. ${result.rounds === 1 ? "1 pomodoro" : result.rounds + " pomodoros"} of ${result.work_minutes} min, from the task's duration${where}.`
-    : `Go. ${result.work_minutes} minutes, just this${where}.`);
+    ? t(onBar ? "main.start.go_planned_bar" : "main.start.go_planned", { n: result.rounds, work: result.work_minutes })
+    : t(onBar ? "main.start.go_bar" : "main.start.go", { work: result.work_minutes }));
   $("search").value = "";
   renderTasks();
   poll();
@@ -794,7 +798,7 @@ async function startTask(task, li, fixed, direct, at) {
 
 async function completeTask(task, li) {
   const inFocus = state && state.session && state.session.task.id === task.id;
-  if (inFocus && !confirm(`“${task.content}” is in focus. Stop the session and mark it as done?`)) return;
+  if (inFocus && !confirm(t("main.tasks.complete_in_focus", { task: task.content }))) return;
   if (li) li.classList.add("busy", "done");
   if (inFocus) {
     const stopped = await api.control("stop");
@@ -805,8 +809,8 @@ async function completeTask(task, li) {
     if (li) li.classList.remove("busy", "done");
     return toast(result.error, true);
   }
-  toast("Done in Todoist.");
-  tasks = tasks.filter((t) => t.id !== task.id);
+  toast(t("main.tasks.completed"));
+  tasks = tasks.filter((x) => x.id !== task.id);
   renderTasks();
   poll();
 }
@@ -830,12 +834,12 @@ function openTaskMenu(task, li, x, y) {
     b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); fn(); };
     menu.append(b);
   };
-  item("play", "Start session", () => startTask(task, li, false, false, { x, y }));
+  item("play", t("main.menu.start"), () => startTask(task, li, false, false, { x, y }));
   if (task.plan || task.subtasks?.length) {
-    item("play", `Start with your usual ${pomo.work_minutes}-min pomodoros`, () => startTask(task, li, true, false, { x, y }));
+    item("play", t("main.menu.start_usual", { work: pomo.work_minutes }), () => startTask(task, li, true, false, { x, y }));
   }
-  item("check", "Mark as done", () => completeTask(task, li));
-  if (task.url) item("eye", "See on Todoist", () => api.open_url(task.url));
+  item("check", t("main.menu.done"), () => completeTask(task, li));
+  if (task.url) item("eye", t("main.menu.todoist"), () => api.open_url(task.url));
   document.body.append(menu);
   const r = menu.getBoundingClientRect();
   menu.style.left = Math.max(4, Math.min(x, innerWidth - r.width - 4)) + "px";
@@ -851,22 +855,22 @@ function openSubtaskPicker(task, li, fixed, at) {
   const menu = el("div", "ctx-menu pick-menu");
   menu.id = "taskMenu";
   menu.setAttribute("role", "menu");
-  menu.setAttribute("aria-label", "Start on");
-  menu.append(el("div", "pick-head", "Start on…"));
-  const item = (t, depth, label) => {
+  menu.setAttribute("aria-label", t("main.picker.aria"));
+  menu.append(el("div", "pick-head", t("main.picker.head")));
+  const item = (one, depth, label) => {
     const b = el("button", "ctx-item pick-item");
     b.setAttribute("role", "menuitem");
     b.style.paddingLeft = 12 + (depth - 1) * 16 + "px";
-    b.append(el("span", "pick-name", label || t.content));
+    b.append(el("span", "pick-name", label || one.content));
     // the pomodoros it would get (unless shift+click asked for the usual ones)
-    if (t.plan && !fixed) b.append(el("span", "pick-plan", t.plan[1] === 1 ? `${t.plan[0]} min` : `${t.plan[1]} × ${t.plan[0]}`));
-    b.title = t.content;
-    b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); startTask(t, li, fixed, true); };
+    if (one.plan && !fixed) b.append(el("span", "pick-plan", t("main.picker.plan", { n: one.plan[1], work: one.plan[0] })));
+    b.title = one.content;
+    b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); startTask(one, li, fixed, true); };
     menu.append(b);
   };
   for (const s of task.subtasks) item(s, s.depth);
   menu.append(el("div", "pick-sep"));
-  item(task, 1, "The whole task");
+  item(task, 1, t("main.picker.whole"));
   document.body.append(menu);
   const r = menu.getBoundingClientRect();
   const play = li && li.querySelector(".play");
@@ -914,7 +918,9 @@ function renderPomodoro() {
   for (const p of PRESETS) {
     const on = p.work_minutes === pomo.work_minutes && p.rest_minutes === pomo.rest_minutes && p.cycles === pomo.cycles;
     const b = el("button", "preset" + (on ? " on" : ""), `${p.work_minutes} / ${p.rest_minutes}`);
-    b.title = `${p.name}: ${p.cycles} × ${p.work_minutes} min focus, ${p.rest_minutes} min breaks`;
+    b.title = t("main.setup.preset", {
+      name: t("main.setup.presets." + p.name), cycles: p.cycles, work: p.work_minutes, rest: p.rest_minutes,
+    });
     b.onclick = () => {
       Object.assign(pomo, { work_minutes: p.work_minutes, rest_minutes: p.rest_minutes, cycles: p.cycles });
       changed();
@@ -922,8 +928,8 @@ function renderPomodoro() {
     presets.append(b);
   }
   const minutes = pomo.cycles * pomo.work_minutes + (pomo.cycles - 1) * pomo.rest_minutes;
-  const end = new Date(Date.now() + minutes * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  $("total").textContent = `${duration(minutes)} · ends ~${end}`;
+  const end = formatTime(new Date(Date.now() + minutes * 60000), { hour: "2-digit", minute: "2-digit" });
+  $("total").textContent = t("main.setup.total", { duration: duration(minutes), time: end });
   if (state) renderTimer();
 }
 
@@ -1025,7 +1031,7 @@ function setFreeActivity(activity) {
     $("freeChipIcon").setAttribute("href", "#a-" + (ACTIVITY_ICONS.includes(activity.icon) ? activity.icon : "dot"));
     $("freeChipName").textContent = activity.name;
   }
-  $("freeName").placeholder = activity ? "Add a detail (optional)" : "What are you working on? (optional)";
+  $("freeName").placeholder = t(activity ? "main.free.detail" : "main.free.placeholder");
 }
 
 // An activity renamed, given another icon or removed in Settings meanwhile.
@@ -1050,19 +1056,23 @@ function freeOptions() {
     for (const r of free.recent) {
       const detail = r.detail.toLowerCase();
       if (r.activity === free.activity.id && detail.includes(text) && detail !== text) {
-        out.push({ kind: "recent", group: `Recent ${free.activity.name}`, recent: r });
+        out.push({ kind: "recent", group: t("main.free.recent_of", { activity: free.activity.name }), recent: r });
       }
     }
-    if (!text) for (const a of activities()) if (a.id !== free.activity.id) out.push({ kind: "activity", group: "Switch to", activity: a });
+    if (!text) {
+      for (const a of activities()) {
+        if (a.id !== free.activity.id) out.push({ kind: "activity", group: t("main.free.switch_to"), activity: a });
+      }
+    }
     return out;
   }
   const starts = (s) => s.toLowerCase().startsWith(text);
   const found = activities().filter((a) => a.name.toLowerCase().includes(text));
   found.sort((a, b) => starts(b.name) - starts(a.name));
-  for (const a of found) out.push({ kind: "activity", group: "Activities", activity: a });
+  for (const a of found) out.push({ kind: "activity", group: t("main.free.activities"), activity: a });
   for (const r of free.recent) {
     const shown = recentText(r).toLowerCase();
-    if (shown.includes(text) && shown !== text) out.push({ kind: "recent", group: "Recent", recent: r });
+    if (shown.includes(text) && shown !== text) out.push({ kind: "recent", group: t("main.free.recent"), recent: r });
   }
   if (typed && !activities().some((a) => a.name.toLowerCase() === text)) out.push({ kind: "custom", group: "", text: typed });
   return out;
@@ -1105,14 +1115,14 @@ function renderFreeList() {
       else opt.append(el("span", "grow", o.recent.detail));
     } else {
       opt.classList.add("custom");
-      opt.append(icon("play"), el("span", "grow", `Start “${o.text}”`));
+      opt.append(icon("play"), el("span", "grow", t("main.free.custom", { text: o.text })));
     }
     opt.onmousedown = (e) => e.preventDefault();  // keep the focus in the field
     opt.onclick = () => chooseFree(o);
     opt.onmousemove = () => { if (free.active !== i) { free.active = i; markFreeActive(); } };
     nodes.push(opt);
   });
-  const edit = el("button", "combo-edit", "Edit activities…");
+  const edit = el("button", "combo-edit", t("main.free.edit"));
   edit.type = "button";
   edit.tabIndex = -1;
   edit.onmousedown = (e) => e.preventDefault();
@@ -1192,11 +1202,12 @@ async function startFree(name, activityId) {
     name = $("freeName").value;
     activityId = free.activity ? free.activity.id : "";
   }
-  if (state && state.session && !confirm(`Replace the current session on “${state.session.task.content}”?`)) return;
+  if (state && state.session && !confirm(t("main.start.replace", { task: state.session.task.content }))) return;
   flushPomodoro();
   const result = await api.start(null, name, activityId || "");
   if (!result.ok) return toast(result.error, true);
-  toast(`Go. ${pomo.work_minutes} minutes, just this${state && (state.bar.local || state.bar.offline) ? "" : " (on the bar)"}.`);
+  const onBar = !(state && (state.bar.local || state.bar.offline));
+  toast(t(onBar ? "main.start.go_bar" : "main.start.go", { work: pomo.work_minutes }));
   $("freeName").value = "";
   setFreeActivity(null);
   closeFreeList();
@@ -3155,7 +3166,7 @@ async function boot() {
     toast(t("settings.saved"));
   }
   if (state.needs_setup) {
-    showEmpty("Welcome to buZyist", "Add your Todoist API token to see your tasks, or turn Todoist off in Settings to run sessions without tasks.", true);
+    showEmpty(t("main.tasks.welcome"), t("main.tasks.welcome_text"), true);
     tasksWereOff = true;
     openSettings();
   } else if (state.todoist) {

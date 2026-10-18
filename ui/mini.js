@@ -2,6 +2,8 @@
 
 const $ = (id) => document.getElementById(id);
 const RING = 2 * Math.PI * 33;
+// The phase chip's text: common.phase.<key>, as in ui/main.js.
+const PHASE_KEYS = { idle: "ready", paused: "paused", work: "focus", rest: "break", call: "call" };
 let api = null;
 let state = null;
 
@@ -13,23 +15,24 @@ function clock(ms) {
 
 function render() {
   if (!state) return;
-  const t = state.timer, s = state.session;
-  const phase = !t ? "idle" : t.phase === "call" ? "call" : t.paused ? "paused" : t.phase === "work" ? "work" : "rest";
+  const tm = state.timer, s = state.session;
+  const phase = !tm ? "idle" : tm.phase === "call" ? "call" : tm.paused ? "paused" : tm.phase === "work" ? "work" : "rest";
   document.body.dataset.phase = phase;
   const call = phase === "call";  // no timer: the time so far, on a full ring
-  const left = t ? Math.max(0, t.paused ? t.left_ms : t.left_ms - (Date.now() - state.now)) : 0;
-  $("mTime").textContent = call ? clock(t.elapsed_ms + (Date.now() - state.now)) : t ? clock(left) : "--:--";
+  const left = tm ? Math.max(0, tm.paused ? tm.left_ms : tm.left_ms - (Date.now() - state.now)) : 0;
+  $("mTime").textContent = call ? clock(tm.elapsed_ms + (Date.now() - state.now)) : tm ? clock(left) : "--:--";
   $("mProgress").style.strokeDasharray = RING;
-  $("mProgress").style.strokeDashoffset = call ? 0 : t ? RING * (1 - left / t.total_ms) : RING;
-  $("mPhase").textContent = { idle: "Ready", paused: "Paused", work: "Focus", rest: "Break", call: "Call" }[phase];
-  $("mRound").textContent = call ? "until it ends" : t ? `Pomodoro ${t.round} of ${t.rounds}` : "";
-  const r = !s && t && state.remote;  // started on another PC
-  $("mTask").textContent = s ? s.task.content : r ? r.task.content : t ? (state.bar.local || state.bar.offline ? "Timer running" : "Running on the bar") : "No session";
-  $("mProject").textContent = s ? s.task.project : r ? r.task.project || `on ${r.by}` : "";
-  $("mPauseIcon").setAttribute("href", t && t.paused ? "#i-play" : "#i-pause");
-  $("mPause").title = t && t.paused ? "Resume" : "Pause";
-  $("mStop").style.display = t ? "" : "none";
-  $("mPause").style.display = t && !call ? "" : "none";
+  $("mProgress").style.strokeDashoffset = call ? 0 : tm ? RING * (1 - left / tm.total_ms) : RING;
+  $("mPhase").textContent = t("common.phase." + PHASE_KEYS[phase]);
+  $("mRound").textContent = call ? t("mini.until_end") : tm ? t("mini.round", { round: tm.round, rounds: tm.rounds }) : "";
+  const r = !s && tm && state.remote;  // started on another PC
+  $("mTask").textContent = s ? s.task.content : r ? r.task.content
+    : tm ? t(state.bar.local || state.bar.offline ? "mini.timer_running" : "mini.on_bar") : t("mini.no_session");
+  $("mProject").textContent = s ? s.task.project : r ? r.task.project || t("mini.by", { by: r.by }) : "";
+  $("mPauseIcon").setAttribute("href", tm && tm.paused ? "#i-play" : "#i-pause");
+  $("mPause").title = t(tm && tm.paused ? "mini.resume" : "mini.pause");
+  $("mStop").style.display = tm ? "" : "none";
+  $("mPause").style.display = tm && !call ? "" : "none";
   if (phase !== "paused") $("mini").classList.remove("alert");
 }
 
