@@ -1714,10 +1714,25 @@ let barScreens = {};
 let barThemes = [];  // the bar's own, the card's first; [] until read
 const prettyTheme = (name) => (name ? name[0].toUpperCase() + name.slice(1).replace(/_/g, " ") : "");
 
+// The bar's battery under Test connection (Api.bar_power); hidden without a
+// bar, or when it doesn't answer or doesn't say.
+const BATTERY_STATES = ["charging", "charged", "discharging"];
+async function loadBarPower() {
+  const line = $("barPower");
+  line.classList.add("hidden");
+  if (!$("s_use_busybar").checked) return;
+  const result = await api.bar_power();
+  if (!result.ok || result.charge == null) return;
+  const state = BATTERY_STATES.includes(result.state) ? result.state : "unknown";
+  line.textContent = t("settings.bar.battery_" + state, { charge: formatNumber(result.charge) });
+  line.classList.remove("hidden");
+}
+
 async function loadBarThemes() {
   const note = $("barThemesNote");
   note.textContent = "";
   if (!$("s_use_busybar").checked) return;
+  loadBarPower();
   const result = await api.bar_themes();
   if (!result.ok) {
     note.textContent = t("settings.bar.themes_error", { error: result.error });
@@ -3074,6 +3089,7 @@ $("testBar").onclick = async () => {
   out.className = "test-result " + (result.ok ? "ok" : "bad");
   out.textContent = !result.ok ? result.error
     : t(result.version ? "settings.bar.connected_firmware" : "settings.bar.connected", { via: result.via, version: result.version });
+  loadBarPower();
 };
 
 // ------------------------------------------------------------- keyboard

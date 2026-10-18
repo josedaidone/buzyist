@@ -190,3 +190,33 @@ def test_stop_and_every_write_is_newer(bar):
         stamps.append(bar.snapshot().snapshot_timestamp_ms)
     assert stamps == sorted(set(stamps))  # strictly increasing, all in the same millisecond
     assert bar.snapshot().snapshot.type == "NOT_STARTED"
+
+
+# ------------------------------------------------------------------ power
+
+
+class PowerBar:
+    def __init__(self, power):
+        self.power = power
+
+    def status_power(self):
+        return self.power
+
+
+@pytest.mark.parametrize(
+    ("power", "expected"),
+    [
+        (types.StatusPower(state="charging", battery_charge=82), {"charge": 82, "state": "charging"}),
+        (types.StatusPower(battery_charge=40), {"charge": 40, "state": None}),
+        (types.StatusPower(), {"charge": None, "state": None}),
+    ],
+)
+def test_power_reads_the_battery(data_dir, monkeypatch, power, expected):
+    bar = Bar({"use_busybar": True, "busybar_ip": "192.168.1.50"})
+    monkeypatch.setattr(bar, "_client", lambda route: PowerBar(power))
+    assert bar.power() == expected
+
+
+def test_power_on_the_local_clock_is_refused(bar):
+    with pytest.raises(constants.AppError):
+        bar.power()

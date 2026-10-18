@@ -225,6 +225,10 @@ class Api:
 
         return self._do(go)
 
+    def bar_power(self):
+        """The bar's battery level and whether it is charging, for the BUSY Bar tab."""
+        return self._do(self._app.bar.power)
+
     def bar_themes(self):
         """The themes the bar has, for the screen pickers (the card's first)."""
         return self._do(lambda: {"themes": self._app.bar.themes()})
