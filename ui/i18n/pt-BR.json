@@ -68,12 +68,12 @@
       "settings": "Configurações"
     },
     "bar": {
-      "looking": "Procurando a barra",
+      "looking": "Procurando a BUSY Bar",
       "local": "Timer neste PC",
-      "offline": "Barra fora de alcance · timer neste PC",
+      "offline": "BUSY Bar fora de alcance · timer neste PC",
       "offline_title": "Não foi possível falar com o BUSY Bar. O timer roda aqui e volta para a barra assim que ela responder.",
       "via": "BUSY Bar · {via}",
-      "unreachable": "Barra offline"
+      "unreachable": "BUSY Bar offline"
     },
     "timer": {
       "aria": "Timer",
@@ -214,7 +214,7 @@
       "turn_on": "Ligue-o nas Configurações para escolher tarefas.",
       "load_failed": "Não foi possível carregar as tarefas",
       "open_settings": "Abrir configurações",
-      "welcome": "Boas-vindas ao buZyist",
+      "welcome": "Bem vindo ao buZyist",
       "welcome_text": "Adicione seu token de API do Todoist para ver suas tarefas, ou desligue o Todoist nas Configurações para fazer sessões sem tarefas.",
       "count": "{shown} de {total}",
       "count_planned": "{shown} de {total} · {duration}",
