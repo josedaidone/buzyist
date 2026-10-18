@@ -11,6 +11,8 @@
 //                               an icon, only its last text is replaced)
 //   data-i18n-<attr>="key"      that attribute: data-i18n-title,
 //                               data-i18n-placeholder, data-i18n-aria-label, ...
+//   data-i18n-rich="key"        the element's content, from a text that may hold
+//                               <b>, <i>, <code>, <kbd> and <br> (setRich)
 // The English in the markup stays as written until then.
 
 const I18N = { lang: "en", active: {}, english: {} };
@@ -67,6 +69,7 @@ function applyI18n(root) {
   for (const node of (root || document).querySelectorAll("*")) {
     for (const [name, key] of Object.entries(node.dataset)) {
       if (name === "i18n") setText(node, t(key));
+      else if (name === "i18nRich") setRich(node, t(key));
       else if (name.startsWith("i18n")) {
         // dataset turns data-i18n-aria-label into i18nAriaLabel
         const attr = name.slice(4).replace(/[A-Z]/g, (c) => "-" + c.toLowerCase()).replace(/^-/, "");
@@ -81,6 +84,21 @@ function setText(node, text) {
   const texts = [...node.childNodes].filter((c) => c.nodeType === 3 && c.textContent.trim());
   if (texts.length) texts[texts.length - 1].textContent = text;
   else node.append(text);
+}
+
+// A text with a few inline tags (help texts: <b>Close</b>, <code>*.google.com</code>)
+// as the node's content. Only those tags become elements, without attributes;
+// anything else stays text, so a catalog can't put markup of its own in a page.
+const RICH_TAGS = /<(b|i|code|kbd)>([^<]*)<\/\1>|<br>/g;
+function setRich(node, text) {
+  node.replaceChildren();
+  let at = 0;
+  for (const m of text.matchAll(RICH_TAGS)) {
+    if (m.index > at) node.append(text.slice(at, m.index));
+    node.append(m[1] ? Object.assign(document.createElement(m[1]), { textContent: m[2] }) : document.createElement("br"));
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) node.append(text.slice(at));
 }
 
 // Ask Python for the catalogs and translate the page; English if that fails.
