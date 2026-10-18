@@ -422,6 +422,11 @@ class Bar:
 
         return self.run(go, device=True)
 
+    def power(self) -> dict:
+        """The bar's battery (GET /api/status/power): {charge, state}, each None when the bar doesn't say."""
+        power = self.run(lambda bar: bar.status_power(), device=True)
+        return {"charge": power.battery_charge, "state": power.state.value if power.state else None}
+
     def set_theme(self, theme: str, since: int) -> bool:
         """
         Show `theme` on the running timer, if it is one from `since` (a session's
