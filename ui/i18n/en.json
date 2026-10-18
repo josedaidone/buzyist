@@ -62,6 +62,99 @@
     }
   },
   "stats": {
+    "_": "The Stats tab (Settings). Day names and numbers come from formatDate/formatNumber.",
+    "today": "Today",
+    "week": "Last 7 days",
+    "span": {
+      "one": "Last {n} day",
+      "other": "Last {n} days"
+    },
+    "focus": {
+      "title": "Focus",
+      "pomodoros": {
+        "one": "{n} pomodoro",
+        "other": "{n} pomodoros"
+      },
+      "sessions": {
+        "one": "{n} session",
+        "other": "{n} sessions"
+      },
+      "tasks": {
+        "one": "{n} task worked on",
+        "other": "{n} tasks worked on"
+      },
+      "completed": {
+        "one": "{n} done",
+        "other": "{n} done"
+      },
+      "days": {
+        "one": "{n} day",
+        "other": "{n} days"
+      },
+      "streak": "Streak: {current} in a row · best {best}",
+      "skip_weekends": "Weekends don't break the streak",
+      "chart": {
+        "one": "Focus per day over the last {n} day: {duration} in all.",
+        "other": "Focus per day over the last {n} days: {duration} in all."
+      },
+      "tip_none": "No pomodoros",
+      "by_activity": "Focus by activity, last 30 days",
+      "activity_task": "Todoist tasks",
+      "activity_other": "Other",
+      "activities_empty": "Pick an activity under “What are you working on?” to see where your focus goes.",
+      "top_tasks": "Most focused tasks, last 30 days",
+      "tasks_empty": "No pomodoros yet. Pick a task and start the timer.",
+      "help": "Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist."
+    },
+    "apps": {
+      "title": "Time in apps",
+      "switch": "Count the time I spend in each app",
+      "legend_focus": "During focus",
+      "legend_other": "Outside focus",
+      "during_focus": "{duration} during focus",
+      "chart": {
+        "one": "Time in apps per day over the last {n} day: {duration} in all.",
+        "other": "Time in apps per day over the last {n} days: {duration} in all."
+      },
+      "tip": "{focus} during focus · {other} outside",
+      "tip_none": "Nothing counted",
+      "most_apps": "Most used apps, last 30 days",
+      "most_sites": "Most used websites, last 30 days",
+      "row": "{today} today · {week} this week · {share} in focus",
+      "show_all_apps": {
+        "one": "Show all {n} apps",
+        "other": "Show all {n} apps"
+      },
+      "show_all_sites": {
+        "one": "Show all {n} websites",
+        "other": "Show all {n} websites"
+      },
+      "apps_empty": "Nothing counted yet. Use an app for a minute and come back.",
+      "apps_off": "Turn this on to see which apps get your time.",
+      "sites_off": "Turn this on to see which websites get your time.",
+      "sites_empty": "Nothing counted yet. Browse for a minute and come back.",
+      "sites_no_extension": "Websites are timed by the Chrome extension: set it up in the Websites tab.",
+      "help": "The app in front gets the time, in focus or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json."
+    },
+    "blocks": {
+      "title": "Websites blocked",
+      "legend_focus": "During focus",
+      "legend_limit": "Over a limit",
+      "split": "{focus} focus · {limit} limit",
+      "chart": {
+        "one": "Blocks per day over the last {n} day: {focus} during focus, {limit} over a limit.",
+        "other": "Blocks per day over the last {n} days: {focus} during focus, {limit} over a limit."
+      },
+      "tip": "{focus} during focus · {limit} over a limit",
+      "tip_none": "Nothing blocked",
+      "count": {
+        "one": "{n} block",
+        "other": "{n} blocks"
+      },
+      "most": "Most blocked, last 30 days",
+      "empty": "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.",
+      "help": "Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts."
+    }
   },
   "tray": {
   },
