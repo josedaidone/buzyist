@@ -24,7 +24,7 @@ from pydantic_core import PydanticCustomError
 
 from buzyist.activities import DEFAULT_ACTIVITIES, clean_activities, default_activities
 from buzyist.app_limits import _sanitize_app_limits, clean_app_limits
-from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens
+from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens, default_bar_screens
 from buzyist.blocker import clean_blocked_apps, normalize_blocked_apps
 from buzyist.calls import clean_call_ignore
 from buzyist.constants import (
@@ -511,6 +511,8 @@ class Config(BaseModel):
             # A config without activities gets the defaults, named in its language
             # (written once: saved activities keep their names when it changes).
             data["activities"] = default_activities(data.get("language"))
+        if "bar_screens" not in data:
+            data["bar_screens"] = default_bar_screens(data.get("language"))  # the same for the bar's texts
         for _ in range(len(cls.model_fields) + 1):
             try:
                 return cls.model_validate(data, context={"load": True}).model_dump()

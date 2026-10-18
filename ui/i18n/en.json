@@ -967,7 +967,9 @@
       "closed_hours_text": "You set these hours aside. It can open again then.",
       "closed_budget_title": "That's enough {name} for now",
       "closed_budget_text": "You've used your {allowed} min {period}. It can open again at {until}."
-    }
+    },
+    "another_pc": "another PC",
+    "another_pc_name": "Another PC"
   },
   "errors": {
     "_": "Shown in Settings and the windows (AppError). Python makes them; logs keep their English.",
@@ -1149,7 +1151,9 @@
       "call": "Call",
       "programming": "Programming",
       "reading": "Reading"
-    }
+    },
+    "bar_call": "CALL",
+    "bar_done": "DONE"
   },
   "todoist": {
     "_": "The comment logged on a Todoist task after a session, in the language of that moment. `when` is a strftime format.",

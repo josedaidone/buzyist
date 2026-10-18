@@ -28,7 +28,7 @@ import copy
 import re
 
 from buzyist.constants import AppError
-from buzyist.i18n import app_error, t
+from buzyist.i18n import ENGLISH, app_error, t, translate
 
 SCREENS = ("focus", "call", "done")
 MODES = {"focus": ("card", "theme", "text"), "call": ("card", "theme", "text"), "done": ("text", "off")}
@@ -68,6 +68,18 @@ DEFAULT_BAR_SCREENS = {
     "call": {"mode": "theme", "theme": "on_call", "text": "CALL", "color": "molho"},
     "done": {"mode": "text", "theme": "", "text": "DONE", "color": "folha"},
 }
+
+
+def default_bar_screens(lang: str | None = None) -> dict:
+    """
+    DEFAULT_BAR_SCREENS with the call and end texts in `lang` (defaults.bar_call,
+    defaults.bar_done; English when None or not shipped): for a config that has
+    no bar screens yet. Saved screens keep their texts.
+    """
+    out = copy.deepcopy(DEFAULT_BAR_SCREENS)
+    for screen in ("call", "done"):
+        out[screen]["text"] = translate(str(lang or ENGLISH), f"defaults.bar_{screen}")
+    return out
 
 
 def fill_text(template: str, values: dict) -> str:

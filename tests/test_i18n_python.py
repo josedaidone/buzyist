@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from buzyist import activities, i18n, paths
+from buzyist import activities, bar_screens, i18n, paths
 from buzyist.config import Config
 from buzyist.constants import AppError
 from buzyist.i18n import app_error, english
@@ -100,6 +100,22 @@ def test_saved_activities_keep_their_names_whatever_the_language(make_app):
     assert make_app(PT | {"activities": activities.DEFAULT_ACTIVITIES}).cfg["activities"][0]["name"] == "Email"
 
 
+def test_a_fresh_portuguese_config_gets_portuguese_bar_texts(make_app):
+    screens = make_app(PT).cfg["bar_screens"]
+    assert (screens["call"]["text"], screens["done"]["text"]) == ("CHAMADA", "FEITO")
+    assert screens["focus"]["text"] == "{task}"
+    saved = make_app({"bar_screens": bar_screens.DEFAULT_BAR_SCREENS})
+    saved.save_settings({"language": "pt-BR"})
+    assert saved.cfg["bar_screens"]["done"]["text"] == "DONE"  # never rewritten
+    assert bar_screens.default_bar_screens("en") == bar_screens.DEFAULT_BAR_SCREENS
+
+
+def test_a_remote_session_without_a_pc_name_is_from_another_pc(make_app):
+    app = make_app(PT)
+    app.remote_session = lambda: {"task": {"content": "Relatório"}, "started_at": "09:00", "name": ""}
+    assert app._remote_view()["by"] == "outro PC"
+
+
 def test_the_english_catalog_names_the_defaults_as_the_code_does():
     assert activities.default_activities("en") == activities.DEFAULT_ACTIVITIES
     assert activities.default_activities(None) == activities.DEFAULT_ACTIVITIES
@@ -151,18 +167,18 @@ def test_errors_are_in_the_app_language_and_english_for_the_log(make_app):
         app.save_filter(None, " ", "today")
     assert str(caught.value) == "Dê um nome ao filtro."
     assert caught.value.english == "Give the filter a name."
-    with pytest.raises(AppError, match="^Um pomodoro dura de"):
+    with pytest.raises(AppError, match=r"^Um pomodoro dura de"):
         app.save_settings({"work_minutes": 0})
 
 
 def test_settings_field_errors_follow_the_language_of_the_moment(monkeypatch):
     monkeypatch.setitem(i18n._source, "config", {"language": "pt-BR"})
-    with pytest.raises(AppError, match="^Um intervalo dura de"):
+    with pytest.raises(AppError, match=r"^Um intervalo dura de"):
         Config.check({"rest_minutes": 0})
-    with pytest.raises(AppError, match="^“nada” não é um site"):
+    with pytest.raises(AppError, match=r"^“nada” não é um site"):
         Config.check({"blocked_sites": ["nada"]})
     monkeypatch.setitem(i18n._source, "config", {"language": "en"})
-    with pytest.raises(AppError, match="^Breaks run"):
+    with pytest.raises(AppError, match=r"^Breaks run"):
         Config.check({"rest_minutes": 0})
 
 
@@ -193,7 +209,10 @@ def test_toasts_in_portuguese(make_app, clock, deferred_threads):
     app.engine_step()
     clock.advance(minutes=25, seconds=1)
     app.engine_step()
-    assert toasts[-1] == ("Mandou bem! Hora do intervalo", "Pomodoro 1 de 2 concluído. Aproveite os 5 min de intervalo.")
+    assert toasts[-1] == (
+        "Mandou bem! Hora do intervalo",
+        "Pomodoro 1 de 2 concluído. Aproveite os 5 min de intervalo.",
+    )
 
 
 # ----------------------------------------------- every key is in the catalog ---
@@ -201,19 +220,20 @@ def test_toasts_in_portuguese(make_app, clock, deferred_threads):
 # Keys made at run time from a prefix and a known set of endings.
 DYNAMIC = {
     "defaults.activities.": [a["id"] for a in activities.DEFAULT_ACTIVITIES],
+    "defaults.bar_": ["call", "done"],
     "errors.bar_screens.name_": ["focus", "call", "done"],
     "notify.limit.this_": ["minute", "hour", "day", "week"],
     "notify.limit.stretch_": ["minute", "hour", "day", "week"],
     "notify.weekdays.": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
     "tray.title_": ["idle", "call", "focus", "break", "paused"],
 }
-AREAS = ("errors", "notify", "tray", "defaults", "todoist")
+AREAS = "errors|notify|tray|defaults|todoist"
 
 
 def test_every_key_the_python_code_uses_is_in_the_catalogs():
     source = "\n".join(p.read_text(encoding="utf-8") for p in Path(activities.__file__).parent.rglob("*.py"))
-    keys = set(re.findall(r'"((?:%s)\.[a-z_.]+)"' % "|".join(AREAS), source))
-    for found in re.findall(r'f"((?:%s)\.[a-z_.]+)\{' % "|".join(AREAS), source):
+    keys = set(re.findall(r'"((?:AREAS)\.[a-z_.]+)"'.replace("AREAS", AREAS), source))
+    for found in re.findall(r'f"((?:AREAS)\.[a-z_.]+)\{'.replace("AREAS", AREAS), source):
         assert found in DYNAMIC, found
         keys |= {found + end for end in DYNAMIC[found]}
     keys = {k for k in keys if not k.endswith(".")}

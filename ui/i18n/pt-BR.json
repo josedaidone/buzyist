@@ -958,7 +958,9 @@
       "closed_hours_text": "Você reservou esse horário. Ele pode abrir de novo depois.",
       "closed_budget_title": "Chega de {name} por enquanto",
       "closed_budget_text": "Você usou os seus {allowed} min {period}. Ele pode abrir de novo às {until}."
-    }
+    },
+    "another_pc": "outro PC",
+    "another_pc_name": "Outro PC"
   },
   "errors": {
     "language": "Escolha um idioma da lista.",
@@ -1138,7 +1140,9 @@
       "call": "Chamada",
       "programming": "Programação",
       "reading": "Leitura"
-    }
+    },
+    "bar_call": "CHAMADA",
+    "bar_done": "FEITO"
   },
   "todoist": {
     "comment_bar": "🍅 × {n} ({minutes} min de foco) no BUSY Bar, encerrada em {when}",
