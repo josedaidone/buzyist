@@ -25,7 +25,7 @@ from busylib.features import timer_state
 from PIL import Image, ImageDraw, ImageFont
 
 from buzyist import paths
-from buzyist.bar_screens import OWN_THEME_PREFIX, SCREEN_COLORS, fill_text
+from buzyist.bar_screens import OLD_PLACEHOLDERS, OWN_THEME_PREFIX, SCREEN_COLORS, fill_text
 from buzyist.constants import APP, AppError, now_ms
 
 if TYPE_CHECKING:
@@ -208,9 +208,10 @@ class BarScreens:
         values = {
             "task": ended["task"]["content"],
             "activity": (ended.get("activity") or {}).get("name", ""),
-            "tomatoes": ended["done"],
+            "pomodoros": ended["done"],
             "minutes": ended["minutes"],
         }
+        values |= {old: values[new] for old, new in OLD_PLACEHOLDERS["done"].items()}
         return {"draw": fill_text(done["text"], values), "color": done["color"]}
 
     def _session_screen(self, cfg: dict, session: dict, view: dict) -> dict:
@@ -220,8 +221,8 @@ class BarScreens:
             "task": session["task"]["content"],
             "activity": activity.get("name", ""),
             "apps": ", ".join(call["apps"]) if call else "",
-            "round": view["round"],
-            "rounds": view["rounds"],
+            "pomodoro": view["round"],
+            "pomodoros": view["rounds"],
         }
         if call:
             screen = cfg["bar_screens"]["call"]
@@ -236,12 +237,13 @@ class BarScreens:
             elapsed = view["elapsed_ms"]
             minutes, next_s = elapsed // 60000, 60 - (elapsed % 60000) / 1000
         elif view["phase"] == "rest":
-            # The break is the bar's own screen: get the next round's picture ready.
+            # The break is the bar's own screen: get the next pomodoro's picture ready.
             minutes, next_s = view["work_ms"] // 60000, IDLE_WAIT_S
-            values["round"] = min(view["round"] + 1, view["rounds"])
+            values["pomodoro"] = min(view["round"] + 1, view["rounds"])
         else:
             minutes = view["minutes"]
             next_s = IDLE_WAIT_S if view["paused"] else (view["left_ms"] % 60000 or 60000) / 1000
+        values |= {old: values[new] for old, new in OLD_PLACEHOLDERS["focus"].items()}
         return {
             "text": fill_text(screen["text"], values) or session["task"]["content"],
             "color": screen["color"],

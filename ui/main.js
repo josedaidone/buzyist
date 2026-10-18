@@ -127,11 +127,11 @@ function renderTimer() {
   $("time").textContent = clock(left);
   $("ringProgress").style.strokeDasharray = RING;
   $("ringProgress").style.strokeDashoffset = t ? RING * (1 - left / total) : 0;
-  $("timeLabel").textContent = !t ? "per tomato" : t.paused ? "paused" : "left";
-  $("timerBox").setAttribute("aria-label", `${clock(left)} ${t ? "left" : "per tomato"}`);
+  $("timeLabel").textContent = !t ? "per pomodoro" : t.paused ? "paused" : "left";
+  $("timerBox").setAttribute("aria-label", `${clock(left)} ${t ? "left" : "per pomodoro"}`);
   $("phaseTag").textContent = { idle: "Ready", paused: "Paused", work: "Focus", rest: "Break" }[phase];
 
-  // this session's tomatoes: done, now, planned
+  // this session's pomodoros: done, now, planned
   const rounds = t ? t.rounds : p.cycles;
   const done = !t ? 0 : t.round - (t.phase === "rest" ? 0 : 1);
   const now = t && t.phase === "work" ? t.round : 0;
@@ -143,20 +143,20 @@ function renderTimer() {
     if (rounds <= 12) {
       for (let n = 1; n <= rounds; n++) dots.append(tomato(n <= done ? "done" : n === now ? "now" : "plan"));
     }
-    dots.setAttribute("aria-label", t ? `Tomato ${Math.min(t.round, rounds)} of ${rounds}` : `${rounds} tomato${rounds === 1 ? "" : "es"}`);
+    dots.setAttribute("aria-label", t ? `Pomodoro ${Math.min(t.round, rounds)} of ${rounds}` : `${rounds} pomodoro${rounds === 1 ? "" : "s"}`);
   }
   const restMin = Math.round((t ? t.rest_ms : p.rest_minutes * 60000) / 60000);
   let line;
-  if (!t) line = p.cycles === 1 ? `1 tomato of ${p.work_minutes} min, no break`
-    : `${p.cycles} tomatoes of ${p.work_minutes} min, ${p.rest_minutes} min breaks`;
-  else if (t.phase === "rest") line = `Break · tomato ${t.round + 1} of ${t.rounds} next`;
-  else if (t.round >= t.rounds) line = `Tomato ${t.round} of ${t.rounds} · the last one`;
-  else line = `Tomato ${t.round} of ${t.rounds} · ${restMin} min break after`;
+  if (!t) line = p.cycles === 1 ? `1 pomodoro of ${p.work_minutes} min, no break`
+    : `${p.cycles} pomodoros of ${p.work_minutes} min, ${p.rest_minutes} min breaks`;
+  else if (t.phase === "rest") line = `Break · pomodoro ${t.round + 1} of ${t.rounds} next`;
+  else if (t.round >= t.rounds) line = `Pomodoro ${t.round} of ${t.rounds} · the last one`;
+  else line = `Pomodoro ${t.round} of ${t.rounds} · ${restMin} min break after`;
   $("roundsText").textContent = line;
   document.title = t ? `${clock(left)} · ${s ? s.task.content : "buZyist"}` : "buZyist";
 }
 
-// A call shows the time so far on a full ring, and no tomatoes.
+// A call shows the time so far on a full ring, and no pomodoros.
 function renderCall(t, s) {
   const so = clock(callTime(t));
   $("time").textContent = so;
@@ -169,7 +169,7 @@ function renderCall(t, s) {
   if (dots.dataset.key !== "call") {
     dots.dataset.key = "call";
     dots.textContent = "";
-    dots.setAttribute("aria-label", "A call, with no tomatoes");
+    dots.setAttribute("aria-label", "A call, with no pomodoros");
   }
   $("roundsText").textContent = "Ends when the call does · counted as focus";
   document.title = `${so} · ${s ? s.task.content : "buZyist"}`;
@@ -215,7 +215,7 @@ function renderCurrent() {
     $("curTask").textContent = "Timer running";
     meta.append(el("span", "", state.todoist ? "Pick a task to put it in focus" : ""));
   } else {
-    $("curEyebrow").textContent = state.todoist ? "One tomato at a time." : "Name it if you like, then go.";
+    $("curEyebrow").textContent = state.todoist ? "One pomodoro at a time." : "Name it if you like, then go.";
     $("curTask").textContent = state.todoist ? "Pick a task to start" : "Ready when you are";
   }
   $("freeBox").classList.toggle("hidden", !!t || !!s);
@@ -265,7 +265,7 @@ function renderToday() {
   const n = today.pomodoros;
   const date = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   if ($("todayDate").textContent !== date) $("todayDate").textContent = date;
-  $("sumTitle").textContent = n ? `${n} tomato${n === 1 ? "" : "es"} today` : "No tomatoes yet today";
+  $("sumTitle").textContent = n ? `${n} pomodoro${n === 1 ? "" : "s"} today` : "No pomodoros yet today";
   const side = [];
   if (today.minutes) side.push(duration(today.minutes) + " of focus");
   if (today.completed) side.push(`${today.completed} done`);
@@ -278,12 +278,12 @@ function renderToday() {
     if (!n) box.append(el("span", "none", "Pick a task. 25 minutes, just that."));
     for (let i = 0; i < Math.min(n, 16); i++) box.append(tomato("done"));
     if (n > 16) box.append(el("span", "more", `+${n - 16}`));
-    box.setAttribute("aria-label", `${n} tomato${n === 1 ? "" : "es"} finished today`);
+    box.setAttribute("aria-label", `${n} pomodoro${n === 1 ? "" : "s"} finished today`);
   }
   // Without the task list (no Todoist) the header chip carries the count.
   const chip = $("today");
   chip.textContent = "";
-  chip.append(tomato("done", "t"), el("b", "", String(n)), n === 1 ? " tomato today" : " tomatoes today");
+  chip.append(tomato("done", "t"), el("b", "", String(n)), n === 1 ? " pomodoro today" : " pomodoros today");
   if (today.minutes) chip.append(" · " + duration(today.minutes));
 }
 
@@ -336,13 +336,13 @@ function renderEnded() {
   for (let i = 0; i < Math.min(e.done, 8); i++) box.append(tomato("done"));
   if (e.done > 8) box.append(el("span", "more", `+${e.done - 8}`));
   box.classList.toggle("hidden", !e.done);
-  box.setAttribute("aria-label", `${e.done} tomato${e.done === 1 ? "" : "es"}`);
+  box.setAttribute("aria-label", `${e.done} pomodoro${e.done === 1 ? "" : "s"}`);
   $("endedTitle").textContent = finished ? "Done. Take a breather." : "Session stopped";
   $("endedTask").textContent = e.task.content;
   $("endedComplete").classList.toggle("hidden", !e.task.id || !state.todoist);
   $("endedSummary").textContent = e.done
-    ? `${e.done} tomato${e.done === 1 ? "" : "es"} · ${duration(e.minutes)} of focus`
-    : "No full tomato this time. That's fine.";
+    ? `${e.done} pomodoro${e.done === 1 ? "" : "s"} · ${duration(e.minutes)} of focus`
+    : "No full pomodoro this time. That's fine.";
   $("endedProblems").textContent = (e.problems || []).join(" ");
 }
 
@@ -633,10 +633,10 @@ function renderTasks() {
     const due = dueText(t);
     if (due) meta.append(el("span", t.overdue ? "late" : "", due));
     if (t.plan) {
-      // Its Todoist duration sets the tomatoes (buzyist/plan.py).
+      // Its Todoist duration sets the pomodoros (buzyist/plan.py).
       const [mins, rounds] = t.plan;
       const chip = el("span", "plan");
-      chip.title = `${t.minutes} min in Todoist: ${rounds} tomato${rounds === 1 ? "" : "es"} of ${mins} min. Shift+click play for your usual settings.`;
+      chip.title = `${t.minutes} min in Todoist: ${rounds} pomodoro${rounds === 1 ? "" : "s"} of ${mins} min. Shift+click play for your usual settings.`;
       chip.append(icon("recent"), rounds === 1 ? `${mins} min` : `${rounds} × ${mins} min`);
       meta.append(chip);
     }
@@ -664,8 +664,8 @@ function renderTasks() {
     body.append(meta);
     const play = el("button", "play");
     play.append(icon("play"));
-    play.title = "Start a tomato";
-    play.setAttribute("aria-label", "Start a tomato on: " + t.content);
+    play.title = "Start a session";
+    play.setAttribute("aria-label", "Start a session on: " + t.content);
     play.tabIndex = -1;
     const check = el("button", "prio");
     check.title = "Mark as done";
@@ -755,12 +755,12 @@ function markCurrentTask() {
       if (n > 8) dots.append(el("span", "", "+" + (n - 8)));
       dots.classList.toggle("hidden", !n);
       dots.setAttribute("role", "img");
-      dots.setAttribute("aria-label", `${n} tomato${n === 1 ? "" : "es"} done`);
+      dots.setAttribute("aria-label", `${n} pomodoro${n === 1 ? "" : "s"} done`);
     }
   }
 }
 
-// fixed: the usual tomato settings even when the task's duration would set them.
+// fixed: the usual pomodoro settings even when the task's duration would set them.
 // A task with open subtasks first asks which one (direct: start this one, no asking;
 // at: where to open the question, see openSubtaskPicker).
 async function startTask(task, li, fixed, direct, at) {
@@ -777,7 +777,7 @@ async function startTask(task, li, fixed, direct, at) {
   if (!result.ok) return toast(result.error, true);
   const where = state && (state.bar.local || state.bar.offline) ? "" : " (on the bar)";
   toast(result.planned
-    ? `Go. ${result.rounds === 1 ? "1 tomato" : result.rounds + " tomatoes"} of ${result.work_minutes} min, from the task's duration${where}.`
+    ? `Go. ${result.rounds === 1 ? "1 pomodoro" : result.rounds + " pomodoros"} of ${result.work_minutes} min, from the task's duration${where}.`
     : `Go. ${result.work_minutes} minutes, just this${where}.`);
   $("search").value = "";
   renderTasks();
@@ -822,9 +822,9 @@ function openTaskMenu(task, li, x, y) {
     b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); fn(); };
     menu.append(b);
   };
-  item("play", "Start pomodoro", () => startTask(task, li, false, false, { x, y }));
+  item("play", "Start session", () => startTask(task, li, false, false, { x, y }));
   if (task.plan || task.subtasks?.length) {
-    item("play", `Start with your usual ${pomo.work_minutes}-min tomatoes`, () => startTask(task, li, true, false, { x, y }));
+    item("play", `Start with your usual ${pomo.work_minutes}-min pomodoros`, () => startTask(task, li, true, false, { x, y }));
   }
   item("check", "Mark as done", () => completeTask(task, li));
   if (task.url) item("eye", "See on Todoist", () => api.open_url(task.url));
@@ -850,7 +850,7 @@ function openSubtaskPicker(task, li, fixed, at) {
     b.setAttribute("role", "menuitem");
     b.style.paddingLeft = 12 + (depth - 1) * 16 + "px";
     b.append(el("span", "pick-name", label || t.content));
-    // the tomatoes it would get (unless shift+click asked for the usual ones)
+    // the pomodoros it would get (unless shift+click asked for the usual ones)
     if (t.plan && !fixed) b.append(el("span", "pick-plan", t.plan[1] === 1 ? `${t.plan[0]} min` : `${t.plan[1]} × ${t.plan[0]}`));
     b.title = t.content;
     b.onclick = (e) => { e.stopPropagation(); closeTaskMenu(); startTask(t, li, fixed, true); };
@@ -991,7 +991,7 @@ $("btnPause").onclick = () => control(state.timer && state.timer.paused ? "resum
 
 // ------------------------------------------------- what are you working on
 
-// The free field (a tomato with no task) is a combobox. Focusing it lists
+// The free field (a session with no task) is a combobox. Focusing it lists
 // the activities (state.activities, edited in Settings, General) and the
 // latest names used (Api.recent_free). Picking an activity turns it into a
 // chip in the field, and what you type after it is the detail ("Email ·
@@ -1072,7 +1072,7 @@ function renderFreeList() {
   }
   // Enter takes the highlighted option: an activity the text starts with,
   // or (nothing else matching) the text as typed. With nothing typed, or
-  // after a chip, nothing is highlighted and Enter starts the tomato.
+  // after a chip, nothing is highlighted and Enter starts the session.
   const text = $("freeName").value.trim().toLowerCase();
   if (free.active === -2) {
     free.active = text && !free.activity
@@ -1406,14 +1406,14 @@ function barChart(chart, days, series, label, tip) {
   });
 }
 
-// Focus from history.json (Api.focus_stats): focus time, tomatoes, sessions
+// Focus from history.json (Api.focus_stats): focus time, pomodoros, sessions
 // and tasks for today / 7 / 30 days, the streak, minutes per day, top tasks.
 function renderFocusStats(s) {
   const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
   $("focusTiles").replaceChildren(...tiles.map(([label, t]) => {
     const tile = el("div", "stat-tile");
     tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(t.minutes)),
-                el("div", "help", `${plural(t.pomodoros, "tomato")} · ${plural(t.sessions, "session")}`),
+                el("div", "help", `${plural(t.pomodoros, "pomodoro")} · ${plural(t.sessions, "session")}`),
                 el("div", "help", `${plural(t.tasks, "task")} worked on · ${t.completed} done`));
     return tile;
   }));
@@ -1422,7 +1422,7 @@ function renderFocusStats(s) {
 
   barChart($("focusChart"), s.days, [["minutes", "stat-f"]],
     `Focus per day over the last ${s.span} days: ${duration(s.totals.span.minutes)} in all.`,
-    { line: (d) => d.minutes ? `${duration(d.minutes)} · ${plural(d.pomodoros, "tomato")}` : "No tomatoes", max: duration });
+    { line: (d) => d.minutes ? `${duration(d.minutes)} · ${plural(d.pomodoros, "pomodoro")}` : "No pomodoros", max: duration });
   $("focusFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
   // One row per activity, with Todoist tasks and typed names ("_task",
@@ -1434,16 +1434,16 @@ function renderFocusStats(s) {
     const name = el("span", "stat-host stat-activity");
     name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), g.name);
     const share = s.totals.span.minutes ? Math.round((100 * g.minutes) / s.totals.span.minutes) : 0;
-    row.append(name, el("span", "help", `${plural(g.pomodoros, "tomato")} · ${share}%`), el("b", "", duration(g.minutes)));
+    row.append(name, el("span", "help", `${plural(g.pomodoros, "pomodoro")} · ${share}%`), el("b", "", duration(g.minutes)));
     return row;
   }) : [el("div", "help", "Pick an activity under “What are you working on?” to see where your focus goes.")]));
 
   $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((t) => {
     const row = el("div", "stat-site");
-    row.append(el("span", "stat-host", t.content), el("span", "help", `${plural(t.pomodoros, "tomato")} · ${plural(t.sessions, "session")}`),
+    row.append(el("span", "stat-host", t.content), el("span", "help", `${plural(t.pomodoros, "pomodoro")} · ${plural(t.sessions, "session")}`),
                el("b", "", duration(t.minutes)));
     return row;
-  }) : [el("div", "help", "No tomatoes yet. Pick a task and start the timer.")]));
+  }) : [el("div", "help", "No pomodoros yet. Pick a task and start the timer.")]));
 }
 
 const blockWord = (n) => `${n} block${n === 1 ? "" : "s"}`;
@@ -1595,7 +1595,7 @@ function showTodoistFields() {
 }
 $("s_use_todoist").onchange = showTodoistFields;
 
-// (minutes per tomato, tomatoes) for a task of `minutes`, or null. Mirrors
+// (minutes per pomodoro, pomodoros) for a task of `minutes`, or null. Mirrors
 // plan_session in buzyist/plan.py; tests/plan_cases.json checks both.
 function planSession(minutes, c) {
   if (!c.plan_from_duration || !(minutes > 0)) return null;
@@ -1617,7 +1617,7 @@ function showPlanFields() {
   const ok = c.plan_target >= 5 && c.plan_min >= 5 && c.plan_max >= 5 && c.plan_single_max >= 0
     && c.plan_min <= c.plan_target && c.plan_target <= c.plan_max;
   if (!ok) {
-    $("planExample").textContent = "Keep the tomato length between the shortest and the longest.";
+    $("planExample").textContent = "Keep the pomodoro length between the shortest and the longest.";
     return;
   }
   c.plan_from_duration = true;
@@ -1656,9 +1656,9 @@ const BAR_COLORS = {  // as SCREEN_COLORS in buzyist/bar_screens.py (a test chec
 const MAX_SCREEN_TEXT = 60;  // as in buzyist/bar_screens.py
 const OWN_MODES = [["card", "The card's"], ["theme", "A theme"], ["text", "My text"]];
 const SCREEN_EDITS = {
-  focus: { title: "Focus", modes: OWN_MODES, words: ["task", "activity", "round", "rounds"], minutes: 18, text: "{task}", color: "tomate" },
+  focus: { title: "Focus", modes: OWN_MODES, words: ["task", "activity", "pomodoro", "pomodoros"], minutes: 18, text: "{task}", color: "tomate" },
   call: { title: "Call", modes: OWN_MODES, words: ["task", "activity", "apps"], minutes: 12, text: "CALL", color: "molho" },
-  done: { title: "End of session", modes: [["text", "My text"], ["off", "Off"]], words: ["task", "activity", "tomatoes", "minutes"], minutes: null, text: "DONE", color: "folha" },
+  done: { title: "End of session", modes: [["text", "My text"], ["off", "Off"]], words: ["task", "activity", "pomodoros", "minutes"], minutes: null, text: "DONE", color: "folha" },
 };
 let barScreens = {};
 let barThemes = [];  // the bar's own, the card's first; [] until read

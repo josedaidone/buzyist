@@ -22,7 +22,7 @@ function render() {
   $("mProgress").style.strokeDasharray = RING;
   $("mProgress").style.strokeDashoffset = call ? 0 : t ? RING * (1 - left / t.total_ms) : RING;
   $("mPhase").textContent = { idle: "Ready", paused: "Paused", work: "Focus", rest: "Break", call: "Call" }[phase];
-  $("mRound").textContent = call ? "until it ends" : t ? `Tomato ${t.round} of ${t.rounds}` : "";
+  $("mRound").textContent = call ? "until it ends" : t ? `Pomodoro ${t.round} of ${t.rounds}` : "";
   const r = !s && t && state.remote;  // started on another PC
   $("mTask").textContent = s ? s.task.content : r ? r.task.content : t ? (state.bar.local || state.bar.offline ? "Timer running" : "Running on the bar") : "No session";
   $("mProject").textContent = s ? s.task.project : r ? r.task.project || `on ${r.by}` : "";

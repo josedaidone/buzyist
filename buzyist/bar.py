@@ -371,7 +371,7 @@ class Bar:
             live = bar.busy_snapshot()
             variant = live.snapshot
             if not isinstance(variant, types.BusySnapshotInterval):
-                raise AppError("No interval session is running.")
+                raise AppError("No session is running.")
             settings = variant.interval_settings
             following = (timer_state(live).interval or 0) + 1
             # Index cycles*2-1 is where a session ends; it is never run.

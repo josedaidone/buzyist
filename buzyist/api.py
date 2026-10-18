@@ -59,7 +59,7 @@ class Api:
         return self._do(lambda: {"count": len(self._app.check_query(str(query)))})
 
     def start(self, task_id=None, name="", activity="", fixed=False):
-        """`fixed`: the usual tomato settings even when the task has a duration."""
+        """`fixed`: the usual pomodoro settings even when the task has a duration."""
         return self._do(
             self._app.start_task,
             None if task_id is None else str(task_id),
@@ -226,8 +226,8 @@ class Api:
         """A text screen as the bar would show it: a PNG data URL (bar_display.render)."""
 
         def go():
-            values = {"task": "Write the Q4 plan", "activity": "Email", "apps": "Teams", "round": 2, "rounds": 4}
-            values |= {"tomatoes": 3, "minutes": 75}
+            values = {"task": "Write the Q4 plan", "activity": "Email", "apps": "Teams", "pomodoro": 2}
+            values |= {"pomodoros": 4, "minutes": 75, "round": 2, "rounds": 4, "tomatoes": 3}
             shown = fill_text(str(text or ""), values)
             picture = png(render(shown, str(color), None if minutes is None else int(minutes)))
             return {"url": "data:image/png;base64," + base64.b64encode(picture).decode()}

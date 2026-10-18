@@ -321,9 +321,11 @@ def test_the_wake_up_lands_just_after_the_minute_turns(run, device, deferred_thr
     assert app.bar_screens.step() == pytest.approx(45.3, abs=0.1)
 
 
-def test_the_break_gets_the_next_round_ready(run, device, deferred_threads):
+# {round}/{rounds}: what texts saved before the pomodoro wording said (OLD_PLACEHOLDERS).
+@pytest.mark.parametrize("text", ["{pomodoro}/{pomodoros}", "{round}/{rounds}"])
+def test_the_break_gets_the_next_pomodoro_ready(run, device, deferred_threads, text):
     app = start(
-        run({"bar_screens": {**DEFAULT_BAR_SCREENS, "focus": {"mode": "text", "text": "{round}/{rounds}"}}}),
+        run({"bar_screens": {**DEFAULT_BAR_SCREENS, "focus": {"mode": "text", "text": text}}}),
         deferred_threads,
     )
     app.step(minutes=25, seconds=10)
@@ -365,6 +367,17 @@ def test_a_call_shows_the_call_screen_with_its_minutes(run, device, deferred_thr
     app.step(minutes=1)
     assert device.picture(device.theme).tobytes() == render("CALL", "molho", 4).tobytes()
     assert app.session["call"]  # still the same call
+
+
+@pytest.mark.parametrize("text", ["{pomodoros} done", "{tomatoes} done"])
+def test_the_done_screen_counts_the_pomodoros(run, device, deferred_threads, text):
+    done = {"mode": "text", "text": text, "color": "folha"}
+    app = start(run({"cycles": 1, "bar_screens": {**DEFAULT_BAR_SCREENS, "done": done}}), deferred_threads)
+    app.step(minutes=25, seconds=10)
+    deferred_threads.run_pending()
+    app.step()
+    assert app.ended["done"] == 1
+    assert device.drawn().tobytes() == render("1 done", "folha").tobytes()
 
 
 def test_the_done_screen_is_drawn_until_the_summary_closes(run, device, deferred_threads):

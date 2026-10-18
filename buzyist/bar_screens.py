@@ -47,11 +47,14 @@ SCREEN_COLORS = {
 }
 
 # What a text can say, per screen; anything else in braces stays as typed.
+# Texts saved before #22 (one word per concept) may say {round}/{rounds} (focus) or {tomatoes}
+# (done): OLD_PLACEHOLDERS still fills them, but they aren't offered.
 PLACEHOLDERS = {
-    "focus": ("task", "activity", "round", "rounds"),
+    "focus": ("task", "activity", "pomodoro", "pomodoros"),
     "call": ("task", "activity", "apps"),
-    "done": ("task", "activity", "tomatoes", "minutes"),
+    "done": ("task", "activity", "pomodoros", "minutes"),
 }
+OLD_PLACEHOLDERS = {"focus": {"round": "pomodoro", "rounds": "pomodoros"}, "done": {"tomatoes": "pomodoros"}}
 
 # The themes buZyist puts on the bar for its text screens start with this,
 # and aren't offered as themes to pick (bar_display.THEME_SLOTS).

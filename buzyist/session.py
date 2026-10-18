@@ -78,7 +78,10 @@ class SessionMixin:
                             f"Pomodoro {interval // 2 + 1} of {rounds} done. Enjoy your {mins} min break.",
                         )
                     else:
-                        notify = ("Back to it", f"Round {interval // 2 + 1} of {rounds}: {session['task']['content']}")
+                        notify = (
+                            "Back to it",
+                            f"Pomodoro {interval // 2 + 1} of {rounds}: {session['task']['content']}",
+                        )
             if reason:
                 self.session = None
                 paths.SESSION_PATH.unlink(missing_ok=True)
@@ -393,7 +396,7 @@ class SessionMixin:
         with self.lock:
             on_call = bool(self.session and self.session.get("call"))
         if on_call and action != "stop":
-            raise AppError("A call has no pause or break: it ends with the call, or stop it.")
+            raise AppError("A call can't be paused or skipped: it ends with the call, or stop it.")
         try:
             if action == "stop":
                 self._on_bar(self.bar.stop)
