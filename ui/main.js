@@ -1342,41 +1342,40 @@ $("appTimeMore").onclick = () => { appTimeAll = true; loadStats(); };
 $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("appTimeTiles").replaceChildren(...tiles.map(([label, t]) => {
+  $("appTimeTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(t.focus + t.other)),
-                el("div", "help", `${duration(t.focus)} during focus`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.focus + tot.other)),
+                el("div", "help", t("stats.apps.during_focus", { duration: duration(tot.focus) })));
     return tile;
   }));
 
   barChart($("appTimeChart"), s.days, [["focus", "stat-f"], ["other", "stat-l"]],
-    `Time in apps per day over the last ${s.span} days: ${duration(s.totals.span.focus + s.totals.span.other)} in all.`,
-    { line: (d) => d.focus + d.other ? `${duration(d.focus)} during focus · ${duration(d.other)} outside` : "Nothing counted", max: duration });
+    t("stats.apps.chart", { n: s.span, duration: duration(s.totals.span.focus + s.totals.span.other) }),
+    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), max: duration });
   $("appTimeFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
-  timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "apps", (a) => a.key + ".exe",
-    s.on ? "Nothing counted yet. Use an app for a minute and come back." : "Turn this on to see which apps get your time.");
-  timeRows($("siteTimeSites"), $("siteTimeMore"), s.sites || [], siteTimeAll, "websites", (a) => a.key,
-    !s.on ? "Turn this on to see which websites get your time."
-      : s.extension ? "Nothing counted yet. Browse for a minute and come back."
-        : "Websites are timed by the Chrome extension: set it up in the Websites tab.");
+  timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "stats.apps.show_all_apps", (a) => a.key + ".exe",
+    t(s.on ? "stats.apps.apps_empty" : "stats.apps.apps_off"));
+  timeRows($("siteTimeSites"), $("siteTimeMore"), s.sites || [], siteTimeAll, "stats.apps.show_all_sites", (a) => a.key,
+    t(!s.on ? "stats.apps.sites_off" : s.extension ? "stats.apps.sites_empty" : "stats.apps.sites_no_extension"));
 }
 
-// The 8 rows with the most time (all of them once "Show all" was pressed).
-function timeRows(list, more, rows, all, noun, title, empty) {
+// The 8 rows with the most time (all of them once "Show all" was pressed);
+// `moreKey` is the "Show all" button's text.
+function timeRows(list, more, rows, all, moreKey, title, empty) {
   const SHOWN = 8;
   const shown = all ? rows : rows.slice(0, SHOWN);
   list.replaceChildren(...(shown.length ? shown.map((a) => {
     const row = el("div", "stat-site");
-    const share = a.span ? Math.round((100 * a.focus) / a.span) : 0;
-    row.append(el("span", "stat-host", a.name), el("span", "help", `${duration(a.today)} today · ${duration(a.week)} this week · ${share}% in focus`),
+    const share = a.span ? a.focus / a.span : 0;
+    row.append(el("span", "stat-host", a.name),
+               el("span", "help", t("stats.apps.row", { today: duration(a.today), week: duration(a.week), share: percent(share) })),
                el("b", "", duration(a.span)));
     row.title = title(a);
     return row;
   }) : [el("div", "help", empty)]));
   more.classList.toggle("hidden", all || rows.length <= SHOWN);
-  more.textContent = `Show all ${rows.length} ${noun}`;
+  more.textContent = t(moreKey, { n: rows.length });
 }
 
 // Saved at once (not with Save), so the streak above changes as you click.
@@ -1388,12 +1387,18 @@ $("s_streak_skip_weekends").onchange = async () => {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// The Stats tab's text in the app language: its three tiles' titles, a share
+// (0..1) as a whole percent, and a day ("Sat, Oct 17" / "sáb., 17 de out.").
+const statTiles = (s) => [[t("stats.today"), s.totals.today], [t("stats.week"), s.totals.week], [t("stats.span", { n: s.span }), s.totals.span]];
+const percent = (share) => formatNumber(share, { style: "percent", maximumFractionDigits: 0 });
+const statDay = (iso) => formatDate(new Date(iso + "T12:00"), { weekday: "short", day: "numeric", month: "short" });
+
 // One column per day, stacked from `series` ([key, css class] pairs, the
 // first at the bottom); `tip(day)` is the hover line, `label` the aria text.
 function barChart(chart, days, series, label, tip) {
   const top = Math.max(1, ...days.map((d) => series.reduce((sum, [k]) => sum + d[k], 0)));
   const box = el("div", "stat-tip hidden");
-  chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : String(top)), box);
+  chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : formatNumber(top)), box);
   chart.setAttribute("aria-label", label);
   days.forEach((d, i) => {
     const col = el("div", "stat-col");
@@ -1404,7 +1409,7 @@ function barChart(chart, days, series, label, tip) {
       col.append(seg);
     }
     col.onmouseenter = () => {
-      box.replaceChildren(el("b", "", i === days.length - 1 ? "Today" : statDay(d.day)), el("span", "", tip.line(d)));
+      box.replaceChildren(el("b", "", i === days.length - 1 ? t("stats.today") : statDay(d.day)), el("span", "", tip.line(d)));
       box.classList.remove("hidden");
       const x = col.offsetLeft + col.offsetWidth / 2;
       box.style.left = Math.min(Math.max(x, 90), chart.clientWidth - 90) + "px";
@@ -1417,66 +1422,65 @@ function barChart(chart, days, series, label, tip) {
 // Focus from history.json (Api.focus_stats): focus time, pomodoros, sessions
 // and tasks for today / 7 / 30 days, the streak, minutes per day, top tasks.
 function renderFocusStats(s) {
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("focusTiles").replaceChildren(...tiles.map(([label, t]) => {
+  const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
+  $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(t.minutes)),
-                el("div", "help", `${plural(t.pomodoros, "pomodoro")} · ${plural(t.sessions, "session")}`),
-                el("div", "help", `${plural(t.tasks, "task")} worked on · ${t.completed} done`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.minutes)),
+                el("div", "help", counts(tot)),
+                el("div", "help", t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })));
     return tile;
   }));
-  const streak = $("focusStreak");
-  streak.replaceChildren("Streak: ", el("b", "", plural(s.streak.current, "day")), ` in a row · best ${plural(s.streak.best, "day")}`);
+  const current = t("stats.focus.days", { n: s.streak.current });
+  const [before, after] = splitAround(t("stats.focus.streak", { current, best: t("stats.focus.days", { n: s.streak.best }) }), current);
+  $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
   barChart($("focusChart"), s.days, [["minutes", "stat-f"]],
-    `Focus per day over the last ${s.span} days: ${duration(s.totals.span.minutes)} in all.`,
-    { line: (d) => d.minutes ? `${duration(d.minutes)} · ${plural(d.pomodoros, "pomodoro")}` : "No pomodoros", max: duration });
+    t("stats.focus.chart", { n: s.span, duration: duration(s.totals.span.minutes) }),
+    { line: (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none"), max: duration });
   $("focusFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
   // One row per activity, with Todoist tasks and typed names ("_task",
   // "_other") as their own rows; hidden until an activity has been used.
   const groups = s.activities || [];
   const used = groups.some((g) => !g.id.startsWith("_"));
+  const groupName = (g) => g.id === "_task" ? t("stats.focus.activity_task") : g.id === "_other" ? t("stats.focus.activity_other") : g.name;
   $("focusActivities").replaceChildren(...(used ? groups.map((g) => {
     const row = el("div", "stat-site");
     const name = el("span", "stat-host stat-activity");
-    name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), g.name);
-    const share = s.totals.span.minutes ? Math.round((100 * g.minutes) / s.totals.span.minutes) : 0;
-    row.append(name, el("span", "help", `${plural(g.pomodoros, "pomodoro")} · ${share}%`), el("b", "", duration(g.minutes)));
+    name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), groupName(g));
+    const share = s.totals.span.minutes ? g.minutes / s.totals.span.minutes : 0;
+    row.append(name, el("span", "help", t("stats.focus.pomodoros", { n: g.pomodoros }) + " · " + percent(share)), el("b", "", duration(g.minutes)));
     return row;
-  }) : [el("div", "help", "Pick an activity under “What are you working on?” to see where your focus goes.")]));
+  }) : [el("div", "help", t("stats.focus.activities_empty"))]));
 
-  $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((t) => {
+  $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((task) => {
     const row = el("div", "stat-site");
-    row.append(el("span", "stat-host", t.content), el("span", "help", `${plural(t.pomodoros, "pomodoro")} · ${plural(t.sessions, "session")}`),
-               el("b", "", duration(t.minutes)));
+    row.append(el("span", "stat-host", task.content), el("span", "help", counts(task)),
+               el("b", "", duration(task.minutes)));
     return row;
-  }) : [el("div", "help", "No pomodoros yet. Pick a task and start the timer.")]));
+  }) : [el("div", "help", t("stats.focus.tasks_empty"))]));
 }
 
-const blockWord = (n) => `${n} block${n === 1 ? "" : "s"}`;
-const statDay = (iso) => new Date(iso + "T12:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
-
 function renderStats(s) {
-  const tiles = [["Today", s.totals.today], ["Last 7 days", s.totals.week], [`Last ${s.span} days`, s.totals.span]];
-  $("statTiles").replaceChildren(...tiles.map(([label, t]) => {
+  const split = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
+  $("statTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", String(t.focus + t.limit)),
-                el("div", "help", `${t.focus} focus · ${t.limit} limit`));
+    tile.append(el("div", "stat-label", label), el("div", "stat-num", formatNumber(tot.focus + tot.limit)),
+                el("div", "help", split(tot)));
     return tile;
   }));
 
   barChart($("statChart"), s.days, [["focus", "stat-f"], ["limit", "stat-l"]],
-    `Blocks per day over the last ${s.span} days: ${s.totals.span.focus} during focus, ${s.totals.span.limit} over a limit.`,
-    { line: (d) => d.focus + d.limit ? `${d.focus} during focus · ${d.limit} over a limit` : "Nothing blocked" });
+    t("stats.blocks.chart", { n: s.span, focus: formatNumber(s.totals.span.focus), limit: formatNumber(s.totals.span.limit) }),
+    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none") });
   $("statFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
 
   $("statSites").replaceChildren(...(s.sites.length ? s.sites.map((site) => {
     const row = el("div", "stat-site");
-    row.append(el("span", "stat-host", site.host), el("span", "help", `${site.focus} focus · ${site.limit} limit`),
-               el("b", "", blockWord(site.focus + site.limit)));
+    row.append(el("span", "stat-host", site.host), el("span", "help", split(site)),
+               el("b", "", t("stats.blocks.count", { n: site.focus + site.limit })));
     return row;
-  }) : [el("div", "help", "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.")]));
+  }) : [el("div", "help", t("stats.blocks.empty"))]));
 }
 
 for (const b of document.querySelectorAll("#settingsTabs .stab")) b.onclick = () => showTab(b.dataset.tab);

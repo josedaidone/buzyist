@@ -62,6 +62,99 @@
     }
   },
   "stats": {
+    "_": "A aba Estatísticas (Configurações). Nomes de dias e números vêm de formatDate/formatNumber.",
+    "today": "Hoje",
+    "week": "Últimos 7 dias",
+    "span": {
+      "one": "Último {n} dia",
+      "other": "Últimos {n} dias"
+    },
+    "focus": {
+      "title": "Foco",
+      "pomodoros": {
+        "one": "{n} pomodoro",
+        "other": "{n} pomodoros"
+      },
+      "sessions": {
+        "one": "{n} sessão",
+        "other": "{n} sessões"
+      },
+      "tasks": {
+        "one": "{n} tarefa trabalhada",
+        "other": "{n} tarefas trabalhadas"
+      },
+      "completed": {
+        "one": "{n} concluída",
+        "other": "{n} concluídas"
+      },
+      "days": {
+        "one": "{n} dia",
+        "other": "{n} dias"
+      },
+      "streak": "Sequência: {current} seguidos · recorde de {best}",
+      "skip_weekends": "Fins de semana não quebram a sequência",
+      "chart": {
+        "one": "Foco por dia no último {n} dia: {duration} no total.",
+        "other": "Foco por dia nos últimos {n} dias: {duration} no total."
+      },
+      "tip_none": "Nenhum pomodoro",
+      "by_activity": "Foco por atividade, últimos 30 dias",
+      "activity_task": "Tarefas do Todoist",
+      "activity_other": "Outros",
+      "activities_empty": "Escolha uma atividade em “No que você está trabalhando?” para ver para onde vai o seu foco.",
+      "top_tasks": "Tarefas com mais foco, últimos 30 dias",
+      "tasks_empty": "Nenhum pomodoro ainda. Escolha uma tarefa e inicie o timer.",
+      "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist."
+    },
+    "apps": {
+      "title": "Tempo nos apps",
+      "switch": "Contar o tempo que passo em cada app",
+      "legend_focus": "Durante o foco",
+      "legend_other": "Fora do foco",
+      "during_focus": "{duration} durante o foco",
+      "chart": {
+        "one": "Tempo nos apps por dia no último {n} dia: {duration} no total.",
+        "other": "Tempo nos apps por dia nos últimos {n} dias: {duration} no total."
+      },
+      "tip": "{focus} durante o foco · {other} fora",
+      "tip_none": "Nada contado",
+      "most_apps": "Apps mais usados, últimos 30 dias",
+      "most_sites": "Sites mais usados, últimos 30 dias",
+      "row": "{today} hoje · {week} nesta semana · {share} no foco",
+      "show_all_apps": {
+        "one": "Mostrar o {n} app",
+        "other": "Mostrar todos os {n} apps"
+      },
+      "show_all_sites": {
+        "one": "Mostrar o {n} site",
+        "other": "Mostrar todos os {n} sites"
+      },
+      "apps_empty": "Nada contado ainda. Use um app por um minuto e volte aqui.",
+      "apps_off": "Ative isto para ver quais apps ficam com o seu tempo.",
+      "sites_off": "Ative isto para ver quais sites ficam com o seu tempo.",
+      "sites_empty": "Nada contado ainda. Navegue por um minuto e volte aqui.",
+      "sites_no_extension": "O tempo nos sites é medido pela extensão do Chrome: configure-a na aba Sites.",
+      "help": "O app em primeiro plano fica com o tempo, em foco ou não, a menos que você não tenha tocado no teclado nem no mouse por um minuto. O tempo nos sites é medido pela extensão do Chrome: a aba ativa da janela do navegador em que você está, então ele faz parte do tempo do navegador acima. Tudo fica neste PC, em app_time.json e site_time.json."
+    },
+    "blocks": {
+      "title": "Sites bloqueados",
+      "legend_focus": "Durante o foco",
+      "legend_limit": "Acima de um limite",
+      "split": "{focus} no foco · {limit} por limite",
+      "chart": {
+        "one": "Bloqueios por dia no último {n} dia: {focus} durante o foco, {limit} acima de um limite.",
+        "other": "Bloqueios por dia nos últimos {n} dias: {focus} durante o foco, {limit} acima de um limite."
+      },
+      "tip": "{focus} durante o foco · {limit} acima de um limite",
+      "tip_none": "Nada bloqueado",
+      "count": {
+        "one": "{n} bloqueio",
+        "other": "{n} bloqueios"
+      },
+      "most": "Mais bloqueados, últimos 30 dias",
+      "empty": "Nada bloqueado ainda. Ative o bloqueio na aba Sites ou adicione um limite de site.",
+      "help": "Contado cada vez que a extensão do Chrome mostra a página de bloqueio: durante uma fase de trabalho, ou quando um limite de site se esgota ou está no horário bloqueado. Todos os perfis do navegador neste PC somam nas mesmas contas."
+    }
   },
   "tray": {
   },
