@@ -83,7 +83,6 @@ DEFAULT_ACTIVITIES = [
 ]
 
 
-
 def default_activities(lang: str | None = None) -> list[dict]:
     """
     The default activities named in `lang` (English when None or not shipped),

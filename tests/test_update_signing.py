@@ -255,7 +255,7 @@ def test_changed_checksums_are_refused(github, signing_on, caplog):
     github[DOWNLOADS + "SHA256SUMS.txt"] = github[DOWNLOADS + "SHA256SUMS.txt"].replace(b"  ", b"  x", 1)
     with pytest.raises(constants.AppError) as caught:
         updater.download_setup(release())
-    assert str(caught.value) == updater.UNSIGNED_UPDATE == "The update isn't signed by buZyist; not installing it."
+    assert str(caught.value) == "The update isn't signed by buZyist; not installing it."
     assert "bad signature" in caplog.text
     assert not any(paths.UPDATES_DIR.glob("*.exe"))
     assert DOWNLOADS + SETUP_NAME not in github["asked"]  # the Setup isn't even downloaded
@@ -362,7 +362,7 @@ def test_an_unsigned_update_shows_the_error(github, signing_on, make_app, side_e
     app.update = release(sig=None)
     with pytest.raises(constants.AppError):
         app.install_update()
-    assert app.update_view()["error"] == updater.UNSIGNED_UPDATE
+    assert app.update_view()["error"] == "The update isn't signed by buZyist; not installing it."
     assert side_effects.processes == []
 
 

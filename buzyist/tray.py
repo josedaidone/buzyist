@@ -122,6 +122,7 @@ class TrayMixin:
 
     def tray_menu(self) -> pystray.Menu:
         """The tray menu; its texts are read in the app language each time Windows shows it."""
+
         def running(_=None):
             return self.timer_view() is not None
 

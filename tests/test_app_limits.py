@@ -371,7 +371,7 @@ def test_the_nudge_says_the_period_in_words(budget, words):
         "reason": "budget",
         "used_s": budget["minutes"] * 60 + 20,
         "budget_s": budget["minutes"] * 60,
-        "limit_label": f"{budget['minutes']} min per {limits_mod.period_label(budget['every'], budget['unit'])}",
+        "limit_label": limits_mod.budget_label(budget),
     }
     title, text = limits_mod.nudge_text(r, status)
     assert title == "Time for a break from WhatsApp and Slack?"

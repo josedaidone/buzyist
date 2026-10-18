@@ -550,6 +550,8 @@ def field_error(key: str) -> str:
         message, values = FIELD_ERRORS[key]
         return t(message, **values)
     return t("errors.fields.invalid", name=key.replace("_", " ")) if key else t("errors.fields.invalid_any")
+
+
 LIST_KEYS = (
     "filters",
     "blocked_apps",
