@@ -90,7 +90,7 @@
     "help_limits_switched_off": "Os limites de sites foram desligados.",
     "help_limits_switched_off_how": "Ligue “Aplicar limites de sites” em buZyist → Configurações → Limites.",
     "help_no_limits": "Nenhum limite ainda.",
-    "help_no_limits_how": "Abra o buZyist e vá em Configurações → Limites → Adicionar limite de site (por exemplo, 5 minutos por hora).",
+    "help_no_limits_how": "Abra o buZyist e vá em Configurações → Limites → Adicionar um limite de site (por exemplo, 5 minutos por hora).",
     "footer": "Altere os limites em {where}. O bloqueio durante os pomodoros fica na aba Sites, e a contagem de bloqueios em Estatísticas.",
     "footer_where": "buZyist → Configurações → Limites",
     "version": "Extensão {version}"
