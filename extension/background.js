@@ -18,6 +18,11 @@
 //
 // 3. Sharing limits, and the running task, across PCs: see "sharing across
 //    PCs" below.
+//
+// Its texts (the badge's) and the pages' are in the app language buZyist
+// names in its answers (`language`), kept with lastGood: see i18n.js.
+
+importScripts("i18n.js");
 
 const BASE = "http://127.0.0.1:47616";
 const VERSION = chrome.runtime.getManifest().version;
@@ -677,10 +682,14 @@ function checkTab(tabId, url) {
 // 45s, 12m, 3h: short enough for the badge.
 function shortTime(seconds) {
   const s = Math.max(0, Math.ceil(seconds));
-  if (s < 60) return s + "s";
+  if (s < 60) return t("badge.seconds", { n: s });
   const m = Math.ceil(s / 60);
-  return m < 100 ? m + "m" : Math.floor(m / 60) + "h";
+  return m < 100 ? t("badge.minutes", { n: m }) : t("badge.hours", { n: Math.floor(m / 60) });
 }
+
+// The app language: buZyist's last answer says it (also while it's closed,
+// from the cached one); English before it has answered once.
+const languageNow = () => (lastGood && lastGood.language) || "en";
 
 // setBadgeTextColor is Chrome 110+; older browsers keep their default.
 function badgeText(color) {
@@ -700,13 +709,15 @@ function updateBadge(focus, now, url) {
     const low = here.left > 30 && here.left <= 120;
     chrome.action.setBadgeBackgroundColor({ color: here.left <= 30 ? "#D9361B" : low ? "#F5B83D" : "#1E6B43" });
     badgeText(low ? "#3A1410" : "#FFFFFF");
-    chrome.action.setTitle({ title: `buZyist: ${shortTime(here.left)} left on ${patternsOf(here.rule).join(", ")} (${here.rule.limit_label})` });
+    chrome.action.setTitle({ title: t("badge.limit_title", {
+      time: shortTime(here.left), sites: patternsOf(here.rule).join(", "), label: limitLabel(here.rule.limit_label),
+    }) });
   } else if (focus.active && focus.ends_at_ms) {
     const mins = Math.max(0, Math.round((focus.ends_at_ms - now) / 60000));
     chrome.action.setBadgeText({ text: String(mins) });
     chrome.action.setBadgeBackgroundColor({ color: "#D9361B" });
     badgeText("#FFFFFF");
-    chrome.action.setTitle({ title: `buZyist: focus, ${mins} min left` });
+    chrome.action.setTitle({ title: t("badge.focus_title", { n: mins }) });
   } else {
     chrome.action.setBadgeText({ text: "" });
     chrome.action.setTitle({ title: "buZyist Focus" });
@@ -746,6 +757,7 @@ async function tick(force) {
     focus: !!focus.in_focus && !focus.offline,
     since: started,
   };
+  await useLanguage(languageNow());
   updateBadge(focus, Date.now(), await activeUrl(false));
   // While something is being timed, keep ticking (and keep the worker awake).
   const timing = counting.ids.length > 0 || !!counting.host;
@@ -813,6 +825,7 @@ async function blockPageData(msg) {
   const rule = limitRules(focus).find((r) => r.id === msg.limit);
   const state = rule && limitState(rule, now);
   return {
+    language: languageNow(),
     focus: {
       active: !!focus.active, task: focus.task || "", ends_at_ms: focus.ends_at_ms || 0,
       activity: focus.activity || "",
@@ -839,6 +852,7 @@ async function popupData() {
   const upcoming = (rule) => (rule.windows_ms || []).find(([start]) => start > now);
   return {
     version: VERSION,
+    language: languageNow(),
     offline: !!focus.offline || !lastGood,
     known: !!lastGood,
     focus: {

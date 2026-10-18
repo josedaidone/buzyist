@@ -25,10 +25,10 @@ function goBack() {
   else history.length > 1 ? history.back() : location.replace("about:blank");
 }
 
-const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+// In the app language (i18n.js): "17:00", or "Thu 08:00" when it isn't today.
+const clock = formatClock;
 const when = (ms) => {
-  const day = new Date(ms).toDateString() === new Date().toDateString()
-    ? "" : new Date(ms).toLocaleDateString([], { weekday: "short" }) + " ";
+  const day = new Date(ms).toDateString() === new Date().toDateString() ? "" : formatWeekday(ms) + " ";
   return day + clock(ms);
 };
 const minutes = (s) => Math.round(s / 60);
@@ -43,8 +43,14 @@ function renderCount() {
   const count = $("count");
   if (!endsAt) { count.textContent = ""; return; }
   const mins = Math.ceil(Math.max(0, endsAt - Date.now()) / 60000);
-  const html = `Focus until <b>${clock(endsAt)}</b> \u00b7 <b>${mins}</b> min left`;
-  if (count.innerHTML !== html) count.innerHTML = html;
+  setNodes(count, tBold("blocked.focus_until", { time: clock(endsAt), n: mins }));
+}
+
+// Replaces a line's content (text with bold parts) only when it changed.
+function setNodes(node, parts) {
+  const next = document.createElement("p");
+  next.append(...parts);
+  if (node.innerHTML !== next.innerHTML) node.replaceChildren(...next.childNodes);
 }
 
 // Sets text only when it changed, so nothing flickers on a re-render.
@@ -62,34 +68,37 @@ function countBlock() {
   chrome.runtime.sendMessage({ type: "blocked", kind: limitId ? "limit" : "focus", host }).catch(() => {});
 }
 
-function render(status) {
+async function render(status) {
   if (!status) return; // no answer this round: keep what's shown
+  // buZyist's language, as the worker last heard it (English until then).
+  if (await useLanguage(status.language)) applyI18n();
   const { focus, limit } = status;
   if (limitId) {
     if (!limit) { goBack(); return; }
     countBlock();
     const eyebrow = $("eyebrow").lastChild;
-    if (eyebrow.textContent !== "Limit") eyebrow.textContent = "Limit";
+    if (eyebrow.textContent !== t("blocked.limit")) eyebrow.textContent = t("blocked.limit");
     $("eyebrow").classList.add("limit");
     if (limit.reason === "window") {
-      setText("title", "Blocked right now.");
-      setText("task", `${limit.pattern} is blocked at this time.`);
+      setText("title", t("blocked.window_title"));
+      setText("task", t("blocked.window_line", { pattern: limit.pattern }));
     } else {
-      setText("title", "That's enough for now.");
-      setText("task", `You've used ${minutes(limit.used_s)} of ${minutes(limit.budget_s)} min on ${limit.pattern} (${limit.label}).`);
+      setText("title", t("blocked.budget_title"));
+      setText("task", t("blocked.budget_line", {
+        used: minutes(limit.used_s), budget: minutes(limit.budget_s), pattern: limit.pattern, label: limitLabel(limit.label),
+      }));
     }
     endsAt = 0;
-    const count = `Opens again at <b>${when(limit.until)}</b>`;
-    if ($("count").innerHTML !== count) $("count").innerHTML = count;
+    setNodes($("count"), tBold("blocked.opens_at", { when: when(limit.until) }));
     passMinutes = limit.pass_minutes;
-    setText("pass", `Allow ${passMinutes} more minutes`);
+    setText("pass", t("blocked.pass", { n: passMinutes }));
     $("pass").classList.remove("hidden");
     return;
   }
   if (!focus.active) { goBack(); return; }
   countBlock();
   const eyebrow = $("eyebrow").lastChild;
-  const label = focus.activity ? `Blocked during ${focus.activity}` : "Focus";
+  const label = focus.activity ? t("blocked.focus_activity", { activity: focus.activity }) : t("blocked.focus");
   if (eyebrow.textContent !== label) eyebrow.textContent = label;
   setText("task", focus.task || "");
   endsAt = focus.ends_at_ms || 0;
@@ -98,7 +107,7 @@ function render(status) {
 
 async function check() {
   try {
-    render(await chrome.runtime.sendMessage({ type: "status", limit: limitId }));
+    await render(await chrome.runtime.sendMessage({ type: "status", limit: limitId }));
   } catch (e) {
     // The worker is waking up; ask again on the next round.
   }
@@ -107,7 +116,7 @@ async function check() {
 $("pass").onclick = async () => {
   $("pass").disabled = true;
   try {
-    render(await chrome.runtime.sendMessage({ type: "grant", id: limitId, limit: limitId }));
+    await render(await chrome.runtime.sendMessage({ type: "grant", id: limitId, limit: limitId }));
   } catch (e) { /* the next check picks it up */ }
   $("pass").disabled = false;
 };
