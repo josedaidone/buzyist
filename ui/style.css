@@ -362,6 +362,7 @@ body.solo .tasks { display: none; }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 15px; font-weight: 500; }
 .search input:focus { outline: none; }
 .search input::placeholder { color: var(--muted); opacity: .8; }
+#hotkeyHint:empty { display: none; } /* no hotkey set */
 kbd {
   font: 700 11px/1 var(--bz-font-body); color: var(--muted); padding: 5px 8px; border-radius: 8px;
   background: var(--bg); white-space: nowrap;
@@ -532,7 +533,7 @@ body[data-phase="paused"] .badge { background: var(--bz-barro); }
   background: var(--surface); flex: none;
 }
 .stab {
-  flex: 1 1 0; min-width: 0; height: 34px; padding: 0 4px; border: 0; border-radius: 999px;
+  flex: 1 1 auto; min-width: 0; height: 34px; padding: 0 4px; /* auto: a longer name gets its width */ border: 0; border-radius: 999px;
   background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 700;
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap;
   transition: background .12s, color .12s;
@@ -557,7 +558,11 @@ body[data-phase="paused"] .badge { background: var(--bz-barro); }
   padding: 4px 8px 4px 14px; border-radius: var(--r-row); background: var(--surface); min-height: 52px;
 }
 .app-row .switch { min-width: 0; }
-.app-row .exe { color: var(--muted); font-size: 12px; font-weight: 500; margin-left: 2px; }
+.app-row .exe {
+  color: var(--muted); font-size: 12px; font-weight: 500; margin-left: 2px;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; /* the label's title has it all */
+}
+.app-row .switch:has(.exe) > span:not(.knob, .exe) { white-space: nowrap; } /* the name stays whole, the file name gives way */
 .app-row.off .action { opacity: .45; }
 .app-row .action {
   height: 34px; padding: 0 8px; border-radius: 999px; border: 2px solid var(--line);
@@ -654,7 +659,10 @@ body[data-phase="paused"] .badge { background: var(--bz-barro); }
 .input-row { display: flex; gap: 8px; align-items: center; }
 .input-row .input { flex: 1; }
 .input-row.inline .help { margin: 0; }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Side-by-side fields; subgrid lines up their inputs when one label wraps. */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.two > .field { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+.two.pin-wide { grid-template-columns: 2fr 3fr; } /* an IP address is short; "•••• saved (type to replace)" isn't */
 .toggles { display: grid; gap: 2px; margin: 2px 0 8px; }
 .test-result { font-size: 13.5px; font-weight: 600; margin-top: 8px; color: var(--muted); }
 .test-result.ok { color: var(--done); }
@@ -795,7 +803,7 @@ body.instant .modal, body.instant .scrim { transition: none; }
 .stat-activity svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
 .stat-noicon { width: 18px; flex: none; }
 .stat-tile .help { margin-top: 2px; line-height: 1.35; }
-.stat-streak { font-size: 13.5px; color: var(--muted); margin: -4px 0 12px; }
+#p_stats .help + h4 { margin-top: 20px; } /* a section's closing note, then the next title */.stat-streak { font-size: 13.5px; color: var(--muted); margin: -4px 0 12px; }
 .stat-streak b { color: var(--ink); }
 #appTimeBody.muted { opacity: .55; }
 #appTimeMore, #siteTimeMore { margin: -6px 0 12px; }

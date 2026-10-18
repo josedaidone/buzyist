@@ -1431,6 +1431,12 @@ function barChart(chart, days, series, label, tip) {
   });
 }
 
+// A stat tile's "3 pomodoros · 2 sessions": a narrow tile wraps at the dots or
+// inside a phrase, never between a number and the word after it.
+function keepCounts(text) {
+  return text.split(" · ").map((part) => part.replace(/^(\S+) /, "$1 ")).join(" · ");
+}
+
 // Focus from history.json (Api.focus_stats): focus time, pomodoros, sessions
 // and tasks for today / 7 / 30 days, the streak, minutes per day, top tasks.
 function renderFocusStats(s) {
@@ -1438,8 +1444,8 @@ function renderFocusStats(s) {
   $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
     tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.minutes)),
-                el("div", "help", counts(tot)),
-                el("div", "help", t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })));
+                el("div", "help", keepCounts(counts(tot))),
+                el("div", "help", keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed }))));
     return tile;
   }));
   const current = t("stats.focus.days", { n: s.streak.current });
@@ -1478,7 +1484,7 @@ function renderStats(s) {
   $("statTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
     const tile = el("div", "stat-tile");
     tile.append(el("div", "stat-label", label), el("div", "stat-num", formatNumber(tot.focus + tot.limit)),
-                el("div", "help", split(tot)));
+                el("div", "help", keepCounts(split(tot))));
     return tile;
   }));
 

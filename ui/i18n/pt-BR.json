@@ -71,7 +71,7 @@
       "looking": "Procurando a BUSY Bar",
       "local": "Timer neste PC",
       "offline": "BUSY Bar fora de alcance · timer neste PC",
-      "offline_title": "Não foi possível falar com o BUSY Bar. O timer roda aqui e volta para a barra assim que ela responder.",
+      "offline_title": "Não foi possível falar com a BUSY Bar. O timer roda aqui e volta para a BUSY Bar assim que ela responder.",
       "via": "BUSY Bar · {via}",
       "unreachable": "BUSY Bar offline"
     },
@@ -109,7 +109,7 @@
       "remote": "Iniciada em {by}",
       "remote_since": "Iniciada em {by} · desde {time}",
       "no_task": "Nenhuma tarefa vinculada",
-      "bar_no_task": "Iniciado na barra, nenhuma tarefa vinculada",
+      "bar_no_task": "Iniciado na BUSY Bar, nenhuma tarefa vinculada",
       "timer_running": "Timer rodando",
       "pick_to_focus": "Escolha uma tarefa para colocá-la em foco",
       "idle": "Um pomodoro de cada vez.",
@@ -179,7 +179,7 @@
     },
     "free": {
       "label": "No que você está trabalhando?",
-      "placeholder": "No que você está trabalhando? (opcional)",
+      "placeholder": "No que vai trabalhar? (opcional)",
       "detail": "Adicione um detalhe (opcional)",
       "remove": "Remover a atividade",
       "activities": "Atividades",
@@ -195,14 +195,14 @@
       "already": "Essa tarefa já está em foco.",
       "replace": "Substituir a sessão atual em “{task}”?",
       "go": "Vamos lá. {work} minutos, só isso.",
-      "go_bar": "Vamos lá. {work} minutos, só isso (na barra).",
+      "go_bar": "Vamos lá. {work} minutos, só isso (na BUSY Bar).",
       "go_planned": {
         "one": "Vamos lá. {n} pomodoro de {work} min, pela duração da tarefa.",
         "other": "Vamos lá. {n} pomodoros de {work} min, pela duração da tarefa."
       },
       "go_planned_bar": {
-        "one": "Vamos lá. {n} pomodoro de {work} min, pela duração da tarefa (na barra).",
-        "other": "Vamos lá. {n} pomodoros de {work} min, pela duração da tarefa (na barra)."
+        "one": "Vamos lá. {n} pomodoro de {work} min, pela duração da tarefa (na BUSY Bar).",
+        "other": "Vamos lá. {n} pomodoros de {work} min, pela duração da tarefa (na BUSY Bar)."
       }
     },
     "tasks": {
@@ -324,7 +324,7 @@
     "no_task": "Sem tarefa",
     "no_session": "Nenhuma sessão",
     "timer_running": "Timer rodando",
-    "on_bar": "Rodando na barra",
+    "on_bar": "Rodando na BUSY Bar",
     "by": "em {by}",
     "pause": "Pausar",
     "resume": "Retomar",
@@ -413,19 +413,19 @@
       "pin": "PIN da API HTTP",
       "pin_lost": "Digite o PIN de novo (ele não pode ser lido neste PC).",
       "pin_saved": "Há um PIN salvo.",
-      "poll": "Consultar a barra a cada",
+      "poll": "Consultar a BUSY Bar a cada",
       "seconds": "segundos",
       "usb": "Tentar também por USB (10.0.4.20)",
       "test": "Testar conexão",
       "testing": "Testando…",
       "connected": "Conectada por {via}",
       "connected_firmware": "Conectada por {via} · firmware {version}",
-      "screens_title": "Telas da barra",
-      "screens_on": "Escolher o que a barra mostra durante as sessões",
+      "screens_title": "Telas da BUSY Bar",
+      "screens_on": "Escolher o que a BUSY Bar mostra durante as sessões",
       "by_activity": "Foco por atividade",
       "by_activity_help": "Sessões numa atividade podem mostrar outra coisa enquanto você se concentra. Tarefas do Todoist e nomes digitados usam Foco; chamadas usam Chamada.",
-      "firmware_help": "O intervalo e a pausa são da própria barra: ela mostra REST e PAUSED, seja o que for que você escolher aqui. Um texto seu substitui o tempo restante na barra, então os minutos vão para o canto, atualizados a cada minuto.",
-      "themes_error": "Não deu para ler os temas da barra: {error} Os que já estão escolhidos continuam.",
+      "firmware_help": "O intervalo e a pausa são da própria BUSY Bar: ela mostra REST e PAUSED, seja o que for que você escolher aqui. Um texto seu substitui o tempo restante na BUSY Bar, então os minutos vão para o canto, atualizados a cada minuto.",
+      "themes_error": "Não deu para ler os temas da BUSY Bar: {error} Os que já estão escolhidos continuam.",
       "no_activities": "Nenhuma atividade (Configurações, Geral).",
       "screens": {
         "focus": "Foco",
@@ -439,17 +439,17 @@
         "off": "Desligada",
         "same": "Igual ao Foco"
       },
-      "on_bar": "{screen} na barra",
+      "on_bar": "{screen} na BUSY Bar",
       "theme_for": "Tema para {screen}",
       "text_for": "Texto para {screen}",
-      "preview_alt": "Como a barra mostra {screen}",
+      "preview_alt": "Como a BUSY Bar mostra {screen}",
       "colour_for": "Cor para {screen}",
       "insert": "Inserir {word}",
       "help_card": "A tela do próprio cartão, com o tempo restante.",
-      "help_theme": "A imagem do tema, como a barra a desenha.",
-      "help_theme_wait": "Os temas da barra aparecem aqui quando ela responder.",
-      "help_off": "A barra volta a mostrar o relógio.",
-      "done_help": "Fica na barra até você fechar o resumo.",
+      "help_theme": "A imagem do tema, como a BUSY Bar a desenha.",
+      "help_theme_wait": "Os temas da BUSY Bar aparecem aqui quando ela responder.",
+      "help_off": "A BUSY Bar volta a mostrar o relógio.",
+      "done_help": "Fica na BUSY Bar até você fechar o resumo.",
       "colors": {
         "tomate": "Tomate",
         "molho": "Molho",
@@ -515,8 +515,8 @@
       "mode_label": "Modo dos sites",
       "mode_block": "Bloquear estes sites",
       "mode_allow": "Permitir só estes sites",
-      "placeholder_allow": "Adicionar um site permitido, ex.: github.com ou *.google.com",
-      "placeholder_block": "Adicionar um site, ex.: youtube.com ou *.reddit.com",
+      "placeholder_allow": "Um site permitido, ex.: github.com ou *.google.com",
+      "placeholder_block": "Um site, ex.: youtube.com ou *.reddit.com",
       "help_allow": "Durante os pomodoros, qualquer outro site mostra uma página de “volte ao trabalho”.",
       "help_allow_empty": "A lista está vazia, então todos os sites ficam bloqueados durante os pomodoros.",
       "help_block": "Estes sites mostram uma página de “volte ao trabalho” durante os pomodoros.",
@@ -704,7 +704,7 @@
       "limits": "Compartilhar limites e tempo com meus outros PCs",
       "limits_help": "Pela sincronização do Chrome: em cada PC, conecte um perfil do Chrome à mesma Conta do Google, com a sincronização ativada, e carregue a extensão do buZyist nele. Aí o tempo no Instagram aqui conta nos seus outros PCs também. Só os limites são compartilhados; as suas outras configurações ficam em cada PC.",
       "session": "Compartilhar a tarefa em andamento com meus outros PCs",
-      "session_help": "Aí outro PC com a mesma BUSY Bar mostra a tarefa que você começou aqui, em vez de “Iniciado na barra”. Ative nos dois PCs.",
+      "session_help": "Aí outro PC com a mesma BUSY Bar mostra a tarefa que você começou aqui, em vez de “Iniciado na BUSY Bar”. Ative nos dois PCs.",
       "owner": "Perfil do Chrome que compartilha",
       "owner_help": "Escolha o perfil conectado à conta que você usa nos outros PCs. Os outros perfis deste PC continuam aplicando os limites e contando o tempo; só não o compartilham.",
       "not_yet": "Ainda não sincronizado",
@@ -749,7 +749,7 @@
       "installing": "Instalando…",
       "downloading": "Baixando a atualização…",
       "out": "Saiu o buZyist {version}. Instalar reinicia o buZyist.",
-      "confirm_bar": "O buZyist reinicia para atualizar. A sessão continua rodando na barra e é retomada depois do reinício. Atualizar agora?",
+      "confirm_bar": "O buZyist reinicia para atualizar. A sessão continua rodando na BUSY Bar e é retomada depois do reinício. Atualizar agora?",
       "confirm": "O buZyist reinicia para atualizar. A sessão continua rodando e é retomada depois do reinício. Atualizar agora?",
       "installing_toast": "Instalando o buZyist {version}. Ele reinicia sozinho."
     }
@@ -898,8 +898,8 @@
       "text": "Não foi possível adicionar @{label}: {error}"
     },
     "bar_back": {
-      "title": "O BUSY Bar voltou",
-      "text": "O timer está no BUSY Bar de novo."
+      "title": "A BUSY Bar voltou",
+      "text": "O timer está na BUSY Bar de novo."
     },
     "bar_gone": {
       "title": "BUSY Bar fora de alcance",
@@ -1002,24 +1002,24 @@
       "too_many": "Mantenha os limites de apps abaixo de {max}."
     },
     "bar": {
-      "off": "O BUSY Bar está desligado nas configurações; o timer roda neste PC.",
-      "no_route": "Informe o endereço Wi-Fi do BUSY Bar nas Configurações ou permita USB.",
-      "bad_pin": "O BUSY Bar recusou o PIN (confira as Configurações).",
-      "answered": "O BUSY Bar respondeu: {error}",
-      "unreachable": "Não foi possível falar com o BUSY Bar. {problems}",
+      "off": "A BUSY Bar está desligada nas configurações; o timer roda neste PC.",
+      "no_route": "Informe o endereço Wi-Fi da BUSY Bar nas Configurações ou permita USB.",
+      "bad_pin": "A BUSY Bar recusou o PIN (confira as Configurações).",
+      "answered": "A BUSY Bar respondeu: {error}",
+      "unreachable": "Não foi possível falar com a BUSY Bar. {problems}",
       "no_session": "Nenhuma sessão em andamento.",
-      "bad_address": "“{address}” não é o endereço do BUSY Bar; digite um como 192.168.1.50."
+      "bad_address": "“{address}” não é o endereço da BUSY Bar; digite um como 192.168.1.50."
     },
     "bar_screens": {
       "name_focus": "Tela de foco",
       "name_call": "Tela de chamada",
       "name_done": "Tela de fim de sessão",
       "missing": "{screen}: as configurações não chegaram; tente de novo.",
-      "mode": "{screen}: escolha o que o BUSY Bar mostra.",
-      "theme": "{screen}: escolha um dos temas do BUSY Bar.",
-      "text": "{screen}: digite o que o BUSY Bar mostra.",
+      "mode": "{screen}: escolha o que a BUSY Bar mostra.",
+      "theme": "{screen}: escolha um dos temas da BUSY Bar.",
+      "text": "{screen}: digite o que a BUSY Bar mostra.",
       "text_long": "{screen}: use no máximo {max} caracteres no texto.",
-      "list": "As telas do BUSY Bar não chegaram; tente de novo."
+      "list": "As telas da BUSY Bar não chegaram; tente de novo."
     },
     "calls": {
       "list": "Os apps a ignorar não chegaram; tente de novo.",
@@ -1036,7 +1036,7 @@
       "cycles": "Uma sessão tem de {min} a {max} pomodoros.",
       "plan_single_max": "Um só pomodoro para tarefas de até 0 a {max} minutos.",
       "plan_target": "Escolha uma duração de pomodoro entre a mais curta e a mais longa.",
-      "poll_seconds": "Consulte o BUSY Bar a cada {min} a {max} segundos.",
+      "poll_seconds": "Consulte a BUSY Bar a cada {min} a {max} segundos.",
       "focus_label": "Use no máximo {max} caracteres na etiqueta.",
       "invalid": "{name}: valor inválido.",
       "invalid_any": "Uma configuração é inválida."
@@ -1084,7 +1084,7 @@
     },
     "settings": {
       "not_number": "{name}: precisa ser um número.",
-      "switch_running": "Interrompa a sessão em andamento antes de alternar entre o BUSY Bar e este PC.",
+      "switch_running": "Interrompa a sessão em andamento antes de alternar entre a BUSY Bar e este PC.",
       "startup_entry": "Não foi possível mudar a entrada de inicialização do Windows: {error}",
       "encrypt_failed": "O Windows não conseguiu criptografar o token salvo; tente de novo."
     },
@@ -1145,7 +1145,7 @@
     "bar_done": "FEITO"
   },
   "todoist": {
-    "comment_bar": "🍅 × {n} ({minutes} min de foco) no BUSY Bar, encerrada em {when}",
+    "comment_bar": "🍅 × {n} ({minutes} min de foco) na BUSY Bar, encerrada em {when}",
     "comment_local": "🍅 × {n} ({minutes} min de foco), encerrada em {when}",
     "when": "%d/%m/%Y %H:%M"
   }
