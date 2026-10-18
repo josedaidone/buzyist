@@ -1,0 +1,119 @@
+{
+  "_": "Português (Brasil). Same keys as en.json; terms per GLOSSARY.md (pomodoro, sessão, intervalo, pausar/pausado). The settings named here (Configurações → Limites, “Aplicar limites de sites”, ...) must match ui/i18n/pt-BR.json.",
+  "time": {
+    "seconds": "{n} s",
+    "minutes": "{n} min",
+    "hours": "{h} h",
+    "hours_minutes": "{h} h {m} min"
+  },
+  "limit": {
+    "_": "O rótulo de um limite, a partir do \"5 min per hour\" do buZyist: {minutes} é o limite, n o tamanho do período.",
+    "minute": {
+      "one": "{minutes} min por minuto",
+      "other": "{minutes} min a cada {n} minutos"
+    },
+    "hour": {
+      "one": "{minutes} min por hora",
+      "other": "{minutes} min a cada {n} horas"
+    },
+    "day": {
+      "one": "{minutes} min por dia",
+      "other": "{minutes} min a cada {n} dias"
+    },
+    "week": {
+      "one": "{minutes} min por semana",
+      "other": "{minutes} min a cada {n} semanas"
+    }
+  },
+  "badge": {
+    "_": "O selo da barra de ferramentas cabe uns 4 caracteres.",
+    "seconds": "{n}s",
+    "minutes": "{n}m",
+    "hours": "{n}h",
+    "limit_title": "buZyist: {time} restantes em {sites} ({label})",
+    "focus_title": {
+      "one": "buZyist: foco, falta {n} min",
+      "other": "buZyist: foco, faltam {n} min"
+    }
+  },
+  "popup": {
+    "checking": "Verificando…",
+    "starting": "Iniciando…",
+    "connected": "Conectado",
+    "not_running": "buZyist fechado",
+    "focus_title": "Pomodoro",
+    "here_title": "Este site",
+    "limits_title": "Limites de sites",
+    "blocks_title": "Bloqueados hoje",
+    "minutes_left": {
+      "one": "Falta {n} min",
+      "other": "Faltam {n} min"
+    },
+    "in_focus": "Em foco",
+    "focusing_on": "Focando em {task}",
+    "work_running": "Pomodoro em andamento",
+    "during_activity": "{activity}: {rules}",
+    "allow_mode": "Só os sites permitidos abrem até ele terminar.",
+    "block_mode": {
+      "one": "{n} site fica bloqueado até ele terminar.",
+      "other": "{n} sites ficam bloqueados até ele terminar."
+    },
+    "nothing_blocked": "Nenhum site é bloqueado durante o foco.",
+    "unknown_yet": "Desconhecido: o buZyist ainda não respondeu.",
+    "unknown_closed": "Desconhecido enquanto o buZyist está fechado.",
+    "no_work": "Nenhum pomodoro em andamento.",
+    "start_one": "Inicie um no buZyist para bloquear os sites que distraem.",
+    "this_tab": "esta aba",
+    "blocked_until": "Bloqueado até {when}",
+    "times_up_until": "Tempo esgotado, abre de novo às {when}",
+    "left_of": "{left} restantes · {label}",
+    "used_of": "{used} de {budget} min usados, renova {when}",
+    "no_limit_now": "Nenhum limite vale agora.",
+    "blocked_span": "Bloqueado {start}–{end}",
+    "extra_until": "Tempo extra até {time}",
+    "blocked": "Bloqueado",
+    "times_up": "Tempo esgotado",
+    "left": "{left} restantes",
+    "no_time_limit": "Nenhum limite de tempo agora.",
+    "times": {
+      "one": "{n} vez",
+      "other": "{n} vezes"
+    },
+    "blocks_split": "{focus} durante o foco · {limit} por limite",
+    "no_blocks": "Nada bloqueado hoje ainda.",
+    "help_offline": "O buZyist não está aberto.",
+    "help_offline_known": "Os limites continuam valendo pelo que ele disse por último, e o tempo fica guardado até ele voltar.",
+    "help_offline_unknown": "Nada é bloqueado até ele abrir.",
+    "help_offline_start": "Abra o buZyist pelo menu Iniciar ou pelo ícone na bandeja.",
+    "help_limits_off": "Os limites de sites estão desligados.",
+    "help_limits_off_how": "No buZyist, abra Configurações → Limites, adicione um site e ligue “Aplicar limites de sites”.",
+    "help_limits_switched_off": "Os limites de sites foram desligados.",
+    "help_limits_switched_off_how": "Ligue “Aplicar limites de sites” em buZyist → Configurações → Limites.",
+    "help_no_limits": "Nenhum limite ainda.",
+    "help_no_limits_how": "Abra o buZyist e vá em Configurações → Limites → Adicionar limite de site (por exemplo, 5 minutos por hora).",
+    "footer": "Altere os limites em {where}. O bloqueio durante os pomodoros fica na aba Sites, e a contagem de bloqueios em Estatísticas.",
+    "footer_where": "buZyist → Configurações → Limites",
+    "version": "Extensão {version}"
+  },
+  "blocked": {
+    "page_title": "De volta ao trabalho",
+    "focus": "Foco",
+    "focus_activity": "Bloqueado durante {activity}",
+    "focus_title": "O feed pode esperar.",
+    "checking": "Verificando o foco…",
+    "focus_until": {
+      "one": "Foco até {time} · falta {n} min",
+      "other": "Foco até {time} · faltam {n} min"
+    },
+    "limit": "Limite",
+    "window_title": "Bloqueado agora.",
+    "window_line": "{pattern} está bloqueado neste horário.",
+    "budget_title": "Chega por agora.",
+    "budget_line": "Você usou {used} de {budget} min em {pattern} ({label}).",
+    "opens_at": "Abre de novo às {when}",
+    "pass": {
+      "one": "Permitir mais {n} minuto",
+      "other": "Permitir mais {n} minutos"
+    }
+  }
+}

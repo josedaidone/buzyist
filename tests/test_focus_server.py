@@ -418,3 +418,22 @@ def test_post_usage_ignores_bad_website_time(focus_server, app):
     }
     assert focus_server.post("/usage", {"site_time": sites}, headers=TRUSTED).status == 200
     assert app.site_time.days == {}
+
+
+# ------------------------------------------------------------ language ---
+
+
+def test_every_answer_carries_the_app_language(focus_server, app):
+    """The extension shows its pages in it (#28): /focus, /usage, /grant and /sync alike."""
+
+    def languages():
+        return [
+            focus_server.get().json["language"],
+            focus_server.post("/usage", {"usage": {}}, headers=TRUSTED).json["language"],
+            focus_server.post("/grant", {"id": "nope99"}, headers=TRUSTED).json["language"],
+            focus_server.post("/sync", {}, headers=TRUSTED).json["language"],
+        ]
+
+    assert languages() == ["en"] * 4
+    app.save_settings({"language": "pt-BR"})
+    assert languages() == ["pt-BR"] * 4  # on the next exchange, nothing to reload

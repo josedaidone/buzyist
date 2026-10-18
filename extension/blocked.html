@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Back to work</title>
+  <title data-i18n="blocked.page_title">Back to work</title>
   <style>
     /* buZyist: the block page wasn't in the design handoff. It uses the
        "Blocked" state colour (Terra) as the page, with the dark-background
@@ -46,13 +46,14 @@
 <body>
   <div class="card">
     <img class="logo" src="logo-dark.svg" alt="buZyist">
-    <div class="eyebrow" id="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-2.9 7.6-7 9.5-4.1-1.9-7-5.1-7-9.5V6l7-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span>Focus</span></div>
-    <h1 id="title">The feed can wait.</h1>
+    <div class="eyebrow" id="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-2.9 7.6-7 9.5-4.1-1.9-7-5.1-7-9.5V6l7-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span data-i18n="blocked.focus">Focus</span></div>
+    <h1 id="title" data-i18n="blocked.focus_title">The feed can wait.</h1>
     <p class="task" id="task"></p>
-    <p class="count" id="count">Checking focus&hellip;</p>
+    <p class="count" id="count" data-i18n="blocked.checking">Checking focus&hellip;</p>
     <button class="pass hidden" id="pass" type="button"></button>
     <p class="url" id="url"></p>
   </div>
+  <script src="i18n.js"></script>
   <script src="blocked.js"></script>
 </body>
 </html>
