@@ -16,7 +16,7 @@ from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
-from buzyist.i18n import ENGLISH, language, languages, raw_catalog
+from buzyist.i18n import ENGLISH, language, languages, raw_catalog, t
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -233,7 +233,9 @@ class Api:
         """A text screen as the bar would show it: a PNG data URL (bar_display.render)."""
 
         def go():
-            values = {"task": "Write the Q4 plan", "activity": "Email", "apps": "Teams", "pomodoro": 2}
+            # The editor's sample task and activity, in the app language.
+            values = {"task": t("settings.bar.sample_task"), "activity": t("settings.bar.sample_activity")}
+            values |= {"apps": "Teams", "pomodoro": 2}
             values |= {"pomodoros": 4, "minutes": 75, "round": 2, "rounds": 4, "tomatoes": 3}
             shown = fill_text(str(text or ""), values)
             picture = png(render(shown, str(color), None if minutes is None else int(minutes)))

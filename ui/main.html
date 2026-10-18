@@ -174,69 +174,69 @@
 
 <div class="scrim" id="scrim"></div>
 
-<aside class="drawer" id="drawer" aria-label="Settings">
+<aside class="drawer" id="drawer" aria-label="Settings" data-i18n-aria-label="settings.title">
   <div class="drawer-head">
-    <h3>Settings</h3>
-    <button class="icon-btn" id="closeSettings" title="Close"><svg><use href="#i-x"/></svg></button>
+    <h3 data-i18n="settings.title">Settings</h3>
+    <button class="icon-btn" id="closeSettings" title="Close" data-i18n-title="settings.close"><svg><use href="#i-x"/></svg></button>
   </div>
-  <div class="stabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
+  <div class="stabs" id="settingsTabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="settings.sections">
     <button type="button" class="stab" role="tab" data-tab="todoist" aria-controls="p_todoist">Todoist</button>
     <button type="button" class="stab" role="tab" data-tab="timer" aria-controls="p_timer">BUSY Bar</button>
-    <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps">Apps</button>
-    <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites">Websites<i class="dot warn hidden" id="sitesDot"></i></button>
-    <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits">Limits<i class="dot warn hidden" id="limitsDot"></i></button>
-    <button type="button" class="stab" role="tab" data-tab="stats" aria-controls="p_stats">Stats</button>
-    <button type="button" class="stab" role="tab" data-tab="general" aria-controls="p_general">General</button>
-    <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about">About<i class="dot good hidden" id="aboutDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps" data-i18n="settings.tabs.apps">Apps</button>
+    <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites"><span data-i18n="settings.tabs.sites">Websites</span><i class="dot warn hidden" id="sitesDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits"><span data-i18n="settings.tabs.limits">Limits</span><i class="dot warn hidden" id="limitsDot"></i></button>
+    <button type="button" class="stab" role="tab" data-tab="stats" aria-controls="p_stats" data-i18n="settings.tabs.stats">Stats</button>
+    <button type="button" class="stab" role="tab" data-tab="general" aria-controls="p_general" data-i18n="settings.tabs.general">General</button>
+    <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about"><span data-i18n="settings.tabs.about">About</span><i class="dot good hidden" id="aboutDot"></i></button>
   </div>
   <form class="drawer-body" id="settingsForm" autocomplete="off">
     <div class="section" role="tabpanel" id="p_todoist" data-panel="todoist">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist"><span class="knob"></span>Use Todoist</label>
+        <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist"><span class="knob"></span><span data-i18n="settings.todoist.use">Use Todoist</span></label>
       </div>
-      <div class="help" id="noTodoistHelp">Without Todoist, sessions run with no task and you don't need an API token.</div>
+      <div class="help" id="noTodoistHelp" data-i18n="settings.todoist.no_todoist_help">Without Todoist, sessions run with no task and you don't need an API token.</div>
       <div id="todoistFields">
       <div class="field">
-        <label for="s_todoist_token">API token</label>
+        <label for="s_todoist_token" data-i18n="settings.todoist.token">API token</label>
         <div class="input-row">
           <input class="input" id="s_todoist_token" name="todoist_token" type="password" spellcheck="false">
-          <button type="button" class="icon-btn" id="revealToken" title="Show"><svg><use href="#i-eye"/></svg></button>
+          <button type="button" class="icon-btn" id="revealToken" title="Show" data-i18n-title="settings.todoist.reveal"><svg><use href="#i-eye"/></svg></button>
         </div>
-        <div class="help hidden" id="tokenLost">Re-enter your Todoist token (it can't be read on this PC).</div>
-        <div class="help hidden" id="tokenSaved">A token is saved. <button type="button" class="link" id="removeToken">Remove</button></div>
-        <div class="help">Todoist → Settings → Integrations → Developer → API token.</div>
+        <div class="help hidden" id="tokenLost" data-i18n="settings.todoist.token_lost">Re-enter your Todoist token (it can't be read on this PC).</div>
+        <div class="help hidden" id="tokenSaved"><span data-i18n="settings.todoist.token_saved">A token is saved.</span> <button type="button" class="link" id="removeToken" data-i18n="settings.remove">Remove</button></div>
+        <div class="help" data-i18n="settings.todoist.token_help">Todoist → Settings → Integrations → Developer → API token.</div>
       </div>
       <div class="field">
-        <label for="s_focus_label">Label added when a task starts</label>
-        <input class="input" id="s_focus_label" name="focus_label" spellcheck="false" placeholder="Leave empty for no label">
+        <label for="s_focus_label" data-i18n="settings.todoist.label">Label added when a task starts</label>
+        <input class="input" id="s_focus_label" name="focus_label" spellcheck="false" placeholder="Leave empty for no label" data-i18n-placeholder="settings.todoist.label_placeholder">
       </div>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="remove_label_on_end"><span class="knob"></span>Remove the label when the session ends</label>
-        <label class="switch"><input type="checkbox" name="log_comments"><span class="knob"></span>Log finished pomodoros as a task comment</label>
-        <label class="switch"><input type="checkbox" name="offer_subtasks"><span class="knob"></span>Offer a task's subtasks when starting it</label>
-        <label class="switch"><input type="checkbox" name="plan_from_duration" id="s_plan_from_duration"><span class="knob"></span>Size the pomodoros from the task's duration</label>
+        <label class="switch"><input type="checkbox" name="remove_label_on_end"><span class="knob"></span><span data-i18n="settings.todoist.remove_label">Remove the label when the session ends</span></label>
+        <label class="switch"><input type="checkbox" name="log_comments"><span class="knob"></span><span data-i18n="settings.todoist.log_comments">Log finished pomodoros as a task comment</span></label>
+        <label class="switch"><input type="checkbox" name="offer_subtasks"><span class="knob"></span><span data-i18n="settings.todoist.offer_subtasks">Offer a task's subtasks when starting it</span></label>
+        <label class="switch"><input type="checkbox" name="plan_from_duration" id="s_plan_from_duration"><span class="knob"></span><span data-i18n="settings.todoist.plan_from_duration">Size the pomodoros from the task's duration</span></label>
       </div>
       <!-- See buzyist/plan.py for how these split a duration. -->
       <div id="planFields">
-        <div class="help">A task with a duration in Todoist gets its own pomodoros: that much focus time in all, with your usual breaks on top. Shift+click play to use your usual settings instead.</div>
+        <div class="help" data-i18n="settings.todoist.plan_help">A task with a duration in Todoist gets its own pomodoros: that much focus time in all, with your usual breaks on top. Shift+click play to use your usual settings instead.</div>
         <div class="two">
           <div class="field">
-            <label for="s_plan_single_max">One pomodoro for tasks up to</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_single_max" name="plan_single_max" type="number" min="0" max="480"><span class="help">min</span></div>
+            <label for="s_plan_single_max" data-i18n="settings.todoist.plan_single_max">One pomodoro for tasks up to</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_single_max" name="plan_single_max" type="number" min="0" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
           <div class="field">
-            <label for="s_plan_target">Longer tasks: pomodoros of about</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_target" name="plan_target" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_target" data-i18n="settings.todoist.plan_target">Longer tasks: pomodoros of about</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_target" name="plan_target" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
         </div>
         <div class="two">
           <div class="field">
-            <label for="s_plan_min">No shorter than</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_min" name="plan_min" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_min" data-i18n="settings.todoist.plan_min">No shorter than</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_min" name="plan_min" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
           <div class="field">
-            <label for="s_plan_max">No longer than</label>
-            <div class="input-row inline"><input class="input narrow" id="s_plan_max" name="plan_max" type="number" min="5" max="480"><span class="help">min</span></div>
+            <label for="s_plan_max" data-i18n="settings.todoist.plan_max">No longer than</label>
+            <div class="input-row inline"><input class="input narrow" id="s_plan_max" name="plan_max" type="number" min="5" max="480"><span class="help" data-i18n="settings.min">min</span></div>
           </div>
         </div>
         <div class="help" id="planExample"></div>
@@ -246,153 +246,153 @@
 
     <div class="section" role="tabpanel" id="p_timer" data-panel="timer">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="use_busybar" id="s_use_busybar"><span class="knob"></span>Run the timer on a BUSY Bar</label>
+        <label class="switch" data-i18n="settings.bar.use"><input type="checkbox" name="use_busybar" id="s_use_busybar"><span class="knob"></span>Run the timer on a BUSY Bar</label>
       </div>
-      <div class="help hidden" id="noBarHelp">Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.</div>
+      <div class="help hidden" id="noBarHelp" data-i18n="settings.bar.no_bar_help">Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.</div>
       <div id="barFields">
         <div class="two">
           <div class="field">
-            <label for="s_busybar_ip">Wi-Fi address</label>
+            <label for="s_busybar_ip" data-i18n="settings.bar.wifi">Wi-Fi address</label>
             <input class="input" id="s_busybar_ip" name="busybar_ip" placeholder="192.168.1.50" spellcheck="false">
           </div>
           <div class="field">
-            <label for="s_busybar_pin">HTTP API PIN</label>
+            <label for="s_busybar_pin" data-i18n="settings.bar.pin">HTTP API PIN</label>
             <input class="input" id="s_busybar_pin" name="busybar_pin" type="password">
-            <div class="help hidden" id="pinLost">Re-enter the PIN (it can't be read on this PC).</div>
-            <div class="help hidden" id="pinSaved">A PIN is saved. <button type="button" class="link" id="removePin">Remove</button></div>
+            <div class="help hidden" id="pinLost" data-i18n="settings.bar.pin_lost">Re-enter the PIN (it can't be read on this PC).</div>
+            <div class="help hidden" id="pinSaved"><span data-i18n="settings.bar.pin_saved">A PIN is saved.</span> <button type="button" class="link" id="removePin" data-i18n="settings.remove">Remove</button></div>
           </div>
         </div>
         <div class="field">
-          <label for="s_poll_seconds">Check the bar every</label>
+          <label for="s_poll_seconds" data-i18n="settings.bar.poll">Check the bar every</label>
           <div class="input-row inline">
             <input class="input narrow" id="s_poll_seconds" name="poll_seconds" type="number" min="2" max="60">
-            <span class="help">seconds</span>
+            <span class="help" data-i18n="settings.bar.seconds">seconds</span>
           </div>
         </div>
         <div class="toggles">
-          <label class="switch"><input type="checkbox" name="usb_fallback"><span class="knob"></span>Also try USB (10.0.4.20)</label>
+          <label class="switch" data-i18n="settings.bar.usb"><input type="checkbox" name="usb_fallback"><span class="knob"></span>Also try USB (10.0.4.20)</label>
         </div>
-        <button type="button" class="btn" id="testBar">Test connection</button>
+        <button type="button" class="btn" id="testBar" data-i18n="settings.bar.test">Test connection</button>
         <div class="test-result" id="testResult"></div>
-        <h4 class="bar-screens-title">Bar screens</h4>
+        <h4 class="bar-screens-title" data-i18n="settings.bar.screens_title">Bar screens</h4>
         <div class="toggles">
-          <label class="switch"><input type="checkbox" name="bar_screens_on" id="s_bar_screens_on"><span class="knob"></span>Choose what the bar shows during sessions</label>
+          <label class="switch" data-i18n="settings.bar.screens_on"><input type="checkbox" name="bar_screens_on" id="s_bar_screens_on"><span class="knob"></span>Choose what the bar shows during sessions</label>
         </div>
         <div id="barScreenFields">
           <div class="help" id="barThemesNote"></div>
           <div id="barScreens"></div>
-          <h4>Focus by activity</h4>
-          <div class="help">Sessions on an activity can show something else while you focus. Todoist tasks and names you type use Focus; calls use Call.</div>
+          <h4 data-i18n="settings.bar.by_activity">Focus by activity</h4>
+          <div class="help" data-i18n="settings.bar.by_activity_help">Sessions on an activity can show something else while you focus. Todoist tasks and names you type use Focus; calls use Call.</div>
           <div id="barActivityScreens"></div>
-          <div class="help">The break and the pause are the bar's own: it shows REST and PAUSED whatever you pick here. A text of yours replaces the time left on the bar, so its minutes go in the corner, updated every minute.</div>
+          <div class="help" data-i18n="settings.bar.firmware_help">The break and the pause are the bar's own: it shows REST and PAUSED whatever you pick here. A text of yours replaces the time left on the bar, so its minutes go in the corner, updated every minute.</div>
         </div>
       </div>
     </div>
 
     <div class="section" role="tabpanel" id="p_apps" data-panel="apps">
-      <div class="scope-picker" id="appsScope" role="group" aria-label="Whose app blocking to edit"></div>
+      <div class="scope-picker" id="appsScope" role="group" aria-label="Whose app blocking to edit" data-i18n-aria-label="settings.apps.scope_label"></div>
       <div id="appsGlobal">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="block_apps" id="s_block_apps"><span class="knob"></span>Keep these apps away during focus</label>
+        <label class="switch" data-i18n="settings.apps.block"><input type="checkbox" name="block_apps" id="s_block_apps"><span class="knob"></span>Keep these apps away during focus</label>
       </div>
       <div id="blockedAppsFields">
         <div class="app-list" id="blockedApps"></div>
         <div class="input-row">
-          <input class="input" id="addBlockedApp" spellcheck="false" placeholder="Add another program, e.g. Teams.exe">
-          <button type="button" class="btn" id="addBlockedAppBtn">Add</button>
+          <input class="input" id="addBlockedApp" spellcheck="false" placeholder="Add another program, e.g. Teams.exe" data-i18n-placeholder="settings.apps.add_placeholder">
+          <button type="button" class="btn" id="addBlockedAppBtn" data-i18n="settings.add">Add</button>
         </div>
-        <div class="help"><b>Close</b> quits the app. <b>Hide to tray</b> closes its window like its X does, so it keeps running and you stay online. Only during work phases; breaks, pauses and the end of a session leave apps alone.</div>
+        <div class="help" data-i18n-rich="settings.apps.help"><b>Close</b> quits the app. <b>Hide to tray</b> closes its window like its X does, so it keeps running and you stay online. Only during work phases; breaks, pauses and the end of a session leave apps alone.</div>
       </div>
       </div>
       <div class="hidden" id="appsActivity"></div>
     </div>
 
     <div class="section" role="tabpanel" id="p_sites" data-panel="sites">
-      <div class="scope-picker" id="sitesScope" role="group" aria-label="Whose website blocking to edit"></div>
+      <div class="scope-picker" id="sitesScope" role="group" aria-label="Whose website blocking to edit" data-i18n-aria-label="settings.sites.scope_label"></div>
       <div id="sitesGlobal">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="block_sites" id="s_block_sites"><span class="knob"></span>Limit websites during focus</label>
+        <label class="switch" data-i18n="settings.sites.block"><input type="checkbox" name="block_sites" id="s_block_sites"><span class="knob"></span>Limit websites during focus</label>
       </div>
       <div id="blockedSitesFields">
-        <div class="seg" role="radiogroup" aria-label="Website mode">
-          <label><input type="radio" name="site_mode" value="block"><span>Block these sites</span></label>
-          <label><input type="radio" name="site_mode" value="allow"><span>Allow only these sites</span></label>
+        <div class="seg" role="radiogroup" aria-label="Website mode" data-i18n-aria-label="settings.sites.mode_label">
+          <label><input type="radio" name="site_mode" value="block"><span data-i18n="settings.sites.mode_block">Block these sites</span></label>
+          <label><input type="radio" name="site_mode" value="allow"><span data-i18n="settings.sites.mode_allow">Allow only these sites</span></label>
         </div>
         <div class="app-list" id="blockedSites"></div>
         <div class="input-row">
           <input class="input" id="addBlockedSite" spellcheck="false" placeholder="Add a website, e.g. youtube.com">
-          <button type="button" class="btn" id="addBlockedSiteBtn">Add</button>
+          <button type="button" class="btn" id="addBlockedSiteBtn" data-i18n="settings.add">Add</button>
         </div>
         <div class="help" id="sitesHelp"></div>
-        <div class="help">Subdomains are included (<code>youtube.com</code> also covers <code>m.youtube.com</code>). Use <code>*</code> as a wildcard anywhere: <code>*.google.com</code>, <code>google.*</code>, <code>youtube.com/shorts/*</code>. A path covers the pages below it (<code>reddit.com/r/python</code>).</div>
+        <div class="help" data-i18n-rich="settings.sites.patterns_help">Subdomains are included (<code>youtube.com</code> also covers <code>m.youtube.com</code>). Use <code>*</code> as a wildcard anywhere: <code>*.google.com</code>, <code>google.*</code>, <code>youtube.com/shorts/*</code>. A path covers the pages below it (<code>reddit.com/r/python</code>).</div>
       </div>
       </div>
       <div class="hidden" id="sitesActivity"></div>
       <div class="extension-box" id="extBox">
         <div class="extension-status" id="extStatus">Browser extension: not connected</div>
         <div id="extSetup">
-          <div class="help">Blocking websites needs the buZyist extension in your browser. It's a one-time setup:</div>
+          <div class="help" data-i18n="settings.ext.setup_intro">Blocking websites needs the buZyist extension in your browser. It's a one-time setup:</div>
           <ol class="steps">
             <li>
-              <button type="button" class="btn primary" id="installExtension">Open <span class="browser-name">Chrome</span>'s extensions page</button>
-              <div class="help">This also copies the extension's folder path and shows the folder in Explorer.</div>
+              <button type="button" class="btn primary browser-page" id="installExtension">Open Chrome's extensions page</button>
+              <div class="help" data-i18n="settings.ext.open_help">This also copies the extension's folder path and shows the folder in Explorer.</div>
             </li>
-            <li>Turn on <b>Developer mode</b> (the switch at the top right of that page).</li>
-            <li>Drag the selected <code>chrome-extension</code> folder from Explorer onto the page.<br>
+            <li data-i18n-rich="settings.ext.step_dev">Turn on <b>Developer mode</b> (the switch at the top right of that page).</li>
+            <li data-i18n-rich="settings.ext.step_load">Drag the selected <code>chrome-extension</code> folder from Explorer onto the page.<br>
               Or click <b>Load unpacked</b>, paste the path (<kbd>Ctrl</kbd>+<kbd>V</kbd>) into the folder picker's address bar, press <kbd>Enter</kbd>, then <b>Select Folder</b>.</li>
           </ol>
-          <div class="help">The status above turns green within a few seconds of loading the extension.</div>
+          <div class="help" data-i18n="settings.ext.setup_done_help">The status above turns green within a few seconds of loading the extension.</div>
         </div>
         <div class="hidden" id="extOutdated">
-          <div class="help">buZyist was updated and so was its extension, but your browser is still running the old one (<span id="extOldVersion">older</span>, now <span id="extNewVersion"></span>). Reload it:</div>
+          <div class="help" id="extOutdatedText"></div>
           <ol class="steps">
             <li>
-              <button type="button" class="btn primary" id="openExtensionsPage">Open <span class="browser-name">Chrome</span>'s extensions page</button>
+              <button type="button" class="btn primary browser-page" id="openExtensionsPage">Open Chrome's extensions page</button>
             </li>
-            <li>Find <b>buZyist Focus</b> and click its <b>Reload</b> icon (the circular arrow). No need to load the folder again.</li>
+            <li data-i18n-rich="settings.ext.step_reload">Find <b>buZyist Focus</b> and click its <b>Reload</b> icon (the circular arrow). No need to load the folder again.</li>
           </ol>
-          <div class="help">This message goes away within a few seconds of reloading.</div>
+          <div class="help" data-i18n="settings.ext.outdated_help">This message goes away within a few seconds of reloading.</div>
         </div>
-        <div class="help hidden" id="extDone">All set. Keep the extension turned on and buZyist tells it when to block.</div>
+        <div class="help hidden" id="extDone" data-i18n="settings.ext.all_set">All set. Keep the extension turned on and buZyist tells it when to block.</div>
         <div class="path-row">
           <code id="extDir">extension</code>
-          <button type="button" class="btn sm" id="copyExtensionPath">Copy path</button>
-          <button type="button" class="btn sm ghost" id="openExtensionFolder">Show folder</button>
+          <button type="button" class="btn sm" id="copyExtensionPath" data-i18n="settings.ext.copy_path">Copy path</button>
+          <button type="button" class="btn sm ghost" id="openExtensionFolder" data-i18n="settings.ext.show_folder">Show folder</button>
         </div>
       </div>
     </div>
 
     <div class="section" role="tabpanel" id="p_limits" data-panel="limits">
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="site_limits_on" id="s_site_limits_on"><span class="knob"></span>Enforce website limits</label>
+        <label class="switch" data-i18n="settings.limits.site_on"><input type="checkbox" name="site_limits_on" id="s_site_limits_on"><span class="knob"></span>Enforce website limits</label>
       </div>
-      <div class="help">These work all day, with or without a session running. A site is blocked once any of its time limits is used up, or during its blocked hours. Time counts while the site is the active tab in a browser window you're using. Needs the browser extension (Websites tab); reload it after updating buZyist.</div>
+      <div class="help" data-i18n="settings.limits.site_help">These work all day, with or without a session running. A site is blocked once any of its time limits is used up, or during its blocked hours. Time counts while the site is the active tab in a browser window you're using. Needs the browser extension (Websites tab); reload it after updating buZyist.</div>
       <div id="limitsFields">
         <div class="limit-list" id="limitList"></div>
         <div class="limit-editor hidden" id="limitEditor"></div>
-        <button type="button" class="btn" id="addLimitBtn">Add a website limit</button>
+        <button type="button" class="btn" id="addLimitBtn" data-i18n="settings.limits.add_site">Add a website limit</button>
       </div>
       <div class="toggles limits-apps">
-        <label class="switch"><input type="checkbox" name="app_limits_on" id="s_app_limits_on"><span class="knob"></span>Enforce app limits</label>
+        <label class="switch" data-i18n="settings.limits.app_on"><input type="checkbox" name="app_limits_on" id="s_app_limits_on"><span class="knob"></span>Enforce app limits</label>
       </div>
-      <div class="help">The same limits for Windows apps, measured by buZyist: time counts while the app's window is in front and you're using the PC. Once a limit is reached, buZyist closes the app; pick <b>Beep</b> to keep it open and just hear how long it's been in front (again every few minutes it stays there; you pick how often). App limits stay on this PC.</div>
+      <div class="help" data-i18n-rich="settings.limits.app_help">The same limits for Windows apps, measured by buZyist: time counts while the app's window is in front and you're using the PC. Once a limit is reached, buZyist closes the app; pick <b>Beep</b> to keep it open and just hear how long it's been in front (again every few minutes it stays there; you pick how often). App limits stay on this PC.</div>
       <div id="appLimitsFields">
         <div class="limit-list" id="appLimitList"></div>
         <div class="limit-editor hidden" id="appLimitEditor"></div>
-        <button type="button" class="btn" id="addAppLimitBtn">Add an app limit</button>
+        <button type="button" class="btn" id="addAppLimitBtn" data-i18n="settings.limits.add_app">Add an app limit</button>
       </div>
       <div class="extension-box" id="syncBox">
-        <label class="switch"><input type="checkbox" name="sync_limits" id="s_sync_limits"><span class="knob"></span>Share limits and time with my other PCs</label>
-        <div class="help">Through Chrome sync: on each PC, sign one Chrome profile in to the same Google account, with sync on, and load the buZyist extension there. Time on Instagram here then counts on your other PCs too. Only the limits are shared; your other settings stay on each PC.</div>
-        <label class="switch"><input type="checkbox" name="sync_session" id="s_sync_session"><span class="knob"></span>Share the running task with my other PCs</label>
-        <div class="help">Another PC on the same BUSY Bar then shows the task you started here, instead of "Started on the bar". Turn it on on both PCs.</div>
+        <label class="switch" data-i18n="settings.sync.limits"><input type="checkbox" name="sync_limits" id="s_sync_limits"><span class="knob"></span>Share limits and time with my other PCs</label>
+        <div class="help" data-i18n="settings.sync.limits_help">Through Chrome sync: on each PC, sign one Chrome profile in to the same Google account, with sync on, and load the buZyist extension there. Time on Instagram here then counts on your other PCs too. Only the limits are shared; your other settings stay on each PC.</div>
+        <label class="switch" data-i18n="settings.sync.session"><input type="checkbox" name="sync_session" id="s_sync_session"><span class="knob"></span>Share the running task with my other PCs</label>
+        <div class="help" data-i18n="settings.sync.session_help">Another PC on the same BUSY Bar then shows the task you started here, instead of "Started on the bar". Turn it on on both PCs.</div>
         <div id="syncFields">
           <div class="field">
-            <label for="s_sync_owner">Chrome profile that shares</label>
+            <label for="s_sync_owner" data-i18n="settings.sync.owner">Chrome profile that shares</label>
             <select class="input" id="s_sync_owner"></select>
-            <div class="help">Pick the profile signed in to the account you use on your other PCs. Other profiles on this PC still enforce the limits and count time; they just don't share it.</div>
+            <div class="help" data-i18n="settings.sync.owner_help">Pick the profile signed in to the account you use on your other PCs. Other profiles on this PC still enforce the limits and count time; they just don't share it.</div>
           </div>
-          <div class="extension-status" id="syncStatus">Not synced yet</div>
+          <div class="extension-status" id="syncStatus" data-i18n="settings.sync.not_yet">Not synced yet</div>
         </div>
       </div>
     </div>
@@ -452,63 +452,63 @@
         <div class="help" data-i18n="settings.general.language_help">The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.</div>
       </div>
       <div class="field">
-        <label>Activities</label>
+        <label data-i18n="settings.general.activities">Activities</label>
         <div class="activity-list" id="activityList"></div>
         <div class="input-row">
-          <input class="input" id="addActivity" maxlength="30" spellcheck="false" placeholder="Add an activity, e.g. Planning">
-          <button type="button" class="btn" id="addActivityBtn">Add</button>
+          <input class="input" id="addActivity" maxlength="30" spellcheck="false" placeholder="Add an activity, e.g. Planning" data-i18n-placeholder="settings.general.add_activity">
+          <button type="button" class="btn" id="addActivityBtn" data-i18n="settings.add">Add</button>
         </div>
-        <div class="help">Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.</div>
+        <div class="help" data-i18n="settings.general.activities_help">Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.</div>
       </div>
       <!-- Calls: see buzyist/calls.py. call_activity and call_ignore_apps are sent by the Save button. -->
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="call_detect" id="s_call_detect"><span class="knob"></span>Start a session when I'm on a call</label>
+        <label class="switch" data-i18n="settings.general.call_detect"><input type="checkbox" name="call_detect" id="s_call_detect"><span class="knob"></span>Start a session when I'm on a call</label>
       </div>
-      <div class="help">When an app has your microphone or camera on for 15 seconds, buZyist starts a session with no timer, and ends it when the call does. The call counts as focus under the activity below, and blocks the apps and websites that activity blocks. The app you're calling with is never closed.</div>
+      <div class="help" data-i18n="settings.general.call_help">When an app has your microphone or camera on for 15 seconds, buZyist starts a session with no timer, and ends it when the call does. The call counts as focus under the activity below, and blocks the apps and websites that activity blocks. The app you're calling with is never closed.</div>
       <div id="callFields">
         <div class="field">
-          <label for="s_call_activity">Count calls as</label>
+          <label for="s_call_activity" data-i18n="settings.general.call_activity">Count calls as</label>
           <select class="input" id="s_call_activity"></select>
         </div>
         <div class="field">
-          <label for="s_call_ignore">Not calls</label>
-          <input class="input" id="s_call_ignore" spellcheck="false" placeholder="e.g. Voicenotes.exe, NVIDIA Broadcast">
-          <div class="help">Apps that keep the microphone or camera on outside calls (dictation, voice effects), separated by commas; the ones running now are suggested as you type.</div>
+          <label for="s_call_ignore" data-i18n="settings.general.call_ignore">Not calls</label>
+          <input class="input" id="s_call_ignore" spellcheck="false" placeholder="e.g. Voicenotes.exe, NVIDIA Broadcast" data-i18n-placeholder="settings.general.call_ignore_placeholder">
+          <div class="help" data-i18n="settings.general.call_ignore_help">Apps that keep the microphone or camera on outside calls (dictation, voice effects), separated by commas; the ones running now are suggested as you type.</div>
         </div>
       </div>
       <div class="field">
-        <label for="s_hotkey">Global hotkey</label>
+        <label for="s_hotkey" data-i18n="settings.general.hotkey">Global hotkey</label>
         <input class="input" id="s_hotkey" name="hotkey" spellcheck="false" placeholder="ctrl+alt+p">
-        <div class="help">ctrl / alt / shift / win + a key, e.g. <code>ctrl+alt+p</code>. Empty for none.</div>
+        <div class="help" data-i18n-rich="settings.general.hotkey_help">ctrl / alt / shift / win + a key, e.g. <code>ctrl+alt+p</code>. Empty for none.</div>
       </div>
       <div class="toggles">
-        <label class="switch"><input type="checkbox" name="notifications"><span class="knob"></span>Notify at breaks and when a session ends</label>
-        <label class="switch"><input type="checkbox" name="open_on_finish"><span class="knob"></span>Open this window when a session finishes</label>
-        <label class="switch"><input type="checkbox" name="launch_at_login"><span class="knob"></span>Start buZyist when I sign in to Windows</label>
-        <label class="switch" id="autoUpdateRow"><input type="checkbox" name="auto_update"><span class="knob"></span>Install updates automatically when no session is running</label>
+        <label class="switch" data-i18n="settings.general.notifications"><input type="checkbox" name="notifications"><span class="knob"></span>Notify at breaks and when a session ends</label>
+        <label class="switch" data-i18n="settings.general.open_on_finish"><input type="checkbox" name="open_on_finish"><span class="knob"></span>Open this window when a session finishes</label>
+        <label class="switch" data-i18n="settings.general.launch_at_login"><input type="checkbox" name="launch_at_login"><span class="knob"></span>Start buZyist when I sign in to Windows</label>
+        <label class="switch" id="autoUpdateRow" data-i18n="settings.general.auto_update"><input type="checkbox" name="auto_update"><span class="knob"></span>Install updates automatically when no session is running</label>
       </div>
     </div>
 
     <div class="section about" role="tabpanel" id="p_about" data-panel="about">
       <div class="brand"><img class="logo about-logo" src="img/logo.svg" alt="buZyist"></div>
-      <p class="help">One pomodoro at a time. You pick a task, start a session, and the rest of the world waits.</p>
-      <p class="help"><b id="aboutVersion">buZyist</b> · unofficial; not affiliated with BUSY or Todoist.</p>
+      <p class="help" data-i18n="settings.about.tagline">One pomodoro at a time. You pick a task, start a session, and the rest of the world waits.</p>
+      <p class="help"><b id="aboutVersion">buZyist</b> · <span data-i18n="settings.about.unofficial">unofficial; not affiliated with BUSY or Todoist.</span></p>
       <div class="input-row">
         <button type="button" class="btn primary hidden" id="installUpdate"></button>
-        <button type="button" class="btn" id="checkUpdate">Check for updates</button>
-        <button type="button" class="btn ghost hidden" id="releaseNotes">What's new</button>
+        <button type="button" class="btn" id="checkUpdate" data-i18n="settings.about.check">Check for updates</button>
+        <button type="button" class="btn ghost hidden" id="releaseNotes" data-i18n="settings.about.whats_new">What's new</button>
       </div>
       <div class="test-result" id="updateResult"></div>
       <div class="input-row">
-        <button type="button" class="btn" id="openData">Open data folder</button>
+        <button type="button" class="btn" id="openData" data-i18n="settings.about.open_data">Open data folder</button>
         <button type="button" class="btn ghost" id="openRepo">GitHub</button>
       </div>
-      <p class="help">Your settings, token and log live in <code id="aboutData"></code>.</p>
+      <p class="help"><span data-i18n="settings.about.data_dir">Your settings, token and log live in</span> <code id="aboutData"></code></p>
     </div>
   </form>
   <div class="drawer-foot">
-    <button class="btn ghost" id="cancelSettings">Cancel</button>
-    <button class="btn primary" id="saveSettings">Save</button>
+    <button class="btn ghost" id="cancelSettings" data-i18n="settings.cancel">Cancel</button>
+    <button class="btn primary" id="saveSettings" data-i18n="settings.save">Save</button>
   </div>
 </aside>
 
