@@ -72,6 +72,13 @@ export function loadBackground() {
     clearTimeout,
     setInterval,
     clearInterval,
+    // The worker's importScripts("i18n.js"): run the file in the same context.
+    importScripts: (...names) => {
+      for (const name of names) {
+        const path = join(ROOT, "extension", name);
+        vm.runInContext(readFileSync(path, "utf8"), context, { filename: path });
+      }
+    },
   });
   const file = join(ROOT, "extension", "background.js");
   vm.runInContext(readFileSync(file, "utf8"), context, { filename: file });

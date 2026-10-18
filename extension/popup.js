@@ -11,19 +11,19 @@ function el(tag, cls, text) {
   return node;
 }
 
-const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-const weekday = (ms) => new Date(ms).toLocaleDateString([], { weekday: "short" });
+// Texts, dates and times in the app language (i18n.js).
+const clock = formatClock;
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
 // "17:00", or "Thu 08:00" when it isn't today.
-const when = (ms) => (sameDay(ms, Date.now()) ? "" : weekday(ms) + " ") + clock(ms);
+const when = (ms) => (sameDay(ms, Date.now()) ? "" : formatWeekday(ms) + " ") + clock(ms);
 
 function duration(seconds) {
   const s = Math.max(0, Math.ceil(seconds));
-  if (s < 60) return `${s} sec`;
+  if (s < 60) return t("time.seconds", { n: s });
   const m = Math.ceil(s / 60);
-  if (m < 60) return `${m} min`;
+  if (m < 60) return t("time.minutes", { n: m });
   const h = Math.floor(m / 60);
-  return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+  return m % 60 ? t("time.hours_minutes", { h, m: m % 60 }) : t("time.hours", { h });
 }
 
 const names = (patterns) => patterns.join(", ");
@@ -58,20 +58,19 @@ function renderFocus(data) {
   if (f.active) {
     const mins = Math.max(0, Math.ceil((f.ends_at_ms - Date.now()) / 60000));
     // No end time: a call, which lasts as long as it does.
-    box.append(el("div", "big bad", f.ends_at_ms ? `${mins} min left` : "In focus"));
-    box.append(el("div", "small", f.task ? `Focusing on ${f.task}` : "Work phase running"));
+    box.append(el("div", "big bad", f.ends_at_ms ? t("popup.minutes_left", { n: mins }) : t("popup.in_focus")));
+    box.append(el("div", "small", f.task ? t("popup.focusing_on", { task: f.task }) : t("popup.work_running")));
+    const rules = f.mode === "allow" ? t("popup.allow_mode")
+      : f.sites ? t("popup.block_mode", { n: f.sites }) : t("popup.nothing_blocked");
     // An activity's own blocking rules (the session's name already carries it).
-    const during = f.activity ? `${f.activity}: ` : "";
-    box.append(el("div", "small muted", during + (f.mode === "allow"
-      ? "Only your allowed websites open until it ends."
-      : f.sites ? `${f.sites} website${f.sites === 1 ? " is" : "s are"} blocked until it ends.` : "No websites are blocked during focus.")));
+    box.append(el("div", "small muted", f.activity ? t("popup.during_activity", { activity: f.activity, rules }) : rules));
   } else if (data.offline && !data.known) {
-    box.append(el("div", "small muted", "Unknown: buZyist hasn't answered yet."));
+    box.append(el("div", "small muted", t("popup.unknown_yet")));
   } else if (data.offline) {
-    box.append(el("div", "small muted", "Unknown while buZyist is closed."));
+    box.append(el("div", "small muted", t("popup.unknown_closed")));
   } else {
-    box.append(el("div", "small", "No work phase running."));
-    box.append(el("div", "small muted", "Start one in buZyist to block distracting websites."));
+    box.append(el("div", "small", t("popup.no_work")));
+    box.append(el("div", "small muted", t("popup.start_one")));
   }
   swap($("focus"), ...out);
 }
@@ -80,55 +79,55 @@ function ruleRow(rule) {
   const row = el("div", "rule");
   const head = el("div", "name");
   head.append(names(rule.patterns));
-  if (rule.here) head.append(el("span", "tag", "this tab"));
+  if (rule.here) head.append(el("span", "tag", t("popup.this_tab")));
   row.append(head);
 
   if (rule.state) {
     row.append(el("div", "line blocked", rule.state.reason === "window"
-      ? `Blocked until ${when(rule.state.until)}`
-      : `Time's up, opens again at ${when(rule.state.until)}`));
+      ? t("popup.blocked_until", { when: when(rule.state.until) })
+      : t("popup.times_up_until", { when: when(rule.state.until) })));
   } else if (rule.left_s != null) {
     const used = Math.max(0, rule.budget_s - rule.left_s);
-    row.append(el("div", "line", `${duration(rule.left_s)} left \u00b7 ${rule.label}`));
+    row.append(el("div", "line", t("popup.left_of", { left: duration(rule.left_s), label: limitLabel(rule.label) })));
     row.append(bar(rule.left_s, rule.budget_s));
-    row.append(el("div", "line", `${Math.floor(used / 60)} of ${Math.round(rule.budget_s / 60)} min used, resets ${when(rule.resets_ms)}`));
+    row.append(el("div", "line", t("popup.used_of", {
+      used: Math.floor(used / 60), budget: Math.round(rule.budget_s / 60), when: when(rule.resets_ms),
+    })));
   } else if (!rule.next_window) {
-    row.append(el("div", "line", "No limit applies right now."));
+    row.append(el("div", "line", t("popup.no_limit_now")));
   }
   if (rule.next_window && !(rule.state && rule.state.reason === "window")) {
     const [start, end] = rule.next_window;
-    row.append(el("div", "line", `Blocked ${when(start)}\u2013${clock(end)}`));
+    row.append(el("div", "line", t("popup.blocked_span", { start: when(start), end: clock(end) })));
   }
   if (rule.pass_until_ms > Date.now()) {
-    row.append(el("div", "line", `Extra time until ${clock(rule.pass_until_ms)}`));
+    row.append(el("div", "line", t("popup.extra_until", { time: clock(rule.pass_until_ms) })));
   }
   return row;
 }
 
 function render(data) {
   const status = $("status");
-  setText(status, data.offline ? "buZyist not running" : "Connected");
+  setText(status, data.offline ? t("popup.not_running") : t("popup.connected"));
   setClass(status, "status " + (data.offline ? "bad" : "ok"));
 
   // Help: what to do when something is missing. The extension can't open the
-  // app, so it says where to find it.
+  // app, so it says where to find it. Each piece is a whole sentence.
   let helpClass = "notice hidden";
   const helpParts = [];
-  const tip = (info, ...parts) => { helpClass = "notice" + (info ? " info" : ""); helpParts.push(...parts); };
+  const tip = (info, lead, ...lines) => {
+    helpClass = "notice" + (info ? " info" : "");
+    helpParts.push(el("b", "", t(lead) + " "), ...lines.map((key) => t(key) + " "));
+  };
   if (data.offline) {
-    tip(false, el("b", "", "buZyist isn't running. "),
-      data.known ? "Limits keep working from what it last said, and time is saved until it's back. "
-                 : "Nothing is blocked until it runs. ",
-      "Start buZyist from the Start menu, or open it from its tray icon.");
+    tip(false, "popup.help_offline",
+      data.known ? "popup.help_offline_known" : "popup.help_offline_unknown", "popup.help_offline_start");
   } else if (!data.limits_on && !data.limits.length) {
-    tip(true, el("b", "", "Website limits are off. "),
-      "In buZyist, open Settings \u2192 Limits, add a website and turn on \u201cEnforce website limits\u201d.");
+    tip(true, "popup.help_limits_off", "popup.help_limits_off_how");
   } else if (!data.limits_on) {
-    tip(true, el("b", "", "Website limits are switched off. "),
-      "Turn on \u201cEnforce website limits\u201d in buZyist \u2192 Settings \u2192 Limits.");
+    tip(true, "popup.help_limits_switched_off", "popup.help_limits_switched_off_how");
   } else if (!data.limits.length) {
-    tip(true, el("b", "", "No limits yet. "),
-      "Open buZyist, then Settings \u2192 Limits \u2192 Add a website limit (for example 5 minutes per hour).");
+    tip(true, "popup.help_no_limits", "popup.help_no_limits_how");
   }
 
   setClass($("help"), helpClass);
@@ -140,13 +139,14 @@ function render(data) {
   $("hereCard").classList.toggle("hidden", !here.length);
   swap($("here"), ...here.map((rule) => {
     const box = el("div");
-    if (rule.state) box.append(el("div", "big bad", rule.state.reason === "window" ? "Blocked" : "Time's up"));
+    if (rule.state) box.append(el("div", "big bad", t(rule.state.reason === "window" ? "popup.blocked" : "popup.times_up")));
     else if (rule.left_s != null) {
-      box.append(el("div", "big " + (rule.left_s <= 30 ? "bad" : rule.left_s <= 120 ? "warn" : "ok"), duration(rule.left_s) + " left"));
+      const level = rule.left_s <= 30 ? "bad" : rule.left_s <= 120 ? "warn" : "ok";
+      box.append(el("div", "big " + level, t("popup.left", { left: duration(rule.left_s) })));
       box.append(bar(rule.left_s, rule.budget_s));
-      box.append(el("div", "small muted", rule.label));
+      box.append(el("div", "small muted", limitLabel(rule.label)));
     } else {
-      box.append(el("div", "small", "No time limit right now."));
+      box.append(el("div", "small", t("popup.no_time_limit")));
     }
     return box;
   }));
@@ -157,14 +157,13 @@ function render(data) {
   // How often a website was blocked today, on this PC (buZyist's Stats tab has the rest).
   const b = data.blocks_today || { focus: 0, limit: 0 };
   $("blocksCard").classList.toggle("hidden", !data.known);
-  const times = (n) => `${n} time${n === 1 ? "" : "s"}`;
   swap($("blocks"), ...(b.focus + b.limit
-    ? [el("div", "big", times(b.focus + b.limit)),
-       el("div", "small muted", `${b.focus} during focus · ${b.limit} over a limit`)]
-    : [el("div", "small muted", "Nothing blocked yet today.")]));
+    ? [el("div", "big", t("popup.times", { n: b.focus + b.limit })),
+       el("div", "small muted", t("popup.blocks_split", { focus: b.focus, limit: b.limit }))]
+    : [el("div", "small muted", t("popup.no_blocks"))]));
 
-  swap($("footer"), "Change limits in ", el("b", "", "buZyist \u2192 Settings \u2192 Limits"),
-    ". Blocking during pomodoros is in the Websites tab, block counts in Stats. ", el("span", "", `Extension ${data.version}`));
+  swap($("footer"), ...tBold("popup.footer", { where: t("popup.footer_where") }), " ",
+    el("span", "", t("popup.version", { version: data.version })));
 }
 
 let shown = false;
@@ -173,9 +172,11 @@ async function load() {
   try {
     data = await chrome.runtime.sendMessage({ type: "popup" });
   } catch (e) { /* the worker is waking up; try again shortly */ }
+  // buZyist's language, as the worker last heard it (English until then).
+  if (data && (await useLanguage(data.language))) applyI18n();
   if (data) { render(data); shown = true; }
   // Once something is shown, a missed answer keeps it instead of flashing "Starting...".
-  else if (!shown) setText($("status"), "Starting\u2026");
+  else if (!shown) setText($("status"), t("popup.starting"));
 }
 
 load();
