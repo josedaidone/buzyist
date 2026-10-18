@@ -12,7 +12,8 @@ import base64
 import ctypes
 import logging
 
-from buzyist.constants import APP, AppError
+from buzyist.constants import APP
+from buzyist.i18n import app_error
 from buzyist.win32 import CRYPTPROTECT_UI_FORBIDDEN, DATA_BLOB, crypt32, kernel32
 
 log = logging.getLogger(APP)
@@ -64,7 +65,7 @@ def protect_secrets(cfg) -> dict:
             try:
                 out[key] = protect(value)
             except OSError:
-                raise AppError("Windows couldn't encrypt the saved token; try again.")
+                raise app_error("errors.settings.encrypt_failed")
         else:
             out[key] = ""
     return out

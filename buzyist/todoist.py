@@ -13,6 +13,7 @@ import urllib.request
 from datetime import date, datetime
 
 from buzyist.constants import APP, TODOIST_API, AppError
+from buzyist.i18n import app_error, english
 from buzyist.plan import duration_minutes
 
 log = logging.getLogger(APP)
@@ -46,6 +47,13 @@ TODOIST_COLORS = {
 # ----------------------------------------------------------------- Todoist ---
 
 
+class TodoistError(AppError):
+    """Todoist answered with an HTTP error: its `status` and what it said (`detail`)."""
+
+    status = 0
+    detail = ""
+
+
 class Todoist:
     def __init__(self, cfg: dict):
         self.cfg = cfg
@@ -53,7 +61,7 @@ class Todoist:
     def call(self, method: str, path: str, params=None, body=None):
         token = self.cfg.get("todoist_token")
         if not token:
-            raise AppError("Add your Todoist API token in Settings.")
+            raise app_error("errors.todoist.no_token")
         url = TODOIST_API + path
         if params:
             url += "?" + urllib.parse.urlencode(params)
@@ -68,13 +76,16 @@ class Todoist:
                 raw = response.read()
         except urllib.error.HTTPError as err:
             if err.code in (401, 403):
-                raise AppError("Todoist rejected the API token (check Settings).")
+                raise app_error("errors.todoist.bad_token")
             detail = err.read().decode("utf-8", "replace")
             with contextlib.suppress(ValueError, AttributeError):
                 detail = json.loads(detail).get("error") or detail
-            raise AppError(f"Todoist answered {err.code}: {detail[:200]}")
+            detail = str(detail)[:200]
+            answered = app_error("errors.todoist.answered", cls=TodoistError, status=err.code, detail=detail)
+            answered.status, answered.detail = err.code, detail
+            raise answered
         except OSError as err:
-            raise AppError(f"Can't reach Todoist ({getattr(err, 'reason', err)}).")
+            raise app_error("errors.todoist.unreachable", error=getattr(err, "reason", err))
         return json.loads(raw) if raw else None
 
     def pages(self, path: str, params: dict) -> list[dict]:
@@ -145,7 +156,7 @@ class Todoist:
         try:
             return [item for item in self.pages("/tasks/filter", {"query": "subtask"}) if is_open(item)]
         except AppError as err:
-            log.warning("couldn't load the subtasks: %s", err)
+            log.warning("couldn't load the subtasks: %s", english(err))
             return []
 
     def open_children(self, task_id: str) -> list[dict]:

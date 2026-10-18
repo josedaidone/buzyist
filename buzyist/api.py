@@ -16,7 +16,7 @@ from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
-from buzyist.i18n import ENGLISH, language, languages, raw_catalog
+from buzyist.i18n import ENGLISH, app_error, language, languages, raw_catalog, t
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -39,7 +39,7 @@ class Api:
             return {"ok": False, "error": str(err)}
         except Exception as err:
             log.exception("api call")
-            return {"ok": False, "error": f"Unexpected error: {err!r}"}
+            return {"ok": False, "error": t("errors.unexpected", error=repr(err))}
 
     def get_state(self):
         return self._app.state()
@@ -193,7 +193,7 @@ class Api:
         def go():
             sync_extension()
             if not paths.EXTENSION_DIR.exists():
-                raise AppError("The extension folder is missing; reinstall buZyist.")
+                raise app_error("errors.extension.missing")
             copied = set_clipboard(str(paths.EXTENSION_DIR))
             browser = find_browser()
             if browser:
@@ -218,7 +218,7 @@ class Api:
     def test_bar(self):
         def go():
             if self._app.bar.is_local:
-                raise AppError("The BUSY Bar is turned off; the timer runs on this PC.")
+                raise app_error("errors.bar.off")
             self._app.bar.reset()
             version = self._app.bar.run(lambda bar: bar.version(), device=True)
             return {"via": self._app.bar.via, "version": getattr(version, "version", "")}

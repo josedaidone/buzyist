@@ -9,6 +9,7 @@ from datetime import time as dtime
 from typing import TYPE_CHECKING
 
 from buzyist.constants import LIMIT_UNITS, MAX_BLOCKED_SITES, MAX_LIMIT_SITES, MAX_SITE_LIMITS, SITE_ANCHOR, AppError
+from buzyist.i18n import app_error
 
 if TYPE_CHECKING:
     from buzyist.usage import SiteUsage
@@ -33,7 +34,7 @@ def clean_site_pattern(raw) -> str:
     if not host and slash:  # "/path" alone: any host
         host = "*"
     if not host or not re.fullmatch(r"[a-z0-9.*-]+", host) or ("." not in host and "*" not in host) or " " in path:
-        raise AppError(f"{shown!r} isn't a website like youtube.com or *.google.com.")
+        raise app_error("errors.sites.not_site", site=shown)
     path = "/" + path if slash else ""
     if path in ("/", "/*"):  # the whole site, same as the bare host
         path = ""
@@ -48,14 +49,15 @@ def is_plain_domain(pattern: str) -> bool:
 def clean_blocked_sites(values, kind: str = "blocked") -> list[str]:
     """Check and tidy a site list Settings sent; AppError if it's wrong."""
     if not isinstance(values, list):
-        raise AppError("The site list didn't come through; try again.")
+        raise app_error("errors.sites.list")
     out: list[str] = []
     for item in values:
         domain = clean_site_pattern(item)
         if domain not in out:
             out.append(domain)
     if len(out) > MAX_BLOCKED_SITES:
-        raise AppError(f"Keep the {kind} sites under {MAX_BLOCKED_SITES}.")
+        key = "errors.sites.too_many_allowed" if kind == "allowed" else "errors.sites.too_many_blocked"
+        raise app_error(key, max=MAX_BLOCKED_SITES)
     return out
 
 
@@ -148,28 +150,28 @@ def clean_limit_times(raw: dict, pattern: str) -> tuple[str, list[dict], list[di
         rid = uuid.uuid4().hex[:8]
     raw_budgets, raw_windows = raw.get("budgets") or [], raw.get("windows") or []
     if not isinstance(raw_budgets, list) or not isinstance(raw_windows, list):
-        raise AppError(f"{pattern}: the time limits or blocked hours didn't come through; try again.")
+        raise app_error("errors.limits.times_missing", name=pattern)
     budgets, windows = [], []
     for b in raw_budgets:
         try:
             minutes, every, unit = int(b["minutes"]), int(b["every"]), str(b["unit"])
         except (KeyError, TypeError, ValueError):
-            raise AppError(f"{pattern}: a time limit is incomplete.")
+            raise app_error("errors.limits.incomplete", name=pattern)
         if unit not in LIMIT_UNITS or every < 1:
-            raise AppError(f"{pattern}: pick minutes, hours, days or weeks for the period.")
+            raise app_error("errors.limits.unit", name=pattern)
         period = every * LIMIT_UNITS[unit]
         if unit in ("minute", "hour") and period > 1440:
-            raise AppError(f"{pattern}: a period under a day can't be longer than 24 hours; use days.")
+            raise app_error("errors.limits.over_a_day", name=pattern)
         if unit in ("day", "week") and every > 365:
-            raise AppError(f"{pattern}: that period is too long.")
+            raise app_error("errors.limits.too_long", name=pattern)
         if not 1 <= minutes <= period:
-            raise AppError(f"{pattern}: {minutes} minutes doesn't fit in a period of {period} minutes.")
+            raise app_error("errors.limits.doesnt_fit", name=pattern, n=minutes, period=period)
         try:
             days = sorted({int(d) for d in b.get("days", range(7))})
         except (TypeError, ValueError):
             days = []
         if not days or days[0] < 0 or days[-1] > 6:
-            raise AppError(f"{pattern}: pick at least one day for each time limit.")
+            raise app_error("errors.limits.budget_days", name=pattern)
         item = {"minutes": minutes, "every": every, "unit": unit, "days": days}
         if item not in budgets:
             budgets.append(item)
@@ -178,30 +180,30 @@ def clean_limit_times(raw: dict, pattern: str) -> tuple[str, list[dict], list[di
             days = sorted({int(d) for d in w["days"]})
             start, end = _hhmm(w["from"]), _hhmm(w["to"])
         except (KeyError, TypeError, ValueError):
-            raise AppError(f"{pattern}: a blocked-hours entry needs days and times like 08:00.")
+            raise app_error("errors.limits.window_incomplete", name=pattern)
         if not days or days[0] < 0 or days[-1] > 6:
-            raise AppError(f"{pattern}: pick at least one day for the blocked hours.")
+            raise app_error("errors.limits.window_days", name=pattern)
         if start == end and start != 0:
-            raise AppError(f"{pattern}: blocked hours can't start and end at the same time.")
+            raise app_error("errors.limits.window_empty", name=pattern)
         item = {"days": days, "from": f"{start // 60:02d}:{start % 60:02d}", "to": f"{end // 60:02d}:{end % 60:02d}"}
         if item not in windows:
             windows.append(item)
     if not budgets and not windows:
-        raise AppError(f"{pattern}: add a time limit or blocked hours.")
+        raise app_error("errors.limits.empty", name=pattern)
     if len(budgets) > 5 or len(windows) > 5:
-        raise AppError(f"{pattern}: keep it to 5 time limits and 5 blocked-hours entries.")
+        raise app_error("errors.limits.too_many_times", name=pattern, max=5)
     return rid, budgets, windows
 
 
 def clean_site_limit(raw) -> dict:
     """Check and tidy one site-limit rule from Settings; AppError if it's wrong."""
     if not isinstance(raw, dict):
-        raise AppError("A website limit didn't come through; try again.")
+        raise app_error("errors.site_limits.missing")
     sites = raw.get("patterns")
     if sites is None:  # rules saved before a rule could cover several sites
         sites = [raw.get("pattern", "")]
     if not isinstance(sites, list):
-        raise AppError("The websites of a limit didn't come through; try again.")
+        raise app_error("errors.site_limits.sites_missing")
     patterns: list[str] = []
     for site in sites:
         if str(site).strip():
@@ -209,9 +211,9 @@ def clean_site_limit(raw) -> dict:
             if pattern not in patterns:
                 patterns.append(pattern)
     if not patterns:
-        raise AppError("Add at least one website to the limit.")
+        raise app_error("errors.site_limits.no_sites")
     if len(patterns) > MAX_LIMIT_SITES:
-        raise AppError(f"Keep a limit to {MAX_LIMIT_SITES} websites or fewer.")
+        raise app_error("errors.site_limits.too_many_sites", max=MAX_LIMIT_SITES)
     pattern = ", ".join(patterns)  # how this rule is named in messages
     rid, budgets, windows = clean_limit_times(raw, pattern)
     return {
@@ -225,9 +227,9 @@ def clean_site_limit(raw) -> dict:
 
 def clean_site_limits(values) -> list[dict]:
     if not isinstance(values, list):
-        raise AppError("The website limits didn't come through; try again.")
+        raise app_error("errors.site_limits.list")
     if len(values) > MAX_SITE_LIMITS:
-        raise AppError(f"Keep the website limits under {MAX_SITE_LIMITS}.")
+        raise app_error("errors.site_limits.too_many", max=MAX_SITE_LIMITS)
     out = [clean_site_limit(v) for v in values]
     seen: set[str] = set()
     for r in out:  # a copied rule keeps its id: give the later ones new ones
@@ -250,6 +252,14 @@ def _sanitize_site_limits(values) -> list[dict]:
 
 def period_label(every: int, unit: str) -> str:
     return unit if every == 1 else f"{every} {unit}s"
+
+
+def budget_label(budget: dict) -> str:
+    """
+    '30 min per day', '10 min per 2 hours': a budget's `limit_label`, always
+    in English. The extension translates it itself, and app_limits matches on it.
+    """
+    return f"{budget['minutes']} min per {period_label(budget['every'], budget['unit'])}"
 
 
 def budget_bounds(now: datetime, every: int, unit: str) -> tuple[datetime, datetime]:
@@ -320,7 +330,7 @@ def site_limit_status(rule: dict, usage: SiteUsage, now: datetime) -> dict:
         used = usage.used(rule["id"], _ms(start), at)
         budgets.append(
             {
-                "label": f"{b['minutes']} min per {period_label(b['every'], b['unit'])}",
+                "label": budget_label(b),
                 "used_s": round(used),
                 "budget_s": b["minutes"] * 60,
                 "remaining_s": round(b["minutes"] * 60 - used, 1),

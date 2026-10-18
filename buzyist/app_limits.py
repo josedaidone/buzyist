@@ -29,7 +29,8 @@ from buzyist.constants import (
     AppError,
     now_ms,
 )
-from buzyist.site_rules import clean_limit_times, period_label, site_limit_status
+from buzyist.i18n import app_error, t
+from buzyist.site_rules import budget_label, clean_limit_times, site_limit_status
 from buzyist.win32.input import idle_seconds
 from buzyist.win32.processes import list_processes, process_session, terminate_process
 from buzyist.win32.windows import close_windows, foreground_app
@@ -53,9 +54,9 @@ def clean_app_name(raw) -> str:
     """'whatsapp' -> 'whatsapp.exe': a program name, as the app blocker takes them; AppError if it isn't one."""
     name = str(raw).strip().strip('"').strip()
     if "/" in name or "\\" in name:
-        raise AppError("App names are just the program, like WhatsApp.exe.")
+        raise app_error("errors.apps.just_program")
     if not name or len(name) > 100 or re.search(r'[\x00-\x1f<>:"|?*]', name):
-        raise AppError(f"{str(raw).strip()!r} isn't a program name like WhatsApp.exe.")
+        raise app_error("errors.apps.not_program", name=str(raw).strip())
     return name if name.lower().endswith(".exe") else name + ".exe"
 
 
@@ -67,10 +68,10 @@ def app_names(apps: list[str]) -> list[str]:
 def clean_app_limit(raw) -> dict:
     """Check and tidy one app-limit rule from Settings; AppError if it's wrong."""
     if not isinstance(raw, dict):
-        raise AppError("An app limit didn't come through; try again.")
+        raise app_error("errors.app_limits.missing")
     names = raw.get("apps")
     if not isinstance(names, list):
-        raise AppError("The apps of a limit didn't come through; try again.")
+        raise app_error("errors.app_limits.apps_missing")
     apps: list[str] = []
     for item in names:
         if str(item).strip():
@@ -78,23 +79,23 @@ def clean_app_limit(raw) -> dict:
             if app_key(name) not in {app_key(a) for a in apps}:
                 apps.append(name)
     if not apps:
-        raise AppError("Add at least one app to the limit.")
+        raise app_error("errors.app_limits.no_apps")
     if len(apps) > MAX_LIMIT_APPS:
-        raise AppError(f"Keep a limit to {MAX_LIMIT_APPS} apps or fewer.")
+        raise app_error("errors.app_limits.too_many_apps", max=MAX_LIMIT_APPS)
     action = raw.get("action", "close")
     if action not in APP_LIMIT_ACTIONS:
-        raise AppError("Pick whether the limit closes the app or beeps.")
+        raise app_error("errors.app_limits.action")
     if action == "close":
         for name in apps:
             if app_key(name) in PROTECTED_EXES:
-                raise AppError(f"buZyist won't close {name}: Windows or your browser needs it. Make that limit beep.")
+                raise app_error("errors.app_limits.protected", exe=name)
     name = ", ".join(app_names(apps))
     try:
         remind = int(raw.get("remind", APP_LIMIT_REMIND))
     except (TypeError, ValueError):
         remind = 0
     if not APP_LIMIT_REMIND_MIN <= remind <= APP_LIMIT_REMIND_MAX:
-        raise AppError(f"{name}: beep again every {APP_LIMIT_REMIND_MIN} to {APP_LIMIT_REMIND_MAX} minutes.")
+        raise app_error("errors.app_limits.remind", name=name, min=APP_LIMIT_REMIND_MIN, max=APP_LIMIT_REMIND_MAX)
     rid, budgets, windows = clean_limit_times(raw, name)
     return {
         "id": rid,
@@ -109,9 +110,9 @@ def clean_app_limit(raw) -> dict:
 
 def clean_app_limits(values) -> list[dict]:
     if not isinstance(values, list):
-        raise AppError("The app limits didn't come through; try again.")
+        raise app_error("errors.app_limits.list")
     if len(values) > MAX_APP_LIMITS:
-        raise AppError(f"Keep the app limits under {MAX_APP_LIMITS}.")
+        raise app_error("errors.app_limits.too_many", max=MAX_APP_LIMITS)
     out = [clean_app_limit(v) for v in values]
     seen: set[str] = set()
     for r in out:  # a copied rule keeps its id: give the later ones new ones
@@ -141,18 +142,21 @@ def app_limit_status(rule: dict, usage: SiteUsage, now: datetime) -> dict:
     }
 
 
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")  # notify.weekdays.<day>, Monday first
+
+
 def _clock(ms: int) -> str:
-    """'17:00', or 'Mon 00:00' when it isn't today."""
+    """'17:00', or 'Mon 00:00' when it isn't today (the day in the app language)."""
     when = datetime.fromtimestamp(ms / 1000)
-    return when.strftime("%H:%M" if when.date() == datetime.now().date() else "%a %H:%M")
-
-
-_THIS_PERIOD = {"minute": "this minute", "hour": "this hour", "day": "today", "week": "this week"}
+    clock = when.strftime("%H:%M")
+    if when.date() == datetime.now().date():
+        return clock
+    return t("notify.day_time", day=t(f"notify.weekdays.{WEEKDAYS[when.weekday()]}"), time=clock)
 
 
 def _and(names: list[str]) -> str:
     """['WhatsApp', 'Slack', 'Discord'] -> 'WhatsApp, Slack and Discord'."""
-    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+    return names[0] if len(names) == 1 else t("notify.and", list=", ".join(names[:-1]), last=names[-1])
 
 
 def _budget_words(rule: dict, status: dict) -> tuple[int, str]:
@@ -161,30 +165,34 @@ def _budget_words(rule: dict, status: dict) -> tuple[int, str]:
     words: (30, 'today'), (5, 'this hour'), (1, 'in this 5-minute stretch').
     """
     for b in rule["budgets"]:
-        if f"{b['minutes']} min per {period_label(b['every'], b['unit'])}" == status["limit_label"]:
-            words = _THIS_PERIOD[b["unit"]] if b["every"] == 1 else f"in this {b['every']}-{b['unit']} stretch"
-            return b["minutes"], words
-    return round((status["budget_s"] or 0) / 60), "so far"
+        if budget_label(b) == status["limit_label"]:
+            if b["every"] == 1:
+                return b["minutes"], t(f"notify.limit.this_{b['unit']}")
+            return b["minutes"], t(f"notify.limit.stretch_{b['unit']}", n=b["every"])
+    return round((status["budget_s"] or 0) / 60), t("notify.limit.so_far")
 
 
 def nudge_text(rule: dict, status: dict) -> tuple[str, str]:
     """The (title, message) of a "beep" limit's reminder."""
     name = _and(app_names(rule["apps"]))
-    title = f"Time for a break from {name}?"
+    title = t("notify.limit.nudge_title", name=name)
     if status["reason"] != "budget":
-        return title, f"You asked for no {name} until {_clock(status['until_ms'])}."
+        return title, t("notify.limit.nudge_hours", name=name, until=_clock(status["until_ms"]))
     allowed, words = _budget_words(rule, status)
     used = int((status["used_s"] or 0) // 60)
-    return title, f"You've used it {used} min {words} (your limit is {allowed} min)."
+    return title, t("notify.limit.nudge_budget", used=used, period=words, allowed=allowed)
 
 
 def closed_text(rule: dict, status: dict) -> tuple[str, str]:
     """The (title, message) of the toast for a "close" limit closing its apps."""
     name, until = _and(app_names(rule["apps"])), _clock(status["until_ms"])
     if status["reason"] != "budget":
-        return f"No {name} until {until}", "You set these hours aside. It can open again then."
+        return t("notify.limit.closed_hours_title", name=name, until=until), t("notify.limit.closed_hours_text")
     allowed, words = _budget_words(rule, status)
-    return f"That's enough {name} for now", f"You've used your {allowed} min {words}. It can open again at {until}."
+    return (
+        t("notify.limit.closed_budget_title", name=name),
+        t("notify.limit.closed_budget_text", allowed=allowed, period=words, until=until),
+    )
 
 
 class AppLimiter:

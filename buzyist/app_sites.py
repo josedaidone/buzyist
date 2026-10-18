@@ -5,8 +5,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from buzyist.constants import PASS_SECONDS, AppError, now_ms
+from buzyist.constants import PASS_SECONDS, now_ms
 from buzyist.extension import EXTENSION_VERSION
+from buzyist.i18n import app_error, t
 from buzyist.site_rules import is_plain_domain, site_blocking, site_limit_status
 from buzyist.updater import version_tuple
 
@@ -85,10 +86,7 @@ class SitesMixin:
             self.note_instance(instance, account, trusted=True)
         if self.extension_outdated() and self._ext_warned != EXTENSION_VERSION:
             self._ext_warned = EXTENSION_VERSION
-            self.notify(
-                "One more step for the extension",
-                "buZyist was updated. On your browser's extensions page, click Reload on buZyist Focus.",
-            )
+            self.notify(t("notify.extension_reload.title"), t("notify.extension_reload.text"))
 
     def site_limits_status(self, enabled_only: bool = False) -> list[dict]:
         """Where every site-limit rule stands right now (see site_limit_status)."""
@@ -123,5 +121,5 @@ class SitesMixin:
     def grant_pass(self, rid) -> None:
         """The block page's "allow 2 more minutes": lift one rule for a short while."""
         if rid not in {r["id"] for r in self.cfg.get("site_limits") or []}:
-            raise AppError("That limit no longer exists.")
+            raise app_error("errors.limits.gone")
         self.usage.grant(rid, now_ms() + PASS_SECONDS * 1000)

@@ -10,7 +10,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from buzyist import paths
-from buzyist.constants import APP, AppError
+from buzyist.constants import APP
+from buzyist.i18n import app_error, t
 from buzyist.site_rules import activity_rules
 from buzyist.win32.processes import (
     list_processes,
@@ -161,20 +162,20 @@ def normalize_blocked_apps(raw) -> list[dict]:
 def clean_blocked_apps(values) -> list[dict]:
     """Check the list Settings sent, then normalize it; AppError if it's wrong."""
     if not isinstance(values, list) or not all(isinstance(item, dict) for item in values):
-        raise AppError("The app list didn't come through; try again.")
+        raise app_error("errors.apps.list")
     hand = 0
     for item in values:
         if item.get("custom"):
             exe = str((item.get("exes") or [""])[0]).strip()
             if not exe:
-                raise AppError("Type the program name, like Slack.exe.")
+                raise app_error("errors.apps.type_name")
             if "/" in exe or "\\" in exe:
-                raise AppError("App names are just the program, like WhatsApp.exe.")
+                raise app_error("errors.apps.just_program")
             if app_key(exe) in PROTECTED_EXES:
-                raise AppError(f"buZyist won't close {exe}: Windows or your browser needs it.")
+                raise app_error("errors.apps.protected", exe=exe)
             hand += 1
     if hand > MAX_BLOCKED_APPS:
-        raise AppError(f"Keep the added apps under {MAX_BLOCKED_APPS}.")
+        raise app_error("errors.apps.too_many", max=MAX_BLOCKED_APPS)
     return normalize_blocked_apps(values)
 
 
@@ -445,8 +446,9 @@ class AppBlocker:
         if now - self._toasted.get(entry["id"], -self.TOAST_EVERY) < self.TOAST_EVERY:
             return
         self._toasted[entry["id"]] = now
+        title = t("notify.blocked.title", name=entry["name"])
         if not focus["ends_at_ms"]:  # a call: no end time
-            self.app.notify(f"{entry['name']} can wait", "You're on a call. It'll be back after.")
+            self.app.notify(title, t("notify.blocked.text_call"))
             return
         until = datetime.fromtimestamp(focus["ends_at_ms"] / 1000).strftime("%H:%M")
-        self.app.notify(f"{entry['name']} can wait", f"You're focusing until {until}. It'll be back after.")
+        self.app.notify(title, t("notify.blocked.text", until=until))

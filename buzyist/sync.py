@@ -7,6 +7,7 @@ import uuid
 
 from buzyist import paths
 from buzyist.constants import MAX_SITE_LIMITS, SYNC_STALE_DAYS, now_ms
+from buzyist.i18n import t
 from buzyist.site_rules import is_day_key
 from buzyist.storage import read_json
 
@@ -71,7 +72,7 @@ def clean_remote_sessions(raw, own_device: str) -> dict:
                 "stamp": int(s["stamp"]),
                 "snap": int(s.get("snap") or s["stamp"]),
                 "task": {
-                    "content": str(task.get("content") or "")[:200] or "Focus session",
+                    "content": str(task.get("content") or "")[:200] or t("defaults.session_name"),
                     "project": str(task.get("project") or "")[:100],
                     "url": str(task.get("url") or "")[:300],
                 },

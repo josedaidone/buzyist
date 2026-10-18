@@ -27,6 +27,7 @@ from PIL import Image, ImageDraw, ImageFont
 from buzyist import paths
 from buzyist.bar_screens import OLD_PLACEHOLDERS, OWN_THEME_PREFIX, SCREEN_COLORS, fill_text
 from buzyist.constants import APP, AppError, now_ms
+from buzyist.i18n import english
 
 if TYPE_CHECKING:
     from buzyist.app import App
@@ -174,7 +175,7 @@ class BarScreens:
             try:
                 wait = self.step()
             except AppError as err:
-                log.info("bar screen: %s", err)
+                log.info("bar screen: %s", english(err))
                 self._retry_at = now_ms() + RETRY_S * 1000
                 wait = RETRY_S
             except Exception:
