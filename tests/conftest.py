@@ -18,6 +18,8 @@ Everything here keeps a test away from the real machine:
   functions, and OpenKey asked for write access, raise
   ``RegistryWriteRefused``; an audit hook refuses the same through any other
   winreg), so nothing can rewrite the user's sign-in entry.
+- ``english`` (autouse): t() starts each test in English, reading no App's
+  settings from an earlier test.
   ``@pytest.mark.registry_writes`` lifts it on purpose; registry code is
   better tested by monkeypatching the module's ``winreg`` with a fake.
 
@@ -66,7 +68,7 @@ import pytest
 
 import busyist
 from buzyist import app as app_mod
-from buzyist import constants, paths, storage
+from buzyist import constants, i18n, paths, storage
 from buzyist import focus_server as focus_server_mod
 
 # ---------------------------------------------------------------- modules ---
@@ -404,6 +406,12 @@ def data_dir(tmp_path, monkeypatch) -> Path:
     yield new_dir
     if len(GUARD.violations) > before:
         pytest.fail("refused writes to the real data folder: " + "; ".join(GUARD.violations[before:]))
+
+
+@pytest.fixture(autouse=True)
+def english(monkeypatch):
+    """t() in English until the test builds an App (which hands i18n its settings)."""
+    monkeypatch.setitem(i18n._source, "config", None)
 
 
 _LOOPBACK = {"127.0.0.1", "::1", "localhost", "0.0.0.0", "::", ""}  # noqa: S104 - bind-any allowed for test servers

@@ -16,6 +16,7 @@ from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
+from buzyist.i18n import ENGLISH, language, languages, raw_catalog
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -42,6 +43,11 @@ class Api:
 
     def get_state(self):
         return self._app.state()
+
+    def i18n(self):
+        """The app language and its catalog, with English's for what it lacks (ui/i18n.js)."""
+        lang = language()
+        return {"lang": lang, "catalog": raw_catalog(lang), "english": raw_catalog(ENGLISH)}
 
     def get_tasks(self, filter_name=None):
         return self._do(self._app.task_list, None if filter_name is None else str(filter_name))
@@ -113,6 +119,7 @@ class Api:
             extension_dir=str(paths.EXTENSION_DIR),
             extension_browser=(find_browser() or (None,))[0],
             sync_info=self._app.sync_info(),
+            languages=[{"code": code, "name": name} for code, name in languages().items()],
         )
 
     def sync_info(self):

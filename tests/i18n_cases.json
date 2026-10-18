@@ -1,0 +1,64 @@
+{
+  "_": "What t() gives for a key, a language and values: the same cases for buzyist/i18n.py (tests/test_i18n.py) and ui/i18n.js (tests/js/i18n.test.mjs). `cases` run against the small `catalogs` below (to reach the fallbacks the shipped catalogs can't have), `shipped` against ui/i18n/*.json.",
+  "catalogs": {
+    "en": {
+      "_": "a note, never a key",
+      "area": {
+        "plain": "Hello",
+        "only_en": "Only in English",
+        "named": "{task} for {n} min",
+        "count": {"one": "{n} pomodoro", "other": "{n} pomodoros"},
+        "both": {"one": "{n} task in {area}", "other": "{n} tasks in {area}"},
+        "deep": {"er": {"key": "Three levels"}}
+      }
+    },
+    "pt-BR": {
+      "area": {
+        "plain": "Olá",
+        "named": "{task} por {n} min",
+        "count": {"one": "{n} pomodoro", "other": "{n} pomodoros"},
+        "both": {"other": "{n} tarefas em {area}"},
+        "deep": {"er": {"key": "Três níveis"}}
+      }
+    }
+  },
+  "cases": [
+    {"lang": "en", "key": "area.plain", "out": "Hello"},
+    {"lang": "pt-BR", "key": "area.plain", "out": "Olá"},
+    {"lang": "pt-BR", "key": "area.deep.er.key", "out": "Três níveis"},
+    {"lang": "pt-BR", "key": "area.only_en", "out": "Only in English"},
+    {"lang": "pt-BR", "key": "area.nowhere", "out": "area.nowhere"},
+    {"lang": "en", "key": "_", "out": "_"},
+    {"lang": "fr", "key": "area.plain", "out": "Hello"},
+    {"lang": "en", "key": "area.named", "values": {"task": "Report", "n": 25}, "out": "Report for 25 min"},
+    {"lang": "pt-BR", "key": "area.named", "values": {"task": "Relatório", "n": 25}, "out": "Relatório por 25 min"},
+    {"lang": "en", "key": "area.named", "values": {"n": 5}, "out": "{task} for 5 min"},
+    {"lang": "en", "key": "area.plain", "values": {"extra": 1}, "out": "Hello"},
+    {"lang": "en", "key": "area.count", "values": {"n": 1}, "out": "1 pomodoro"},
+    {"lang": "en", "key": "area.count", "values": {"n": 0}, "out": "0 pomodoros"},
+    {"lang": "en", "key": "area.count", "values": {"n": 2}, "out": "2 pomodoros"},
+    {"lang": "en", "key": "area.count", "values": {"n": 1.5}, "out": "1.5 pomodoros"},
+    {"lang": "en", "key": "area.count", "out": "{n} pomodoros"},
+    {"lang": "pt-BR", "key": "area.count", "values": {"n": 0}, "out": "0 pomodoro"},
+    {"lang": "pt-BR", "key": "area.count", "values": {"n": 1}, "out": "1 pomodoro"},
+    {"lang": "pt-BR", "key": "area.count", "values": {"n": 1.5}, "out": "1.5 pomodoro"},
+    {"lang": "pt-BR", "key": "area.count", "values": {"n": 2}, "out": "2 pomodoros"},
+    {"lang": "pt-BR", "key": "area.count", "values": {"n": 1000000}, "out": "1000000 pomodoros"},
+    {"lang": "en", "key": "area.both", "values": {"n": 1, "area": "Inbox"}, "out": "1 task in Inbox"},
+    {"lang": "pt-BR", "key": "area.both", "values": {"n": 1, "area": "Entrada"}, "out": "1 tarefas em Entrada"},
+    {"lang": "pt-BR", "key": "area.both", "values": {"n": 3, "area": "Entrada"}, "out": "3 tarefas em Entrada"}
+  ],
+  "shipped": [
+    {"lang": "en", "key": "language.name", "out": "English"},
+    {"lang": "pt-BR", "key": "language.name", "out": "Português (Brasil)"},
+    {"lang": "en", "key": "summary.result", "values": {"n": 1, "duration": "25 min"}, "out": "1 pomodoro · 25 min of focus"},
+    {"lang": "en", "key": "summary.result", "values": {"n": 3, "duration": "1h 15m"}, "out": "3 pomodoros · 1h 15m of focus"},
+    {"lang": "pt-BR", "key": "summary.result", "values": {"n": 1, "duration": "25 min"}, "out": "1 pomodoro · 25 min de foco"},
+    {"lang": "pt-BR", "key": "summary.result", "values": {"n": 3, "duration": "1h 15min"}, "out": "3 pomodoros · 1h 15min de foco"},
+    {"lang": "pt-BR", "key": "common.duration.h_m", "values": {"h": 1, "m": 15}, "out": "1h 15min"},
+    {"lang": "pt-BR", "key": "main.today.completed", "values": {"n": 2}, "out": "2 concluídas"},
+    {"lang": "pt-BR", "key": "summary.parent_confirm", "values": {"parent": "Mudança"}, "out": "Essa era a última subtarefa de “Mudança”. Concluir essa também?"},
+    {"lang": "en", "key": "summary.title_stopped", "out": "Session stopped"},
+    {"lang": "pt-BR", "key": "summary.title_stopped", "out": "Sessão interrompida"}
+  ]
+}

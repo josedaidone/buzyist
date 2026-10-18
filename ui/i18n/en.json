@@ -1,0 +1,73 @@
+{
+  "_": "English, the reference catalog: every other catalog has exactly these keys. See \"Translations\" in CLAUDE.md. Keys starting with _ are notes, not text.",
+  "language": {
+    "name": "English"
+  },
+  "common": {
+    "duration": {
+      "h_m": "{h}h {m}m",
+      "h": "{h}h",
+      "min": "{m} min"
+    }
+  },
+  "summary": {
+    "chip_done": "Done",
+    "chip_stopped": "Stopped",
+    "title_done": "Done. Take a breather.",
+    "title_stopped": "Session stopped",
+    "pomodoros": {
+      "one": "{n} pomodoro",
+      "other": "{n} pomodoros"
+    },
+    "result": {
+      "one": "{n} pomodoro · {duration} of focus",
+      "other": "{n} pomodoros · {duration} of focus"
+    },
+    "none": "No full pomodoro this time. That's fine.",
+    "complete": "Complete task",
+    "again": "Another session",
+    "close": "Close",
+    "completed": "Done in Todoist.",
+    "parent_confirm": "That was the last subtask of “{parent}”. Complete it too?",
+    "parent_unnamed": "its parent",
+    "both_completed": "Both done in Todoist.",
+    "task_gone": "That task is no longer in the list."
+  },
+  "main": {
+    "today": {
+      "count": {
+        "one": "{n} pomodoro today",
+        "other": "{n} pomodoros today"
+      },
+      "none": "No pomodoros yet today",
+      "focus": "{duration} of focus",
+      "completed": {
+        "one": "{n} done",
+        "other": "{n} done"
+      },
+      "empty": "Pick a task. 25 minutes, just that.",
+      "finished": {
+        "one": "{n} pomodoro finished today",
+        "other": "{n} pomodoros finished today"
+      }
+    }
+  },
+  "mini": {
+  },
+  "settings": {
+    "saved": "Settings saved",
+    "general": {
+      "language": "Language",
+      "language_help": "The language of buZyist's text, dates and numbers. Saving a new one reloads the windows."
+    }
+  },
+  "stats": {
+  },
+  "tray": {
+  },
+  "notify": {
+  },
+  "errors": {
+    "language": "Pick a language from the list."
+  }
+}

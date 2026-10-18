@@ -1,0 +1,73 @@
+{
+  "_": "Português (Brasil). Same keys as en.json; terms per GLOSSARY.md (pomodoro, sessão, intervalo, pausar/pausado).",
+  "language": {
+    "name": "Português (Brasil)"
+  },
+  "common": {
+    "duration": {
+      "h_m": "{h}h {m}min",
+      "h": "{h}h",
+      "min": "{m} min"
+    }
+  },
+  "summary": {
+    "chip_done": "Feito",
+    "chip_stopped": "Interrompida",
+    "title_done": "Pronto. Respire um pouco.",
+    "title_stopped": "Sessão interrompida",
+    "pomodoros": {
+      "one": "{n} pomodoro",
+      "other": "{n} pomodoros"
+    },
+    "result": {
+      "one": "{n} pomodoro · {duration} de foco",
+      "other": "{n} pomodoros · {duration} de foco"
+    },
+    "none": "Nenhum pomodoro completo desta vez. Tudo bem.",
+    "complete": "Concluir tarefa",
+    "again": "Outra sessão",
+    "close": "Fechar",
+    "completed": "Concluída no Todoist.",
+    "parent_confirm": "Essa era a última subtarefa de “{parent}”. Concluir essa também?",
+    "parent_unnamed": "a tarefa principal",
+    "both_completed": "As duas concluídas no Todoist.",
+    "task_gone": "Essa tarefa não está mais na lista."
+  },
+  "main": {
+    "today": {
+      "count": {
+        "one": "{n} pomodoro hoje",
+        "other": "{n} pomodoros hoje"
+      },
+      "none": "Nenhum pomodoro hoje ainda",
+      "focus": "{duration} de foco",
+      "completed": {
+        "one": "{n} concluída",
+        "other": "{n} concluídas"
+      },
+      "empty": "Escolha uma tarefa. 25 minutos, só isso.",
+      "finished": {
+        "one": "{n} pomodoro concluído hoje",
+        "other": "{n} pomodoros concluídos hoje"
+      }
+    }
+  },
+  "mini": {
+  },
+  "settings": {
+    "saved": "Configurações salvas",
+    "general": {
+      "language": "Idioma",
+      "language_help": "O idioma dos textos, datas e números do buZyist. Ao salvar outro, as janelas recarregam."
+    }
+  },
+  "stats": {
+  },
+  "tray": {
+  },
+  "notify": {
+  },
+  "errors": {
+    "language": "Escolha um idioma da lista."
+  }
+}

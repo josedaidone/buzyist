@@ -79,8 +79,9 @@ function setVisible(v) {
 
 window.Mini = { refresh: poll, alert: alertPause, setVisible };
 
-function boot() {
+async function boot() {
   api = window.pywebview.api;
+  await loadI18n(api);
   poll();
   setInterval(() => { if (onScreen()) poll(); }, 1000);
   setInterval(() => { if (!onScreen()) poll(); }, 15000);  // hidden: a slow safety net

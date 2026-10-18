@@ -21,7 +21,7 @@ import webview
 from busylib import types
 from busylib.features import timer_state
 
-from buzyist import paths
+from buzyist import i18n, paths
 from buzyist.api import Api
 from buzyist.app_limits import AppLimiter
 from buzyist.app_sites import SitesMixin
@@ -85,6 +85,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         else:
             saved["config_version"] = CONFIG_VERSION  # a new install is current already
         self.cfg = ConfigStore(paths.CONFIG_PATH, Config.load(saved), backup=paths.CONFIG_BACKUP, validate=Config.check)
+        i18n.use_config(self.cfg)  # t() reads the app language from here
         if resave:
             self.cfg.save()  # also encrypts a token saved in plain text by an older version
         self.usage = SiteUsage(paths.USAGE_PATH)
@@ -652,6 +653,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             merged = Config.check({**c, **clean})  # AppError with the message Settings shows
             clean = {k: merged[k] for k in clean}
             old_hotkey = c["hotkey"]
+            language_changed = merged["language"] != c["language"]
             bar_changed = any(
                 c.get(k) != merged.get(k) for k in ("use_busybar", "busybar_ip", "busybar_pin", "usb_fallback")
             )
@@ -689,6 +691,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.bar_screens.poke()
         if self.tray:
             self.tray.update_menu()
+        if language_changed:
+            self.reload_windows()  # the pages take their text from the catalog at load
 
     def apply_launch_at_login(self) -> None:
         """Make the Windows sign-in entry match the setting."""
