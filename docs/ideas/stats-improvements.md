@@ -1,4 +1,4 @@
-# Stats tab: ranges, navigation, drill-down, better charts
+# Stats: ranges, navigation, drill-down, better charts (done in 2.9.0)
 
 Scope agreed: a range picker and stepping back through time, filtering the
 Focus section by an activity or a task, a readable and keyboard-friendly
@@ -171,6 +171,10 @@ also takes `filter`), built on `stats_common`. **No `date.today()` inside**;
 - PR 4 (drill-down): done. `only` in `focus_stats` (activity or task), the chip above the tiles;
   under a filter the PC time is left out (a note says so) and, for a task, the activity list shows
   where its time went.
+- Added after PR 4, on request (both were out of scope above): Stats moved out of Settings into a
+  drawer of its own (`#statsDrawer`, the chart button in the header), and **Export report**
+  (`ui/report.js`): the period on show as one self-contained HTML page, saved through Windows'
+  Save dialog (`Api.save_report`). Released in 2.9.0 with PRs 1–4.
 
 ## Order of work (one PR each, each green on ruff + pytest + node tests)
 
