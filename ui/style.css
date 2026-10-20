@@ -821,6 +821,14 @@ body.instant .modal, body.instant .scrim { transition: none; }
   display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline;
   padding: 8px 12px; border-radius: var(--r-row); background: var(--surface); font-size: 14px;
 }
+button.stat-site { width: 100%; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+button.stat-site:hover { background: var(--surface-2); }
+button.stat-site:focus-visible { outline: 2px solid var(--bz-tomate); outline-offset: 1px; }
+button.stat-site[aria-pressed="true"] { background: var(--surface-2); }
+.stat-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.stat-filter .chip { color: var(--ink); cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.stat-filter .chip:focus-visible { outline: 2px solid var(--bz-tomate); outline-offset: 1px; }
+.stat-filter .help { flex: 1; min-width: 180px; }
 .stat-host { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat-activity { display: flex; align-items: center; gap: 8px; align-self: center; }
 .stat-activity svg { width: 18px; height: 18px; flex: none; color: var(--muted); }

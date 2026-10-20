@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from buzyist.i18n import app_error
 from buzyist.stats_common import (
     DEFAULT_SPAN,
     buckets,
@@ -54,6 +55,7 @@ def focus_stats(
     activities: list[dict] | None = None,
     offset: int = 0,
     pc: dict[str, tuple[float, float]] | None = None,
+    only: dict | None = None,
 ) -> dict:
     """
     The Focus section for the range `offset` spans of `span` days back from
@@ -80,6 +82,15 @@ def focus_stats(
     `pc` is the time the PC was in use per day, `{day: (seconds, seconds
     during a work phase)}` (App.pc_time): the bars and totals get `outside`,
     the minutes of it outside work phases (breaks, pauses, no session).
+
+    `only` narrows everything but the streak to one activity, `{"activity":
+    id}` (an id of the time per activity, "_task" and "_other" included), or
+    one task, `{"task": key}` (a row's `key`): the totals, the range before,
+    the bars, the tasks (an activity's) and the activities (where a task's
+    time went); tasks done are those of the sessions kept. The PC time isn't
+    split that way, so it is left out (`outside` 0). The answer's `filter`
+    is `{kind, id, name}` (check_filter), or None; an unknown one raises
+    AppError.
     """
     info = range_info(today, span, offset)
     first, last = info["first"], info["last"]
@@ -99,6 +110,18 @@ def focus_stats(
         )
     streak = _streak({h["date"] for h in _sessions(entries) if h.get("pomodoros")}, today, skip_weekends)
     sessions = _sessions(entries)
+    done = [h for h in entries if h.get("completed")]
+    picked = check_filter(sessions, activities or [], only)
+    if picked:
+        match = (
+            (lambda h: _group(h) == picked["id"])
+            if picked["kind"] == "activity"
+            else (lambda h: _task_key(h) == picked["id"])
+        )
+        sessions = [h for h in sessions if match(h)]
+        worked = {_task_key(h) for h in sessions}
+        done = [h for h in done if _task_key(h) in worked]
+        pc = None
 
     pc = pc or {}
 
@@ -114,7 +137,7 @@ def focus_stats(
             "pomodoros": sum(int(h.get("pomodoros") or 0) for h in mine),
             "sessions": sum(1 for h in mine if _counted(h)),
             "tasks": len({_task_key(h) for h in mine if h.get("pomodoros") and h.get("kind") != "call"}),
-            "completed": sum(1 for h in entries if h.get("completed") and lo <= h["date"] <= hi),
+            "completed": sum(1 for h in done if lo <= h["date"] <= hi),
             "outside": sum(outside(d) for d in days),
         }
 
@@ -129,7 +152,8 @@ def focus_stats(
     for h in in_range:
         if not h.get("pomodoros") or h.get("kind") == "call":
             continue
-        task = tasks.setdefault(_task_key(h), {"content": "", "minutes": 0, "pomodoros": 0, "sessions": 0})
+        key = _task_key(h)
+        task = tasks.setdefault(key, {"key": key, "content": "", "minutes": 0, "pomodoros": 0, "sessions": 0})
         task["content"] = h.get("content") or "Focus session"  # the latest name wins
         task["minutes"] += int(h.get("minutes") or 0)
         task["pomodoros"] += int(h.get("pomodoros") or 0)
@@ -143,7 +167,34 @@ def focus_stats(
         "streak": streak,
         "tasks": most,
         "activities": _by_activity(in_range, activities or []),
+        "filter": picked,
     }
+
+
+def check_filter(sessions: list[dict], activities: list[dict], only) -> dict | None:
+    """
+    `only` (see focus_stats) as `{kind: "activity"|"task", id, name}`, the
+    name from the setting or the latest session that has it ("" for "_task"
+    and "_other", which the page names); None for None. Raises AppError for
+    anything else, or an id no session nor activity has.
+    """
+    if only is None:
+        return None
+    if isinstance(only, dict) and len(only) == 1:
+        ((kind, key),) = only.items()
+        if kind in ("activity", "task") and isinstance(key, str) and key:
+            if kind == "activity":
+                if key in ("_task", "_other"):
+                    return {"kind": kind, "id": key, "name": ""}
+                known = next((a for a in activities if a.get("id") == key), None)
+                names = [h["activity"].get("name") for h in sessions if _group(h) == key]
+                if known or names:
+                    return {"kind": kind, "id": key, "name": (known or {}).get("name") or names[-1] or key}
+            else:
+                names = [h.get("content") for h in sessions if _task_key(h) == key and h.get("kind") != "call"]
+                if names:
+                    return {"kind": kind, "id": key, "name": names[-1] or "Focus session"}
+    raise app_error("errors.stats.filter")
 
 
 def earliest(history: list[dict]) -> str | None:
@@ -173,15 +224,14 @@ def _by_activity(sessions: list[dict], activities: list[dict]) -> list[dict]:
     for h in sessions:
         if not _counted(h):
             continue
-        activity = h.get("activity") if isinstance(h.get("activity"), dict) else {}
-        if h.get("task_id"):
-            key, name, icon = "_task", "Todoist tasks", ""
-        elif activity.get("id"):
-            key = str(activity["id"])
-            current = known.get(key, {})
-            name, icon = current.get("name") or activity.get("name") or key, current.get("icon") or "dot"
+        key = _group(h)
+        if key == "_task":
+            name, icon = "Todoist tasks", ""
+        elif key == "_other":
+            name, icon = "Other", ""
         else:
-            key, name, icon = "_other", "Other", ""
+            current = known.get(key, {})
+            name, icon = current.get("name") or h["activity"].get("name") or key, current.get("icon") or "dot"
         group = groups.setdefault(
             key, {"id": key, "name": name, "icon": icon, "minutes": 0, "pomodoros": 0, "sessions": 0}
         )
@@ -189,6 +239,14 @@ def _by_activity(sessions: list[dict], activities: list[dict]) -> list[dict]:
         group["pomodoros"] += int(h.get("pomodoros") or 0)
         group["sessions"] += 1
     return top(groups.values(), lambda g: (-g["minutes"], -g["pomodoros"], g["name"]), None)
+
+
+def _group(entry: dict) -> str:
+    """The time-per-activity group of a session: "_task", its activity's id or "_other"."""
+    activity = entry.get("activity") if isinstance(entry.get("activity"), dict) else {}
+    if entry.get("task_id"):
+        return "_task"
+    return str(activity["id"]) if activity.get("id") else "_other"
 
 
 def _is_day(value) -> bool:

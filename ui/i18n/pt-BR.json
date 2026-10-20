@@ -878,6 +878,14 @@
       "most": "Mais bloqueados",
       "empty": "Nada bloqueado ainda. Ative o bloqueio na aba Sites ou adicione um limite de site.",
       "help": "Contado cada vez que a extensão do Chrome mostra a página de bloqueio: durante uma fase de trabalho, ou quando um limite de site se esgota ou está no horário bloqueado. Todos os perfis do navegador neste PC somam nas mesmas contas."
+    },
+    "filter": {
+      "_": "O chip acima dos cards de Foco enquanto mostram uma atividade ou tarefa (um clique na linha); {name} é o nome.",
+      "activity": "Só {name}",
+      "task": "Só a tarefa {name}",
+      "clear": "Mostrar todo o foco",
+      "pick": "Mostrar só {name}",
+      "note": "O tempo no PC não é separado por atividade ou tarefa, então fica de fora aqui."
     }
   },
   "tray": {
@@ -1160,6 +1168,9 @@
       "download_failed": "O download falhou ({error}).",
       "checksum": "O instalador baixado não confere com a soma de verificação da versão; ele não será instalado.",
       "lock_failed": "Não foi possível travar o instalador baixado (erro {error} do Windows); ele não será instalado."
+    },
+    "stats": {
+      "filter": "Essa atividade ou tarefa não está mais nas suas estatísticas."
     }
   },
   "defaults": {

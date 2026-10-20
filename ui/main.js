@@ -1334,12 +1334,20 @@ function showTab(name, focus) {
 // stats_span setting, the picker at the top) and `statsOffset`, how many
 // periods back from today (the arrows; not saved). Python keeps the offset
 // within the data, and the answer says whether there is anything older.
-let statsOffset = 0, statsAsked = 0;
+// `statsFilter` narrows the Focus section to one activity or task (a click
+// on its row: {activity: id} or {task: key}); the arrows keep it, a new
+// period or opening Settings drops it.
+let statsOffset = 0, statsAsked = 0, statsFilter = null;
 async function loadStats() {
   const asked = ++statsAsked;  // a quick second click wins over a slow first answer
   const picked = formValues(["stats_span"]).stats_span;
-  const s = await api.stats(picked ? Number(picked) : null, statsOffset);
+  const s = await api.stats(picked ? Number(picked) : null, statsOffset, statsFilter);
   if (asked !== statsAsked) return;
+  if (!s.ok && statsFilter) {  // gone meanwhile (history trimmed, activity removed): show everything
+    statsFilter = null;
+    toast(s.error, true);
+    return loadStats();
+  }
   if (!s.ok) return toast(s.error, true);
   statsOffset = s.range.offset;
   renderRange(s.range);
@@ -1353,11 +1361,30 @@ for (const radio of document.querySelectorAll('input[name="stats_span"]')) {
     const result = await api.save_settings(formValues(["stats_span"]));
     if (!result.ok) return toast(result.error, true);
     statsOffset = 0;
+    statsFilter = null;
     loadStats();
   };
 }
 $("statsOlder").onclick = () => { statsOffset += 1; loadStats(); };
 $("statsNewer").onclick = () => { statsOffset = Math.max(0, statsOffset - 1); loadStats(); };
+$("focusFilterClear").onclick = () => { statsFilter = null; loadStats(); };
+
+// Narrow the Focus section to `filter`, or back to everything when it is the one on show.
+function pickStatsFilter(filter) {
+  const [kind, id] = Object.entries(filter)[0];
+  statsFilter = statsFilter && statsFilter[kind] === id ? null : filter;
+  loadStats();
+}
+
+// A Focus list row that narrows the section to it when clicked.
+function filterRow(filter, name, current) {
+  const row = el("button", "stat-site");
+  row.type = "button";
+  row.title = t("stats.filter.pick", { name });
+  row.setAttribute("aria-pressed", String(current));
+  row.onclick = () => pickStatsFilter(filter);
+  return row;
+}
 
 // "Mar 2 – Mar 31" between the arrows, with the year when it isn't this one;
 // a single day is "Today" or "Wed, Oct 14", and has no charts (.one-day).
@@ -1650,7 +1677,8 @@ function keepCounts(text) {
 // pc_time.json, the time on the PC outside focus (`outside`, stacked on top).
 function renderFocusStats(s) {
   const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
-  const pc = s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0;  // counted, now or before
+  // counted, now or before; not split by activity or task, so not under a filter
+  const pc = !s.filter && (s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0);
   const pcLines = (tot, kind) => {
     if (!pc) return [];
     const lines = [t("stats.focus.outside", { duration: bigDuration(tot.outside) })];
@@ -1677,12 +1705,23 @@ function renderFocusStats(s) {
       minutes: true });
 
   // One row per activity, with Todoist tasks and typed names ("_task",
-  // "_other") as their own rows; hidden until an activity has been used.
+  // "_other") as their own rows; hidden until an activity has been used,
+  // except under a filter (for a task: where its time went). A click on a
+  // row, an activity or a task, narrows the section to it (statsFilter).
   const groups = s.activities || [];
   const used = groups.some((g) => !g.id.startsWith("_"));
   const groupName = (g) => g.id === "_task" ? t("stats.focus.activity_task") : g.id === "_other" ? t("stats.focus.activity_other") : g.name;
-  $("focusActivities").replaceChildren(...(used ? groups.map((g) => {
-    const row = el("div", "stat-site");
+  const f = s.filter;
+  $("focusFilter").classList.toggle("hidden", !f);
+  if (f) {
+    const name = f.kind === "activity" ? groupName(f) : f.name;
+    $("focusFilterName").textContent = t(f.kind === "activity" ? "stats.filter.activity" : "stats.filter.task", { name });
+    $("focusFilterClear").title = t("stats.filter.clear");
+    $("focusFilterClear").setAttribute("aria-label", t("stats.filter.clear") + ": " + $("focusFilterName").textContent);
+    $("focusFilter").querySelector(".help").classList.toggle("hidden", !s.pc_on);
+  }
+  $("focusActivities").replaceChildren(...(used || f ? groups.map((g) => {
+    const row = filterRow({ activity: g.id }, groupName(g), f?.kind === "activity" && f.id === g.id);
     const name = el("span", "stat-host stat-activity");
     name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), groupName(g));
     const share = s.totals.range.minutes ? g.minutes / s.totals.range.minutes : 0;
@@ -1691,7 +1730,7 @@ function renderFocusStats(s) {
   }) : [el("div", "help", t("stats.focus.activities_empty"))]));
 
   $("focusTasks").replaceChildren(...(s.tasks.length ? s.tasks.map((task) => {
-    const row = el("div", "stat-site");
+    const row = filterRow({ task: task.key }, task.content, f?.kind === "task" && f.id === task.key);
     row.append(el("span", "stat-host", task.content), el("span", "help", counts(task)),
                el("b", "", duration(task.minutes)));
     return row;
@@ -1795,7 +1834,8 @@ async function openSettings(tab) {
   $("updateResult").textContent = "";
   renderUpdate();
   if (s.use_todoist && !s.has_todoist_token) tab = "todoist";
-  statsOffset = 0;  // Stats opens on the period ending today
+  statsOffset = 0;  // Stats opens on the period ending today, everything on show
+  statsFilter = null;
   showTab(typeof tab === "string" ? tab : settingsTab);
   $("drawer").classList.add("on");
   $("scrim").classList.add("on");

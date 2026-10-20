@@ -885,6 +885,14 @@
       "most": "Most blocked",
       "empty": "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.",
       "help": "Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts."
+    },
+    "filter": {
+      "_": "The chip above the Focus tiles while they show one activity or task (a click on its row); {name} is its name.",
+      "activity": "Only {name}",
+      "task": "Only the task {name}",
+      "clear": "Show all focus",
+      "pick": "Show only {name}",
+      "note": "Time on the PC isn't split by activity or task, so it is left out here."
     }
   },
   "tray": {
@@ -1170,6 +1178,9 @@
       "download_failed": "The download failed ({error}).",
       "checksum": "The downloaded installer doesn't match the release's checksum; not installing it.",
       "lock_failed": "Couldn't lock the downloaded installer (Windows error {error}); not installing it."
+    },
+    "stats": {
+      "filter": "That activity or task isn't in your stats any more."
     }
   },
   "defaults": {

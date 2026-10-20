@@ -168,6 +168,9 @@ also takes `filter`), built on `stats_common`. **No `date.today()` inside**;
   when they'd touch), keyboard and live region; 90 days stays daily with 1px gaps (`.dense`).
   Also: totals of 100h or more show whole hours ("503h") and long numbers are smaller, so a tile's
   number stays on one line in pt-BR.
+- PR 4 (drill-down): done. `only` in `focus_stats` (activity or task), the chip above the tiles;
+  under a filter the PC time is left out (a note says so) and, for a task, the activity list shows
+  where its time went.
 
 ## Order of work (one PR each, each green on ruff + pytest + node tests)
 

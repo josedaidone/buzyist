@@ -329,12 +329,13 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             minutes += session_minutes(self.running_session())
         return {"pomodoros": count, "minutes": minutes, "completed": completed}
 
-    def stats(self, span=None, offset=0) -> dict:
+    def stats(self, span=None, offset=0, only=None) -> dict:
         """
         The Stats tab: `range` ({span, offset, first, last, has_older}) and its
         three sections for it. `span` is one of stats_common.SPANS (None: the
         stats_span setting); `offset` counts ranges back from today and is
-        kept within the oldest data any section holds.
+        kept within the oldest data any section holds. `only` narrows the
+        Focus section to one activity or task (focus_stats).
         """
         today = date.today()
         span = clamp_span(self.cfg.get("stats_span") if span is None else span)
@@ -355,12 +356,14 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         info = range_info(today, span, offset)
         return {
             "range": {**info, "has_older": offset < oldest_offset(today, span, oldest)},
-            "focus": self.focus_stats(today, span, offset),
+            "focus": self.focus_stats(today, span, offset, only),
             "apps": self.app_time_stats(today, span, offset),
             "blocks": self.blocks.stats(today, span, offset),
         }
 
-    def focus_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
+    def focus_stats(
+        self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0, only: dict | None = None
+    ) -> dict:
         """
         The Stats tab's Focus section (focus_stats.focus_stats), with the
         running session and the time on the PC outside focus; `pc_on` is
@@ -378,6 +381,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             activities=cfg.get("activities"),
             offset=offset,
             pc=self.pc_time.day_totals(),
+            only=only,
         )
         return {**stats, "pc_on": bool(cfg.get("pc_time_on"))}
 

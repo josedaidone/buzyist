@@ -141,9 +141,12 @@ class Api:
         """The latest names of sessions with no task, for the "What are you working on?" list."""
         return self._do(lambda: {"recent": self._app.recent_free()})
 
-    def stats(self, span=None, offset=0):
-        """The Stats tab for `span` days, `offset` ranges back from today (App.stats; span None: the setting)."""
-        return self._do(self._app.stats, span, offset)
+    def stats(self, span=None, offset=0, only=None):
+        """
+        The Stats tab for `span` days, `offset` ranges back from today, its
+        Focus section narrowed to `only` (App.stats; span None: the setting).
+        """
+        return self._do(self._app.stats, span, offset, only)
 
     def running_apps(self):
         """The programs running now, for the app names Settings suggests."""

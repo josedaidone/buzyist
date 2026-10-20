@@ -105,7 +105,7 @@ def test_the_running_session_counts_today():
         "completed": 0,
         "outside": 0,
     }
-    assert s["tasks"] == [{"content": "Write the tests", "minutes": 50, "pomodoros": 2, "sessions": 2}]
+    assert s["tasks"] == [{"key": "t1", "content": "Write the tests", "minutes": 50, "pomodoros": 2, "sessions": 2}]
 
 
 def test_top_tasks_by_focus_time_and_free_sessions_by_name():
@@ -268,3 +268,79 @@ def test_a_single_day():
     assert s["change"] == -0.5
     yesterday = focus_stats(history, None, TODAY, span=1, offset=1)
     assert yesterday["first"] == day(1) and yesterday["tasks"][0]["content"] == "Review"
+
+
+def filtered_history():
+    email = {"id": "email", "name": "Email", "detail": ""}
+    return [
+        {**ran(0, "", "Email", 2), "activity": email},
+        {**ran(8, "", "Email", 1), "activity": email},  # the week before
+        ran(1, "t1", "Write the tests", 3),
+        completed(1, "t1"),
+        ran(2, "t2", "Review", 1),
+        completed(2, "t2"),
+        ran(3, "", "Plan", 1),
+        ran(4, "", "Plan", 0, "stopped"),  # no tomato
+        {**ran(5, "", "Call · Zoom", 0), "kind": "call", "minutes": 30, "activity": email},
+    ]
+
+
+def test_filter_by_activity():
+    pc = {day(0): (7200.0, 0.0)}
+    s = focus_stats(filtered_history(), None, TODAY, span=7, pc=pc, only={"activity": "email"})
+    assert s["filter"] == {"kind": "activity", "id": "email", "name": "Email"}
+    assert s["totals"]["range"] == {
+        "minutes": 50 + 30,  # the call counts too
+        "pomodoros": 2,
+        "sessions": 2,
+        "tasks": 1,
+        "completed": 0,
+        "outside": 0,  # the PC time isn't split by activity
+    }
+    assert s["totals"]["previous"]["minutes"] == 25  # the range before is narrowed too
+    assert sum(b["minutes"] for b in s["bars"]) == 80 and all(b["outside"] == 0 for b in s["bars"])
+    assert [t["content"] for t in s["tasks"]] == ["Email"]  # the activity's sessions
+    assert [g["id"] for g in s["activities"]] == ["email"]
+    assert s["streak"] == focus_stats(filtered_history(), None, TODAY, span=7)["streak"]  # untouched
+
+
+def test_filter_by_the_todoist_and_other_groups():
+    s = focus_stats(filtered_history(), None, TODAY, span=7, only={"activity": "_task"})
+    assert s["filter"] == {"kind": "activity", "id": "_task", "name": ""}
+    assert [t["content"] for t in s["tasks"]] == ["Write the tests", "Review"]
+    assert (s["totals"]["range"]["minutes"], s["totals"]["range"]["completed"]) == (100, 2)
+    s = focus_stats(filtered_history(), None, TODAY, span=7, only={"activity": "_other"})
+    assert [t["content"] for t in s["tasks"]] == ["Plan"]
+    assert (s["totals"]["range"]["sessions"], s["totals"]["range"]["completed"]) == (1, 0)
+
+
+def test_filter_by_task():
+    history = [*filtered_history(), {**ran(6, "t1", "Write the tests", 1), "activity": {"id": "docs", "name": "Docs"}}]
+    s = focus_stats(history, None, TODAY, span=7, only={"task": "t1"})
+    assert s["filter"] == {"kind": "task", "id": "t1", "name": "Write the tests"}
+    assert (s["totals"]["range"]["minutes"], s["totals"]["range"]["completed"]) == (100, 1)
+    assert [t["key"] for t in s["tasks"]] == ["t1"]
+    assert [(g["id"], g["minutes"]) for g in s["activities"]] == [("_task", 100)]  # where its time went
+    named = focus_stats(history, None, TODAY, span=7, only={"task": "name:Plan"})
+    assert named["filter"]["name"] == "Plan" and named["totals"]["range"]["minutes"] == 25
+    # another range with nothing of it: zeros, not an error
+    assert focus_stats(history, None, TODAY, span=7, offset=3, only={"task": "t1"})["totals"]["range"]["minutes"] == 0
+
+
+def test_an_unknown_filter_is_refused(make_app):
+    app = make_app({})
+    app.history = filtered_history()
+    api = Api(app)
+    assert api.stats(7, 0, {"activity": "email"})["focus"]["filter"]["name"] == "Email"
+    for bad in (
+        {"activity": "nope"},
+        {"task": "t9"},
+        {"task": "name:Call · Zoom"},
+        {"other": "x"},
+        {},
+        "email",
+        {"task": ""},
+    ):
+        answer = api.stats(7, 0, bad)
+        assert not answer["ok"] and answer["error"] == "That activity or task isn't in your stats any more.", bad
+    assert api.stats(7, 0, None)["focus"]["filter"] is None
