@@ -11,6 +11,7 @@ from pathlib import Path
 
 from buzyist.constants import APP, now_ms
 from buzyist.site_rules import is_day_key
+from buzyist.stats_common import DEFAULT_SPAN, top, totals, window
 from buzyist.storage import read_json, write_json
 
 log = logging.getLogger(APP)
@@ -102,14 +103,14 @@ class BlockLog:
             kinds = self.days.get(day, {})
             return {"day": day, **{k: sum(kinds.get(k, {}).values()) for k in KINDS}}
 
-    def stats(self, span: int = 30) -> dict:
+    def stats(self, today: date, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
         """
-        What the Stats tab shows: one {day, focus, limit} per day for the last
-        `span` days (oldest first, today last), totals for today, 7 and `span`
-        days, and the most blocked websites over `span` days.
+        What the Stats tab shows: one {day, focus, limit} per day of the range
+        `offset` spans back from `today` (stats_common.window; oldest first),
+        totals for its last day, its last 7 days and all of it, and the most
+        blocked websites in it.
         """
-        today = date.today()
-        days = [(today - timedelta(days=i)).isoformat() for i in range(span - 1, -1, -1)]
+        days = window(today, span, offset)
         with self.lock:
             per_day = [{"day": d, **{k: sum(self.days.get(d, {}).get(k, {}).values()) for k in KINDS}} for d in days]
             sites: dict[str, dict[str, int]] = {}
@@ -118,14 +119,13 @@ class BlockLog:
                     for host, n in hosts.items():
                         site = sites.setdefault(host, {"host": host, "focus": 0, "limit": 0})
                         site[k] += n
-
-        def total(rows):
-            return {k: sum(r[k] for r in rows) for k in KINDS}
-
-        top = sorted(sites.values(), key=lambda s: (-(s["focus"] + s["limit"]), s["host"]))[:10]
         return {
             "days": per_day,
-            "totals": {"today": total(per_day[-1:]), "week": total(per_day[-7:]), "span": total(per_day)},
+            "totals": {
+                "today": totals(per_day[-1:], KINDS),
+                "week": totals(per_day[-7:], KINDS),
+                "span": totals(per_day, KINDS),
+            },
             "span": span,
-            "sites": top,
+            "sites": top(sites.values(), lambda s: (-(s["focus"] + s["limit"]), s["host"])),
         }

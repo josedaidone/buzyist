@@ -416,14 +416,27 @@ def test_app_time_is_off_by_default(make_app, desktop, clock):
     assert app.cfg["app_time_on"] is False
     desktop.front = (100, "slack.exe")
     run(app, clock, 30)
-    assert app.app_time.stats()["apps"] == []
+    assert app.app_time.stats(clock.now().date())["apps"] == []
 
 
 def test_app_time_skips_buzyist_itself(make_app, desktop, clock):
     app = make_app({"app_time_on": True})
     desktop.front = (os.getpid(), "python.exe")
     run(app, clock, 60)
-    assert app.app_time.stats()["apps"] == []
+    assert app.app_time.stats(clock.now().date())["apps"] == []
+
+
+def test_app_time_stats_of_an_earlier_range(tmp_path):
+    t = AppTime(tmp_path / "app_time.json")
+    today = datetime(2026, 10, 14).date()
+    t.add("slack.exe", 600, 300, (today - timedelta(days=8)).isoformat())
+    t.add("slack.exe", 120, 0, (today - timedelta(days=13)).isoformat())
+    t.add("winword.exe", 60, 60, today.isoformat())
+    s = t.stats(today, span=7, offset=1)
+    assert len(s["days"]) == 7 and s["days"][-1]["day"] == (today - timedelta(days=7)).isoformat()
+    assert s["totals"]["span"] == {"focus": 5, "other": 7}
+    assert [(a["name"], a["span"], a["focus"], a["today"]) for a in s["apps"]] == [("Slack", 12, 5, 0)]
+    assert [a["name"] for a in t.stats(today, span=7)["apps"]] == ["Word"]
 
 
 def test_app_time_keeps_days_and_drops_unreadable_entries(tmp_path):

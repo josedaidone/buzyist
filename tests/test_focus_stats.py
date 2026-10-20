@@ -120,3 +120,27 @@ def test_focus_by_activity():
         ("_other", "Other", "", 25, 1),
         ("_task", "Todoist tasks", "", 25, 1),
     ]
+
+
+def test_an_earlier_range():
+    history = [
+        ran(0),
+        ran(5, "t2", "Review", 1),
+        ran(35, "t3", "Plan", 3),
+        completed(36, "t3"),
+        ran(70, "t9", pomodoros=8),
+    ]
+    running = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
+    s = focus_stats(history, running, TODAY, offset=1)
+    assert (s["days"][0]["day"], s["days"][-1]["day"]) == (day(59), day(30))
+    assert s["totals"]["span"] == {"minutes": 75, "pomodoros": 3, "sessions": 1, "tasks": 1, "completed": 1}
+    assert s["totals"]["today"]["minutes"] == 0  # the range's last day, not today
+    assert [t["content"] for t in s["tasks"]] == ["Plan"]  # not the running session, not the newer ones
+    # The streak still runs up to today, the running session included.
+    assert s["streak"] == focus_stats(history, running, TODAY)["streak"] == {"current": 1, "best": 1}
+    assert focus_stats(history, None, TODAY, span=7, offset=10)["totals"]["span"]["pomodoros"] == 8
+
+
+def test_the_running_session_keeps_the_streak_going():
+    running = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
+    assert focus_stats([ran(1)], running, TODAY)["streak"] == {"current": 2, "best": 2}

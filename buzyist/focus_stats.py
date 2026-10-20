@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from buzyist.stats_common import DEFAULT_SPAN, top, window
+
 # How a session ended, as finish() logs it; the other entries are completed tasks.
 SESSION_REASONS = ("finished", "stopped", "replaced")
 
@@ -37,9 +39,10 @@ def focus_stats(
     history: list[dict],
     session: dict | None,
     today: date,
-    span: int = 30,
+    span: int = DEFAULT_SPAN,
     skip_weekends: bool = False,
     activities: list[dict] | None = None,
+    offset: int = 0,
 ) -> dict:
     """
     One {day, minutes, pomodoros} per day for the last `span` days (oldest
@@ -58,9 +61,14 @@ def focus_stats(
     `activities` (the setting) names the groups of the time per activity
     over `span` days: one per activity used, plus "_task" (Todoist tasks)
     and "_other" (sessions with only a typed name); see _by_activity.
+
+    `offset` moves the range back that many spans (stats_common.window):
+    the days, totals, tasks and activities are those of that range, and
+    "today" is its last day; the streak still runs up to `today`, and the
+    running session counts only in the range that ends today.
     """
-    days = [(today - timedelta(days=i)).isoformat() for i in range(span - 1, -1, -1)]
-    first = days[0]
+    days = window(today, span, offset)
+    first, last = days[0], days[-1]
     entries = [h for h in history if isinstance(h, dict) and _is_day(h.get("date"))]
     if session:
         entries.append(
@@ -75,7 +83,11 @@ def focus_stats(
                 **({"kind": "call"} if session.get("call") else {}),
             }
         )
-    sessions = [h for h in entries if h.get("reason") in (*SESSION_REASONS, "running")]
+    # The streak runs up to today whatever the range; the rest stops at its last
+    # day (which, with offset 0, is today: the running session is in it).
+    streak = _streak({h["date"] for h in _sessions(entries) if h.get("pomodoros")}, today, skip_weekends)
+    entries = [h for h in entries if h["date"] <= last]
+    sessions = _sessions(entries)
 
     per_day = {d: {"day": d, "minutes": 0, "pomodoros": 0} for d in days}
     for h in sessions:
@@ -102,16 +114,21 @@ def focus_stats(
         task["minutes"] += int(h.get("minutes") or 0)
         task["pomodoros"] += int(h.get("pomodoros") or 0)
         task["sessions"] += 1
-    top = sorted(tasks.values(), key=lambda t: (-t["minutes"], -t["pomodoros"], t["content"]))[:10]
+    most = top(tasks.values(), lambda t: (-t["minutes"], -t["pomodoros"], t["content"]))
 
     return {
         "span": span,
         "days": list(per_day.values()),
         "totals": {"today": total(days[-1]), "week": total(days[-7]), "span": total(first)},
-        "streak": _streak({h["date"] for h in sessions if h.get("pomodoros")}, today, skip_weekends),
-        "tasks": top,
+        "streak": streak,
+        "tasks": most,
         "activities": _by_activity([h for h in sessions if h["date"] >= first], activities or []),
     }
+
+
+def _sessions(entries: list[dict]) -> list[dict]:
+    """The entries that are sessions (the rest are completed tasks)."""
+    return [h for h in entries if h.get("reason") in (*SESSION_REASONS, "running")]
 
 
 def _by_activity(sessions: list[dict], activities: list[dict]) -> list[dict]:
@@ -141,7 +158,7 @@ def _by_activity(sessions: list[dict], activities: list[dict]) -> list[dict]:
         group["minutes"] += int(h.get("minutes") or 0)
         group["pomodoros"] += int(h.get("pomodoros") or 0)
         group["sessions"] += 1
-    return sorted(groups.values(), key=lambda g: (-g["minutes"], -g["pomodoros"], g["name"]))
+    return top(groups.values(), lambda g: (-g["minutes"], -g["pomodoros"], g["name"]), None)
 
 
 def _is_day(value) -> bool:

@@ -13,6 +13,7 @@ from pathlib import Path
 from buzyist.blocker import APP_PRESETS, app_key, exe_label
 from buzyist.constants import APP, now_ms
 from buzyist.site_rules import is_day_key
+from buzyist.stats_common import DEFAULT_SPAN, top, totals, window
 from buzyist.storage import read_json, write_json
 
 log = logging.getLogger(APP)
@@ -165,16 +166,16 @@ class AppTime:
         except OSError:
             log.warning("couldn't write %s", self.path.name, exc_info=True)
 
-    def stats(self, span: int = 30) -> dict:
+    def stats(self, today: date, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
         """
-        What the Stats tab shows: one {day, focus, other} per day for the last
-        `span` days (minutes in any app during a work phase, and outside one;
-        oldest first, today last), totals for today, 7 and `span` days, and
-        the apps with the most time over `span` days (minutes today, this
-        week and over `span`, and the share of it during focus).
+        What the Stats tab shows: one {day, focus, other} per day of the range
+        `offset` spans back from `today` (stats_common.window; minutes in any
+        app during a work phase, and outside one; oldest first), totals for
+        its last day, its last 7 days and all of it, and the apps with the
+        most time in it (minutes on its last day, its last 7 days and all of
+        it, and the share of it during focus).
         """
-        today = date.today()
-        days = [(today - timedelta(days=i)).isoformat() for i in range(span - 1, -1, -1)]
+        days = window(today, span, offset)
         recent = set(days[-7:])
         per_day = []
         apps: dict[str, dict] = {}
@@ -192,13 +193,14 @@ class AppTime:
                         row["today"] += t
                 per_day.append({"day": d, "focus": _minutes(focus), "other": _minutes(total - focus)})
 
-        def total(rows):
-            return {k: sum(r[k] for r in rows) for k in ("focus", "other")}
-
-        top = sorted(apps.values(), key=lambda a: (-a["span"], a["key"]))
+        keys = ("focus", "other")
         return {
             "days": per_day,
-            "totals": {"today": total(per_day[-1:]), "week": total(per_day[-7:]), "span": total(per_day)},
+            "totals": {
+                "today": totals(per_day[-1:], keys),
+                "week": totals(per_day[-7:], keys),
+                "span": totals(per_day, keys),
+            },
             "span": span,
             "apps": [
                 {
@@ -206,7 +208,7 @@ class AppTime:
                     "name": self.name(a["key"]),
                     **{k: _minutes(a[k]) for k in ("today", "week", "span", "focus")},
                 }
-                for a in top[:MAX_APPS]
+                for a in top(apps.values(), lambda a: (-a["span"], a["key"]), MAX_APPS)
                 if a["span"] >= 30  # under half a minute rounds to nothing
             ],
         }

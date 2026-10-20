@@ -1,0 +1,44 @@
+{
+  "_": "The Stats tab's ranges, for buzyist/stats_common.py (tests/test_stats_common.py) and, from the chart on, its mirrors in ui/main.js. A range is `span` days ending `offset` spans before `today`. 2026-10-14 is a Wednesday.",
+  "window": [
+    {"today": "2026-10-14", "span": 7, "offset": 0, "first": "2026-10-08", "last": "2026-10-14"},
+    {"today": "2026-10-14", "span": 7, "offset": 1, "first": "2026-10-01", "last": "2026-10-07"},
+    {"today": "2026-10-14", "span": 30, "offset": 0, "first": "2026-09-15", "last": "2026-10-14"},
+    {"today": "2026-10-14", "span": 30, "offset": 1, "first": "2026-08-16", "last": "2026-09-14"},
+    {"today": "2027-01-05", "span": 7, "offset": 0, "first": "2026-12-30", "last": "2027-01-05"},
+    {"today": "2027-01-05", "span": 90, "offset": 1, "first": "2026-07-10", "last": "2026-10-07"},
+    {"today": "2026-10-14", "span": 365, "offset": 0, "first": "2025-10-15", "last": "2026-10-14"},
+    {"today": "2028-03-01", "span": 7, "offset": 0, "first": "2028-02-24", "last": "2028-03-01"}
+  ],
+  "buckets": [
+    {"_": "by day: one bar per day", "today": "2026-10-14", "span": 7, "by": "day", "bars": [
+      ["2026-10-08", "2026-10-08", 1], ["2026-10-09", "2026-10-09", 1], ["2026-10-10", "2026-10-10", 1],
+      ["2026-10-11", "2026-10-11", 1], ["2026-10-12", "2026-10-12", 1], ["2026-10-13", "2026-10-13", 1],
+      ["2026-10-14", "2026-10-14", 1]
+    ]},
+    {"_": "by week: Thursday to Sunday, then Monday to today", "today": "2026-10-14", "span": 7, "by": "week", "bars": [
+      ["2026-10-08", "2026-10-11", 4], ["2026-10-12", "2026-10-14", 3]
+    ]},
+    {"_": "across the new year: ISO weeks don't care", "today": "2027-01-05", "span": 14, "by": "week", "bars": [
+      ["2026-12-23", "2026-12-27", 5], ["2026-12-28", "2027-01-03", 7], ["2027-01-04", "2027-01-05", 2]
+    ]}
+  ],
+  "year": {"today": "2026-10-14", "bars": 53, "first": ["2025-10-15", "2025-10-19", 5], "last": ["2026-10-12", "2026-10-14", 3]},
+  "change": [
+    {"now": 110, "before": 100, "out": 0.1},
+    {"now": 50, "before": 100, "out": -0.5},
+    {"now": 0, "before": 100, "out": -1.0},
+    {"now": 100, "before": 0, "out": null},
+    {"now": 0, "before": 0, "out": null},
+    {"now": 1, "before": 3, "out": -0.6667}
+  ],
+  "offsets": [
+    {"_": "no data", "today": "2026-10-14", "span": 30, "earliest": null, "max": 0},
+    {"_": "only this range", "today": "2026-10-14", "span": 30, "earliest": "2026-09-15", "max": 0},
+    {"_": "the last day of the range before", "today": "2026-10-14", "span": 30, "earliest": "2026-09-14", "max": 1},
+    {"today": "2026-10-14", "span": 7, "earliest": "2025-10-14", "max": 52},
+    {"today": "2026-10-14", "span": 365, "earliest": "2025-10-15", "max": 0},
+    {"today": "2026-10-14", "span": 365, "earliest": "2025-10-14", "max": 1},
+    {"_": "data dated after today", "today": "2026-10-14", "span": 7, "earliest": "2026-10-20", "max": 0}
+  ]
+}

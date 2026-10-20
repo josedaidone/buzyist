@@ -332,6 +332,22 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             activities=cfg.get("activities"),
         )
 
+    def block_stats(self) -> dict:
+        """How often websites were blocked over the last 30 days, for the Stats tab."""
+        return self.blocks.stats(date.today())
+
+    def app_time_stats(self) -> dict:
+        """Time in each app and on each website over the last 30 days, focus or not, for the Stats tab."""
+        today = date.today()
+        sites = self.site_time.stats(today)
+        return {
+            "on": bool(self.cfg.get("app_time_on")),
+            **self.app_time.stats(today),
+            "sites": sites["apps"],
+            "site_totals": sites["totals"],
+            "extension": self.extension_connected(),
+        }
+
     def running_session(self) -> dict | None:
         """A copy of the running session; a call's counts until now."""
         session = self.session

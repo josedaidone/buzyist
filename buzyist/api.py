@@ -147,22 +147,11 @@ class Api:
 
     def block_stats(self):
         """How often websites were blocked over the last 30 days, for the Stats tab."""
-        return self._do(self._app.blocks.stats)
+        return self._do(self._app.block_stats)
 
     def app_time_stats(self):
         """Time in each app and on each website over the last 30 days, focus or not, for the Stats tab."""
-
-        def stats():
-            sites = self._app.site_time.stats()
-            return {
-                "on": bool(self._app.cfg.get("app_time_on")),
-                **self._app.app_time.stats(),
-                "sites": sites["apps"],
-                "site_totals": sites["totals"],
-                "extension": self._app.extension_connected(),
-            }
-
-        return self._do(stats)
+        return self._do(self._app.app_time_stats)
 
     def running_apps(self):
         """The programs running now, for the app names Settings suggests."""
