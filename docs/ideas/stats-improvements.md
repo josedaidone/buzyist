@@ -164,6 +164,11 @@ also takes `filter`), built on `stats_common`. **No `date.today()` inside**;
   days) with two tiles and no charts, and the time on the PC outside focus in the Focus section
   (`pc_time.json`, `pc_time_on`, on by default).
 
+- PR 3 (chart): done. Gridlines (`niceTicks`), dates under the bars (`axisMarks`, then dropped
+  when they'd touch), keyboard and live region; 90 days stays daily with 1px gaps (`.dense`).
+  Also: totals of 100h or more show whole hours ("503h") and long numbers are smaller, so a tile's
+  number stays on one line in pt-BR.
+
 ## Order of work (one PR each, each green on ruff + pytest + node tests)
 
 1. **`stats_common` + refactor, no visible change**: move the three modules

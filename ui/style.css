@@ -781,26 +781,41 @@ body.instant .modal, body.instant .scrim { transition: none; }
 #p_stats.one-day .stat-chart, #p_stats.one-day .stat-axis, #p_stats.one-day .stat-legend { display: none; }
 .stat-tile { background: var(--surface); border-radius: var(--r-row); padding: 10px 12px; }
 .stat-label { font-size: 12px; font-weight: 700; color: var(--muted); }
-.stat-num { font: 600 28px/1.2 var(--bz-font-display); color: var(--ink); }
+.stat-num { font: 600 28px/1.2 var(--bz-font-display); color: var(--ink); white-space: nowrap; }
+.stat-num.long { font-size: 22px; line-height: 1.53; } /* the same height as one 28px line */
 .stat-legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
 .stat-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .stat-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .stat-f { background: var(--stat-focus); }
 .stat-l { background: var(--stat-limit); }
+/* The bars sit right of a gutter for the gridlines' values (barChart); the
+   dates under them (.stat-axis) start at the same place. */
 .stat-chart {
-  position: relative; display: flex; align-items: stretch; gap: 2px; height: 120px; padding-top: 16px;
-  border-bottom: 2px solid var(--line);
+  --gutter: 44px;
+  position: relative; display: flex; align-items: stretch; gap: 2px; height: 120px; margin-top: 10px;
+  padding-left: var(--gutter); border-bottom: 2px solid var(--line); border-radius: 2px;
 }
-.stat-max { position: absolute; top: 0; left: 0; font-size: 11px; color: var(--faint); }
-.stat-col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; min-width: 0; cursor: default; }
-.stat-col:hover { background: var(--surface); border-radius: 4px 4px 0 0; }
+.stat-chart.dense { gap: 1px; } /* 90 days: thinner gaps leave the bars some width */
+.stat-chart:focus-visible { outline: 2px solid var(--bz-tomate); outline-offset: 6px; }
+.stat-grid { position: absolute; left: var(--gutter); right: 0; height: 0; border-top: 1px dashed var(--line); }
+.stat-tick {
+  position: absolute; right: calc(100% + 6px); transform: translateY(-50%); white-space: nowrap;
+  font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums;
+}
+.stat-col { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; min-width: 0; cursor: default; }
+.stat-col:hover, .stat-col.on { background: var(--surface); border-radius: 4px 4px 0 0; }
 .stat-seg { display: block; flex: none; min-height: 3px; }
 .stat-col .stat-seg:last-child { border-radius: 4px 4px 0 0; }
 .stat-tip {
   position: absolute; top: 0; transform: translate(-50%, -100%); z-index: 3; pointer-events: none; white-space: nowrap;
   display: grid; gap: 2px; padding: 6px 10px; border-radius: 10px; background: var(--ink); color: var(--bg); font-size: 12px;
 }
-.stat-axis { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--faint); margin: 4px 0 16px; }
+.stat-axis { position: relative; height: 16px; margin: 4px 0 16px 44px; font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+.stat-mark { position: absolute; top: 0; transform: translateX(-50%); }
+.stat-mark.first { left: 0; transform: none; }
+.stat-mark.last { right: 0; transform: none; }
+/* Read by screen readers only (the chart's live text) */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .stat-sites { display: grid; gap: 4px; margin-bottom: 12px; }
 .stat-site {
   display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline;

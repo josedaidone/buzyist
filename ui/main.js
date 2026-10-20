@@ -1393,14 +1393,13 @@ $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
   putTiles($("appTimeTiles"), statTiles(s).map(([label, tot, kind]) =>
-    statTile(label, duration(Math.round(tot.focus + tot.other)), kind === "average"
+    statTile(label, bigDuration(tot.focus + tot.other), kind === "average"
       ? [t("stats.tiles.per_day")]
       : [t("stats.apps.during_focus", { duration: duration(tot.focus) }), ...changeLine(s, kind)])));
 
-  barChart($("appTimeChart"), s.bars, [["focus", "stat-f"], ["other", "stat-l"]],
+  barChart($("appTimeChart"), s, [["focus", "stat-f"], ["other", "stat-l"]],
     t("stats.apps.chart", { ...rangeDays(s), duration: duration(s.totals.range.focus + s.totals.range.other) }),
-    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), max: duration, today: !s.offset });
-  axisEnds(s, "appTimeFirst", "appTimeLast");
+    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), minutes: true });
 
   timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "stats.apps.show_all_apps", (a) => a.key + ".exe",
     t(s.on ? "stats.apps.apps_empty" : "stats.apps.apps_off"));
@@ -1466,10 +1465,18 @@ function putTiles(box, tiles) {
   box.classList.toggle("two", tiles.length === 2);
 }
 
+// A long number ("10h 50min") gets a smaller size so it stays on one line.
 function statTile(label, number, lines) {
   const tile = el("div", "stat-tile");
-  tile.append(el("div", "stat-label", label), el("div", "stat-num", number), ...lines.map((line) => el("div", "help", line)));
+  const big = el("div", "stat-num" + (number.length > 7 ? " long" : ""), number);
+  tile.append(el("div", "stat-label", label), big, ...lines.map((line) => el("div", "help", line)));
   return tile;
+}
+
+// A tile's total time: whole hours from 100h on ("503h"), else duration().
+function bigDuration(min) {
+  min = Math.round(min);
+  return min >= 6000 ? t("common.duration.h", { h: Math.round(min / 60) }) : duration(min);
 }
 
 // "+12% on the previous 30 days", under the period's tile; nothing when the
@@ -1480,13 +1487,8 @@ function changeLine(s, kind) {
   return [s.span === 1 ? t("stats.change_day", { change }) : t("stats.change", { change, n: s.span })];
 }
 
-// A chart's first and last day, for its aria text, and under it (the last
-// is "Today" while the period ends today).
+// A chart's first and last day, for its aria text.
 const rangeDays = (s) => ({ first: statDay(s.first), last: statDay(s.last) });
-function axisEnds(s, first, last) {
-  $(first).textContent = statDay(s.first);
-  $(last).textContent = s.offset ? statDay(s.last) : t("stats.today");
-}
 
 // What a bar covers: its day, "Today", or for a week "Mon, Oct 12 – Today".
 function barDay(d, isToday) {
@@ -1494,15 +1496,89 @@ function barDay(d, isToday) {
   return isToday ? t("stats.today") : statDay(d.day);
 }
 
+// The values of a chart's gridlines, 0 first: about `count` even steps whose
+// last is at or above `max`, which is then the top of the chart. Counts step
+// by 1, 2 or 5 × 10ⁿ; minutes (`minutes`) by steps a duration reads well in
+// (15 min, 30 min, 1h, 2h, ...). The same cases as tests/stats_cases.json.
+function niceTicks(max, count, minutes) {
+  const want = Math.max(max, 1) / count;
+  let step;
+  if (minutes) {
+    const steps = [1, 2, 5, 10, 15, 20, 30, 60, 120, 180, 240, 300, 360, 480, 600, 720];
+    step = steps.find((s) => s >= want) || Math.ceil(want / 600) * 600;
+  } else {
+    const power = 10 ** Math.floor(Math.log10(want));
+    step = Math.max(1, [1, 2, 5, 10].map((m) => m * power).find((s) => s >= want));
+  }
+  const ticks = [0];
+  while (ticks[ticks.length - 1] < max) ticks.push(ticks.length * step);
+  if (ticks.length === 1) ticks.push(step);
+  return ticks;
+}
+
+// Which bars get a date under them, [{i, kind}] by i: the first and the last,
+// then every day of a week ("day"), the Mondays of a month ("monday"), and the
+// bars that start a month over 90 days or a year ("month"), each at least a
+// few bars from the next so they don't overlap. The last and the first win.
+function axisMarks(bars, span) {
+  const n = bars.length;
+  if (!n) return [];
+  const gap = span <= 7 ? 1 : span <= 30 ? 4 : span <= 90 ? 12 : 4;
+  const kind = span <= 7 ? "day" : span <= 30 ? "monday" : "month";
+  const wanted = [{ i: n - 1, kind: "last" }, { i: 0, kind: "first" }];
+  bars.forEach((b, i) => {
+    const monday = new Date(b.day + "T12:00").getDay() === 1;
+    const month = b.day.endsWith("-01") || b.day.slice(0, 7) !== b.last.slice(0, 7);
+    if (kind === "day" || (kind === "monday" && monday) || (kind === "month" && month)) wanted.push({ i, kind });
+  });
+  const kept = [];
+  for (const mark of wanted) {
+    if (kept.some((k) => k.i === mark.i)) continue;
+    if (kept.every((k) => Math.abs(k.i - mark.i) >= gap)) kept.push(mark);
+  }
+  return kept.sort((a, b) => a.i - b.i);
+}
+
+// The text of an axis mark: "Today", a weekday over a week, a month's name
+// for "month" marks, else "Oct 12".
+function axisText(mark, bar, s) {
+  if (mark.kind === "last" && !s.offset) return t("stats.today");
+  // A week's last day for the last bar; for a month mark, the day of the month that starts in it.
+  const iso = (mark.kind === "last" && bar.days > 1) || (mark.kind === "month" && !bar.day.endsWith("-01")) ? bar.last : bar.day;
+  const date = new Date(iso + "T12:00");
+  if (s.span <= 7) return formatDate(date, { weekday: "short" });
+  if (mark.kind === "month") return formatDate(date, { month: "short" });
+  return formatDate(date, { day: "numeric", month: "short" });
+}
+
 // One column per bar (a day, or a week for a year), stacked from `series`
-// ([key, css class] pairs, the first at the bottom); `tip.line(bar)` is the
-// hover line, `tip.today` whether the last bar holds today, `label` the aria text.
-function barChart(chart, bars, series, label, tip) {
-  const top = Math.max(1, ...bars.map((d) => series.reduce((sum, [k]) => sum + d[k], 0)));
+// ([key, css class] pairs, the first at the bottom), over gridlines from
+// niceTicks, with the dates under it in the .stat-axis that follows the chart.
+// `tip.line(bar)` is a bar's text and `tip.minutes` whether the values are
+// minutes; `label` sums the chart up for a screen reader. Hover a bar, or
+// focus the chart and use ←/→ (Home/End), to read each one; the text is also
+// read out (the live region).
+function barChart(chart, s, series, label, tip) {
+  const bars = s.bars;
+  const total = (d) => series.reduce((sum, [k]) => sum + d[k], 0);
+  const ticks = niceTicks(Math.max(0, ...bars.map(total)), 3, tip.minutes);
+  const top = ticks[ticks.length - 1];
+  const value = (v) => tip.minutes ? duration(v) : formatNumber(v);
   const box = el("div", "stat-tip hidden");
-  chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : formatNumber(top)), box);
-  chart.setAttribute("aria-label", label);
-  bars.forEach((d, i) => {
+  const said = el("span", "sr-only");
+  said.setAttribute("aria-live", "polite");
+  chart.replaceChildren(box, said);
+  chart.classList.toggle("dense", bars.length > 60);
+  chart.setAttribute("role", "group");
+  chart.setAttribute("aria-label", label + " " + t("stats.chart_keys"));
+  chart.tabIndex = 0;
+  for (const v of ticks.slice(1)) {
+    const line = el("div", "stat-grid");
+    line.style.bottom = (100 * v) / top + "%";
+    line.append(el("span", "stat-tick", value(v)));
+    chart.append(line);
+  }
+  const cols = bars.map((d) => {
     const col = el("div", "stat-col");
     for (const [key, cls] of series) {  // column-reverse: the first is at the bottom
       if (!d[key]) continue;
@@ -1510,15 +1586,57 @@ function barChart(chart, bars, series, label, tip) {
       seg.style.height = (100 * d[key]) / top + "%";
       col.append(seg);
     }
-    col.onmouseenter = () => {
-      box.replaceChildren(el("b", "", barDay(d, tip.today && i === bars.length - 1)), el("span", "", tip.line(d)));
-      box.classList.remove("hidden");
-      const x = col.offsetLeft + col.offsetWidth / 2;
-      box.style.left = Math.min(Math.max(x, 90), chart.clientWidth - 90) + "px";
-    };
-    col.onmouseleave = () => box.classList.add("hidden");
     chart.append(col);
+    return col;
   });
+
+  let active = bars.length - 1;  // the bar the keys move from
+  const show = (i) => {
+    const d = bars[i], col = cols[i];
+    const head = barDay(d, !s.offset && i === bars.length - 1), text = tip.line(d);
+    box.replaceChildren(el("b", "", head), el("span", "", text));
+    box.classList.remove("hidden");
+    const x = col.offsetLeft + col.offsetWidth / 2, half = box.offsetWidth / 2;  // kept inside the chart
+    box.style.left = Math.max(half, Math.min(x, chart.clientWidth - half)) + "px";
+    cols.forEach((c, j) => c.classList.toggle("on", j === i));
+    return head + ": " + text;
+  };
+  const hide = () => {
+    box.classList.add("hidden");
+    cols.forEach((c) => c.classList.remove("on"));
+  };
+  cols.forEach((col, i) => {
+    col.onmouseenter = () => show(i);
+    col.onmouseleave = () => (document.activeElement === chart ? show(active) : hide());
+  });
+  chart.onfocus = () => { if (bars.length) said.textContent = show(active); };
+  chart.onblur = hide;
+  chart.onkeydown = (e) => {
+    const to = { ArrowLeft: active - 1, ArrowRight: active + 1, Home: 0, End: bars.length - 1 }[e.key];
+    if (to === undefined || !bars.length) return;
+    e.preventDefault();
+    active = Math.min(Math.max(to, 0), bars.length - 1);
+    said.textContent = show(active);
+  };
+
+  const axis = chart.nextElementSibling;  // .stat-axis
+  const marks = axisMarks(bars, s.span).map((mark) => {
+    const span = el("span", "stat-mark " + mark.kind, axisText(mark, bars[mark.i], s));
+    if (mark.kind !== "first" && mark.kind !== "last") span.style.left = ((mark.i + 0.5) / bars.length) * 100 + "%";
+    return span;
+  });
+  axis.replaceChildren(...marks);
+  axis.setAttribute("aria-hidden", "true");  // the chart's label and each bar's text already say it
+  // axisMarks keeps them a few bars apart; a long date ("18 de abr.") can still
+  // touch the next one, so drop those, the last and the first kept first.
+  if (axis.offsetWidth) {
+    const kept = [];
+    for (const span of [...marks.filter((m) => m.matches(".last, .first")), ...marks.filter((m) => !m.matches(".last, .first"))]) {
+      const r = span.getBoundingClientRect();
+      if (kept.some((k) => r.left < k.right + 8 && r.right > k.left - 8)) span.remove();
+      else kept.push(r);
+    }
+  }
 }
 
 // A stat tile's "3 pomodoros · 2 sessions": a narrow tile wraps at the dots or
@@ -1535,13 +1653,13 @@ function renderFocusStats(s) {
   const pc = s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0;  // counted, now or before
   const pcLines = (tot, kind) => {
     if (!pc) return [];
-    const lines = [t("stats.focus.outside", { duration: duration(Math.round(tot.outside)) })];
+    const lines = [t("stats.focus.outside", { duration: bigDuration(tot.outside) })];
     const all = tot.minutes + tot.outside;
     if (kind === "range" && all) lines.push(t("stats.focus.share", { share: percent(tot.minutes / all) }));
     return lines;
   };
   putTiles($("focusTiles"), statTiles(s).map(([label, tot, kind]) =>
-    statTile(label, duration(Math.round(tot.minutes)), kind === "average"
+    statTile(label, bigDuration(tot.minutes), kind === "average"
       ? [t("stats.tiles.per_day"), ...pcLines(tot, kind)]
       : [keepCounts(counts(tot)),
          keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })),
@@ -1553,11 +1671,10 @@ function renderFocusStats(s) {
   $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
   const focusLine = (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none");
-  barChart($("focusChart"), s.bars, pc ? [["minutes", "stat-f"], ["outside", "stat-l"]] : [["minutes", "stat-f"]],
+  barChart($("focusChart"), s, pc ? [["minutes", "stat-f"], ["outside", "stat-l"]] : [["minutes", "stat-f"]],
     t("stats.focus.chart", { ...rangeDays(s), duration: duration(s.totals.range.minutes) }),
     { line: (d) => pc && d.outside ? focusLine(d) + " · " + t("stats.focus.outside", { duration: duration(d.outside) }) : focusLine(d),
-      max: duration, today: !s.offset });
-  axisEnds(s, "focusFirst", "focusLast");
+      minutes: true });
 
   // One row per activity, with Todoist tasks and typed names ("_task",
   // "_other") as their own rows; hidden until an activity has been used.
@@ -1591,10 +1708,9 @@ function renderStats(s) {
       ? [t("stats.tiles.per_day")]
       : [keepCounts(split(tot)), ...changeLine(s, kind)])));
 
-  barChart($("statChart"), s.bars, [["focus", "stat-f"], ["limit", "stat-l"]],
+  barChart($("statChart"), s, [["focus", "stat-f"], ["limit", "stat-l"]],
     t("stats.blocks.chart", { ...rangeDays(s), focus: formatNumber(s.totals.range.focus), limit: formatNumber(s.totals.range.limit) }),
-    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none"), today: !s.offset });
-  axisEnds(s, "statFirst", "statLast");
+    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none") });
 
   $("statSites").replaceChildren(...(s.sites.length ? s.sites.map((site) => {
     const row = el("div", "stat-site");

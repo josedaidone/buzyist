@@ -794,6 +794,7 @@
     },
     "change_day": "{change} em relação ao dia anterior",
     "week_tip": "{first} – {last}",
+    "chart_keys": "Use as setas para a esquerda e para a direita para ler cada barra.",
     "focus": {
       "title": "Foco",
       "pomodoros": {

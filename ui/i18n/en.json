@@ -801,6 +801,7 @@
     },
     "change_day": "{change} on the day before",
     "week_tip": "{first} – {last}",
+    "chart_keys": "Use the left and right arrow keys to read each bar.",
     "focus": {
       "title": "Focus",
       "pomodoros": {
