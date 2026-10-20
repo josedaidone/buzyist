@@ -141,28 +141,28 @@ class Api:
         """The latest names of sessions with no task, for the "What are you working on?" list."""
         return self._do(lambda: {"recent": self._app.recent_free()})
 
-    def focus_stats(self):
-        """Focus time, tomatoes, sessions and tasks over the last 30 days, for the Stats tab."""
-        return self._do(self._app.focus_stats)
+    def stats(self, span=None, offset=0, only=None):
+        """
+        The Stats tab for `span` days, `offset` ranges back from today, its
+        Focus section narrowed to `only` (App.stats; span None: the setting).
+        """
+        return self._do(self._app.stats, span, offset, only)
 
-    def block_stats(self):
-        """How often websites were blocked over the last 30 days, for the Stats tab."""
-        return self._do(self._app.blocks.stats)
+    def report_assets(self):
+        """What Export report (ui/report.js) puts in its page besides the stats: the logo, inline, and the version."""
 
-    def app_time_stats(self):
-        """Time in each app and on each website over the last 30 days, focus or not, for the Stats tab."""
+        def go():
+            try:
+                logo = (paths.UI / "img" / "logo.svg").read_text(encoding="utf-8")
+            except OSError:
+                logo = ""
+            return {"logo": logo, "version": app_version()}
 
-        def stats():
-            sites = self._app.site_time.stats()
-            return {
-                "on": bool(self._app.cfg.get("app_time_on")),
-                **self._app.app_time.stats(),
-                "sites": sites["apps"],
-                "site_totals": sites["totals"],
-                "extension": self._app.extension_connected(),
-            }
+        return self._do(go)
 
-        return self._do(stats)
+    def save_report(self, html, filename):
+        """Export report: save the page ui/report.js built where the user picks (App.save_report)."""
+        return self._do(self._app.save_report, html, filename)
 
     def running_apps(self):
         """The programs running now, for the app names Settings suggests."""

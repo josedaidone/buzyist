@@ -309,7 +309,14 @@ def test_calls_count_as_focus_by_activity_not_as_tasks():
         {"date": "2026-01-05", "task_id": "t1", "content": "Write", "pomodoros": 1, "minutes": 25, "reason": "finished"},
     ]  # fmt: skip
     stats = focus_stats(history, None, today, activities=[{"id": "call", "name": "Call", "icon": "phone"}])
-    assert stats["totals"]["today"] == {"minutes": 65, "pomodoros": 1, "sessions": 2, "tasks": 1, "completed": 0}
+    assert stats["totals"]["today"] == {
+        "minutes": 65,
+        "pomodoros": 1,
+        "sessions": 2,
+        "tasks": 1,
+        "completed": 0,
+        "outside": 0,
+    }
     assert [(g["id"], g["minutes"], g["sessions"]) for g in stats["activities"]] == [("call", 40, 1), ("_task", 25, 1)]
     assert [t["content"] for t in stats["tasks"]] == ["Write"]
 

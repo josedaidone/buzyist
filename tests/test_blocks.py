@@ -1,6 +1,7 @@
 """BlockLog (blocks.json): the websites the extension blocked, counted for the Stats tab and the popup."""
 
 import json
+from datetime import timedelta
 
 import pytest
 
@@ -75,14 +76,18 @@ def test_stats_cover_the_last_30_days(clock):
     )
     clock.advance(days=10)  # the oldest of them is now 12 days back
     log.add([block(clock, 5, host="news.ycombinator.com")])
-    s = log.stats()
-    assert s["span"] == 30 and len(s["days"]) == 30
-    assert s["days"][-1] == {"day": clock.now().date().isoformat(), "focus": 1, "limit": 0}
+    s = log.stats(clock.now().date(), span=30)
+    assert s["span"] == 30 and len(s["bars"]) == 30
+    today = clock.now().date().isoformat()
+    assert s["bars"][-1] == {"day": today, "last": today, "days": 1, "focus": 1, "limit": 0}
     assert s["totals"] == {
         "today": {"focus": 1, "limit": 0},
-        "week": {"focus": 1, "limit": 0},
-        "span": {"focus": 3, "limit": 2},
+        "range": {"focus": 3, "limit": 2},
+        "previous": {"focus": 0, "limit": 0},
+        "average": {"focus": 0.1, "limit": 0.1},
     }
+    assert s["change"] is None
+    assert log.earliest() == (clock.now().date() - timedelta(days=12)).isoformat()
     assert s["sites"] == [
         {"host": "reddit.com", "focus": 0, "limit": 2},
         {"host": "youtube.com", "focus": 2, "limit": 0},
@@ -103,3 +108,21 @@ def test_usage_posts_carry_blocks_and_answers_say_todays(clock, app, focus_serve
     assert r.status == 200
     assert r.json["blocks_today"] == {"day": clock.now().date().isoformat(), "focus": 1, "limit": 1}
     assert app.blocks.today()["focus"] == 1
+
+
+def test_stats_of_an_earlier_range(clock):
+    log = BlockLog(paths.BLOCKS_PATH)
+    day = 86_400_000
+    log.add([block(clock, 1, ago_ms=2 * day), block(clock, 2, "limit", "reddit.com", ago_ms=2 * day + 1)])
+    clock.advance(days=8)  # both are now 10 days back: in the week before the last one
+    log.add([block(clock, 3)])
+    today = clock.now().date()
+    s = log.stats(today, span=7, offset=1)
+    assert len(s["bars"]) == 7 and s["last"] == (today - timedelta(days=7)).isoformat()
+    assert s["totals"]["range"] == {"focus": 1, "limit": 1} and "today" not in s["totals"]
+    assert [x["host"] for x in s["sites"]] == ["reddit.com", "youtube.com"]
+    now = log.stats(today, span=7)
+    assert now["totals"]["range"] == {"focus": 1, "limit": 0}
+    assert now["totals"]["previous"] == {"focus": 1, "limit": 1}
+    assert now["change"] == -0.5
+    assert log.stats(today, span=365)["bars"][-1]["day"] <= today.isoformat()

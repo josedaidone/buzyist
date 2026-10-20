@@ -20,6 +20,7 @@
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M7 16.5V11M12 16.5V6.5M17 16.5v-4"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a7 7 0 1 0 2.2-5.1M4.5 4.5v4.2h4.2"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
@@ -31,6 +32,8 @@
   <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5l6 6 6-6"/></symbol>
   <symbol id="i-recent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3.7h3.7"/><path d="M12 8v4.2l2.8 1.8"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5l6-6 6 6"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5l6 6 6-6"/></symbol>
   <!-- Activity icons: ACTIVITY_ICONS in buzyist/activities.py and ui/main.js. -->
   <symbol id="a-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4.5 7l7.5 6 7.5-6"/></symbol>
@@ -60,6 +63,7 @@
     <button class="chip update hidden" id="updateChip" title="A new version of buZyist is out" data-i18n-title="main.header.update_title"></button>
     <button class="chip update hidden" id="extChip" title="The browser extension is out of date" data-i18n-title="main.header.ext_title" data-i18n="main.header.ext">Reload extension</button>
     <span class="chip" id="barChip"><span class="led"></span><span id="barText" data-i18n="main.bar.looking">Looking for the bar</span></span>
+    <button class="icon-btn" id="openStats" title="Stats" aria-label="Stats" data-i18n-title="main.header.stats" data-i18n-aria-label="main.header.stats"><svg><use href="#i-chart"/></svg></button>
     <button class="icon-btn" id="openSettings" title="Settings" aria-label="Settings" data-i18n-title="main.header.settings" data-i18n-aria-label="main.header.settings"><svg><use href="#i-gear"/></svg></button>
   </header>
 
@@ -185,7 +189,6 @@
     <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps" data-i18n="settings.tabs.apps">Apps</button>
     <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites"><span data-i18n="settings.tabs.sites">Websites</span><i class="dot warn hidden" id="sitesDot"></i></button>
     <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits"><span data-i18n="settings.tabs.limits">Limits</span><i class="dot warn hidden" id="limitsDot"></i></button>
-    <button type="button" class="stab" role="tab" data-tab="stats" aria-controls="p_stats" data-i18n="settings.tabs.stats">Stats</button>
     <button type="button" class="stab" role="tab" data-tab="general" aria-controls="p_general" data-i18n="settings.tabs.general">General</button>
     <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about"><span data-i18n="settings.tabs.about">About</span><i class="dot good hidden" id="aboutDot"></i></button>
   </div>
@@ -398,54 +401,6 @@
       </div>
     </div>
 
-    <div class="section" role="tabpanel" id="p_stats" data-panel="stats">
-      <h4 data-i18n="stats.focus.title">Focus</h4>
-      <div class="stat-tiles" id="focusTiles"></div>
-      <div class="stat-streak" id="focusStreak"></div>
-      <div class="toggles">
-        <label class="switch" data-i18n="stats.focus.skip_weekends"><input type="checkbox" name="streak_skip_weekends" id="s_streak_skip_weekends"><span class="knob"></span>Weekends don't break the streak</label>
-      </div>
-      <div class="stat-chart" id="focusChart" role="img"></div>
-      <div class="stat-axis"><span id="focusFirst"></span><span data-i18n="stats.today">Today</span></div>
-      <h4 data-i18n="stats.focus.by_activity">Focus by activity, last 30 days</h4>
-      <div class="stat-sites" id="focusActivities"></div>
-      <h4 data-i18n="stats.focus.top_tasks">Most focused tasks, last 30 days</h4>
-      <div class="stat-sites" id="focusTasks"></div>
-      <div class="help" data-i18n="stats.focus.help">Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist.</div>
-
-      <!-- Time in apps: see buzyist/app_time.py. app_time_on is saved at once, like the streak switch. -->
-      <h4 data-i18n="stats.apps.title">Time in apps</h4>
-      <div class="toggles">
-        <label class="switch" data-i18n="stats.apps.switch"><input type="checkbox" name="app_time_on" id="s_app_time_on"><span class="knob"></span>Count the time I spend in each app</label>
-      </div>
-      <div id="appTimeBody">
-        <div class="stat-tiles" id="appTimeTiles"></div>
-        <div class="stat-legend" aria-hidden="true">
-          <span data-i18n="stats.apps.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.apps.legend_other"><i class="stat-sw stat-l"></i>Outside focus</span>
-        </div>
-        <div class="stat-chart" id="appTimeChart" role="img"></div>
-        <div class="stat-axis"><span id="appTimeFirst"></span><span data-i18n="stats.today">Today</span></div>
-        <h4 data-i18n="stats.apps.most_apps">Most used apps, last 30 days</h4>
-        <div class="stat-sites" id="appTimeApps"></div>
-        <button type="button" class="btn sm ghost hidden" id="appTimeMore"></button>
-        <h4 data-i18n="stats.apps.most_sites">Most used websites, last 30 days</h4>
-        <div class="stat-sites" id="siteTimeSites"></div>
-        <button type="button" class="btn sm ghost hidden" id="siteTimeMore"></button>
-      </div>
-      <div class="help" data-i18n="stats.apps.help">The app in front gets the time, in focus or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json.</div>
-
-      <h4 data-i18n="stats.blocks.title">Websites blocked</h4>
-      <div class="stat-tiles" id="statTiles"></div>
-      <div class="stat-legend" aria-hidden="true">
-        <span data-i18n="stats.blocks.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.blocks.legend_limit"><i class="stat-sw stat-l"></i>Over a limit</span>
-      </div>
-      <div class="stat-chart" id="statChart" role="img"></div>
-      <div class="stat-axis"><span id="statFirst"></span><span data-i18n="stats.today">Today</span></div>
-      <h4 data-i18n="stats.blocks.most">Most blocked, last 30 days</h4>
-      <div class="stat-sites" id="statSites"></div>
-      <div class="help" data-i18n="stats.blocks.help">Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts.</div>
-    </div>
-
     <div class="section" role="tabpanel" id="p_general" data-panel="general">
       <div class="field">
         <label for="s_language" data-i18n="settings.general.language">Language</label>
@@ -459,7 +414,7 @@
           <input class="input" id="addActivity" maxlength="30" spellcheck="false" placeholder="Add an activity, e.g. Planning" data-i18n-placeholder="settings.general.add_activity">
           <button type="button" class="btn" id="addActivityBtn" data-i18n="settings.add">Add</button>
         </div>
-        <div class="help" data-i18n="settings.general.activities_help">Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.</div>
+        <div class="help" data-i18n="settings.general.activities_help">Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. Stats adds up focus time per activity, and renaming one keeps its time.</div>
       </div>
       <!-- Calls: see buzyist/calls.py. call_activity and call_ignore_apps are sent by the Save button. -->
       <div class="toggles">
@@ -513,6 +468,88 @@
   </div>
 </aside>
 
+<!-- Stats: its own drawer (not a Settings tab). Its switches and the period are saved at once. -->
+<aside class="drawer" id="statsDrawer" aria-label="Stats" data-i18n-aria-label="stats.title">
+  <div class="drawer-head">
+    <h3 data-i18n="stats.title">Stats</h3>
+    <button type="button" class="btn sm" id="exportStats" title="Save this period's stats as an HTML page" data-i18n-title="stats.report.export_title" data-i18n="stats.report.export">Export report</button>
+    <button class="icon-btn" id="closeStats" title="Close" aria-label="Close" data-i18n-title="stats.close" data-i18n-aria-label="stats.close"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <form class="drawer-body" id="statsForm" autocomplete="off">
+    <div class="section" id="p_stats">
+      <!-- One period for the three sections (App.stats): stats_span is saved at once, the arrows aren't saved. -->
+      <div class="stat-range">
+        <div class="seg" role="radiogroup" aria-label="Period" data-i18n-aria-label="stats.range.picker">
+          <label><input type="radio" name="stats_span" value="1"><span data-i18n="stats.range.span_1">1 day</span></label>
+          <label><input type="radio" name="stats_span" value="7"><span data-i18n="stats.range.span_7">7 days</span></label>
+          <label><input type="radio" name="stats_span" value="30"><span data-i18n="stats.range.span_30">30 days</span></label>
+          <label><input type="radio" name="stats_span" value="90"><span data-i18n="stats.range.span_90">90 days</span></label>
+          <label><input type="radio" name="stats_span" value="365"><span data-i18n="stats.range.span_365">1 year</span></label>
+        </div>
+        <div class="stat-nav">
+          <button type="button" class="icon-btn sm" id="statsOlder" title="Earlier period" aria-label="Earlier period" data-i18n-title="stats.range.older" data-i18n-aria-label="stats.range.older"><svg><use href="#i-left"/></svg></button>
+          <span id="statsRange" aria-live="polite"></span>
+          <button type="button" class="icon-btn sm" id="statsNewer" title="Later period" aria-label="Later period" data-i18n-title="stats.range.newer" data-i18n-aria-label="stats.range.newer"><svg><use href="#i-right"/></svg></button>
+        </div>
+      </div>
+      <h4 data-i18n="stats.focus.title">Focus</h4>
+      <div class="stat-filter hidden" id="focusFilter">
+        <button type="button" class="chip" id="focusFilterClear"><span id="focusFilterName"></span><svg class="t"><use href="#i-x"/></svg></button>
+        <span class="help" data-i18n="stats.filter.note">Time on the PC isn't split by activity or task, so it is left out here.</span>
+      </div>
+      <div class="stat-tiles" id="focusTiles"></div>
+      <div class="stat-streak" id="focusStreak"></div>
+      <div class="toggles">
+        <label class="switch" data-i18n="stats.focus.skip_weekends"><input type="checkbox" name="streak_skip_weekends" id="s_streak_skip_weekends"><span class="knob"></span>Weekends don't break the streak</label>
+        <label class="switch" data-i18n="stats.focus.pc_switch"><input type="checkbox" name="pc_time_on" id="s_pc_time_on"><span class="knob"></span>Count the time I use the PC outside focus</label>
+      </div>
+      <div class="stat-legend" id="focusLegend" aria-hidden="true">
+        <span data-i18n="stats.focus.legend_focus"><i class="stat-sw stat-f"></i>Focus</span><span data-i18n="stats.focus.legend_outside"><i class="stat-sw stat-l"></i>On the PC outside focus</span>
+      </div>
+      <div class="stat-chart" id="focusChart"></div>
+      <div class="stat-axis"></div>
+      <h4 data-i18n="stats.focus.by_activity">Focus by activity</h4>
+      <div class="stat-sites" id="focusActivities"></div>
+      <h4 data-i18n="stats.focus.top_tasks">Most focused tasks</h4>
+      <div class="stat-sites" id="focusTasks"></div>
+      <div class="help" data-i18n="stats.focus.help">Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist.</div>
+      <div class="help" data-i18n="stats.focus.pc_help">Time on the PC is every minute you touched the keyboard or mouse, whatever was in front; outside focus is that time during breaks, pauses and with no session running. It stays on this PC, in pc_time.json, with no app names.</div>
+
+      <!-- Time in apps: see buzyist/app_time.py. app_time_on is saved at once, like the streak switch. -->
+      <h4 data-i18n="stats.apps.title">Time in apps</h4>
+      <div class="toggles">
+        <label class="switch" data-i18n="stats.apps.switch"><input type="checkbox" name="app_time_on" id="s_app_time_on"><span class="knob"></span>Count the time I spend in each app</label>
+      </div>
+      <div id="appTimeBody">
+        <div class="stat-tiles" id="appTimeTiles"></div>
+        <div class="stat-legend" aria-hidden="true">
+          <span data-i18n="stats.apps.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.apps.legend_other"><i class="stat-sw stat-l"></i>Outside focus</span>
+        </div>
+        <div class="stat-chart" id="appTimeChart"></div>
+        <div class="stat-axis"></div>
+        <h4 data-i18n="stats.apps.most_apps">Most used apps</h4>
+        <div class="stat-sites" id="appTimeApps"></div>
+        <button type="button" class="btn sm ghost hidden" id="appTimeMore"></button>
+        <h4 data-i18n="stats.apps.most_sites">Most used websites</h4>
+        <div class="stat-sites" id="siteTimeSites"></div>
+        <button type="button" class="btn sm ghost hidden" id="siteTimeMore"></button>
+      </div>
+      <div class="help" data-i18n="stats.apps.help">The app in front gets the time, in focus or not, unless you haven't touched the keyboard or mouse for a minute. Websites are timed by the Chrome extension: the active tab of the browser window you're in, so they are part of your browser's time above. It all stays on this PC, in app_time.json and site_time.json.</div>
+
+      <h4 data-i18n="stats.blocks.title">Websites blocked</h4>
+      <div class="stat-tiles" id="statTiles"></div>
+      <div class="stat-legend" aria-hidden="true">
+        <span data-i18n="stats.blocks.legend_focus"><i class="stat-sw stat-f"></i>During focus</span><span data-i18n="stats.blocks.legend_limit"><i class="stat-sw stat-l"></i>Over a limit</span>
+      </div>
+      <div class="stat-chart" id="statChart"></div>
+      <div class="stat-axis"></div>
+      <h4 data-i18n="stats.blocks.most">Most blocked</h4>
+      <div class="stat-sites" id="statSites"></div>
+      <div class="help" data-i18n="stats.blocks.help">Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts.</div>
+    </div>
+  </form>
+</aside>
+
 <div class="modal-wrap" id="endedWrap">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endedTitle">
     <span class="state-chip done-chip" id="endedChip">Done</span>
@@ -558,5 +595,6 @@
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="i18n.js"></script>
 <script src="main.js"></script>
+<script src="report.js"></script>
 </body>
 </html>

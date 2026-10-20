@@ -8,6 +8,8 @@ app_updates.py, app_windows.py and tray.py.
 from __future__ import annotations
 
 import logging
+import os
+import re
 import shutil
 import socket
 import sys
@@ -15,6 +17,7 @@ import threading
 import time
 import winsound
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import webview
@@ -51,13 +54,21 @@ from buzyist.constants import (
     now_ms,
 )
 from buzyist.focus_server import FocusServer
-from buzyist.focus_stats import SESSION_REASONS, focus_stats, session_minutes
+from buzyist.focus_stats import SESSION_REASONS, earliest, focus_stats, session_minutes
 from buzyist.hotkey import GlobalHotkey
 from buzyist.i18n import app_error, english, t
 from buzyist.plan import plan_session
 from buzyist.secrets_dpapi import SECRET_KEYS, unprotect_secrets
 from buzyist.session import SessionMixin
-from buzyist.storage import read_json
+from buzyist.stats_common import (
+    DEFAULT_SPAN,
+    clamp_offset,
+    clamp_span,
+    earliest_day,
+    oldest_offset,
+    range_info,
+)
+from buzyist.storage import read_json, write_bytes_atomic
 from buzyist.sync import load_shared
 from buzyist.todoist import Todoist
 from buzyist.tray import TrayMixin
@@ -94,6 +105,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.app_usage = SiteUsage(paths.APP_USAGE_PATH)  # time on the limited Windows apps
         self.app_time = AppTime(paths.APP_TIME_PATH)  # time in every app, for the Stats tab (app_time_on)
         self.site_time = AppTime(paths.SITE_TIME_PATH, site_key, str)  # and on every website, from the extension
+        # And on the PC at all, one row ("pc"), without what was in front (pc_time_on).
+        self.pc_time = AppTime(paths.PC_TIME_PATH, str, str)
         self.blocks = BlockLog(paths.BLOCKS_PATH)  # websites the extension blocked, for the Stats tab
         self.sync_lock = threading.Lock()  # guards self.shared
         self.shared = load_shared()
@@ -144,8 +157,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.blocker = AppBlocker(self)
         self.focus_hooks.append(self.blocker.poke)
         # Counts time on the apps with a limit and acts on those limits, all
-        # day, and the time in every app while app_time_on is set; idle while
-        # both are off.
+        # day, the time in every app while app_time_on is set and on the PC
+        # while pc_time_on is; idle while all are off.
         self.app_limiter = AppLimiter(self)
         # Starts a call session while the mic or camera is in use; idle while call_detect is off.
         self.calls = CallWatcher(self)
@@ -319,18 +332,109 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             minutes += session_minutes(self.running_session())
         return {"pomodoros": count, "minutes": minutes, "completed": completed}
 
-    def focus_stats(self) -> dict:
-        """Focus time, tomatoes, sessions and tasks over the last 30 days, for the Stats tab."""
+    def stats(self, span=None, offset=0, only=None) -> dict:
+        """
+        The Stats tab: `range` ({span, offset, first, last, has_older}) and its
+        three sections for it. `span` is one of stats_common.SPANS (None: the
+        stats_span setting); `offset` counts ranges back from today and is
+        kept within the oldest data any section holds. `only` narrows the
+        Focus section to one activity or task (focus_stats).
+        """
+        today = date.today()
+        span = clamp_span(self.cfg.get("stats_span") if span is None else span)
+        with self.lock:
+            history = list(self.history)
+        oldest = earliest_day(
+            d
+            for d in (
+                earliest(history),
+                self.blocks.earliest(),
+                self.app_time.earliest(),
+                self.site_time.earliest(),
+                self.pc_time.earliest(),
+            )
+            if d
+        )
+        offset = clamp_offset(offset, today, span, oldest)
+        info = range_info(today, span, offset)
+        return {
+            "range": {**info, "has_older": offset < oldest_offset(today, span, oldest)},
+            "focus": self.focus_stats(today, span, offset, only),
+            "apps": self.app_time_stats(today, span, offset),
+            "blocks": self.blocks.stats(today, span, offset),
+        }
+
+    def focus_stats(
+        self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0, only: dict | None = None
+    ) -> dict:
+        """
+        The Stats tab's Focus section (focus_stats.focus_stats), with the
+        running session and the time on the PC outside focus; `pc_on` is
+        whether that is being counted.
+        """
         with self.lock:
             history, session = list(self.history), self.running_session()
         cfg = self.cfg.view()
-        return focus_stats(
+        stats = focus_stats(
             history,
             session,
-            date.today(),
+            today or date.today(),
+            span,
             skip_weekends=cfg.get("streak_skip_weekends"),
             activities=cfg.get("activities"),
+            offset=offset,
+            pc=self.pc_time.day_totals(),
+            only=only,
         )
+        return {**stats, "pc_on": bool(cfg.get("pc_time_on"))}
+
+    def app_time_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
+        """The Stats tab's Time in apps section: the apps' (AppTime.stats), plus the websites' rows."""
+        today = today or date.today()
+        return {
+            "on": bool(self.cfg.get("app_time_on")),
+            **self.app_time.stats(today, span, offset),
+            "sites": self.site_time.stats(today, span, offset)["apps"],
+            "extension": self.extension_connected(),
+        }
+
+    def save_report(self, html, filename) -> dict:
+        """
+        Export report (Stats): ask where to save `html`, the page ui/report.js
+        built, with Windows' Save dialog (in Documents, named `filename`),
+        write it and open it in the browser. `{path}` is where it went, None
+        when the dialog was cancelled.
+        """
+        if not isinstance(html, str) or not html.strip():
+            raise app_error("errors.report.empty")
+        window = self.main
+        if window is None:
+            raise app_error("errors.report.no_window")
+        folder = Path.home() / "Documents"
+        picked = window.create_file_dialog(
+            webview.FileDialog.SAVE,
+            directory=str(folder) if folder.is_dir() else "",
+            save_filename=report_file_name(filename),
+            file_types=("HTML (*.html;*.htm)",),
+        )
+        if isinstance(picked, (list, tuple)):
+            picked = picked[0] if picked else None
+        if not picked:
+            return {"path": None}
+        path = Path(picked)
+        if path.suffix.lower() not in (".html", ".htm"):
+            path = path.with_name(path.name + ".html")
+        try:
+            write_bytes_atomic(path, html.encode("utf-8"))
+        except OSError as err:
+            log.warning("stats report not saved to %s: %s", path, err)
+            raise app_error("errors.report.write", error=err.strerror or err) from err
+        log.info("stats report saved to %s", path)
+        try:
+            os.startfile(path)
+        except OSError as err:
+            log.warning("couldn't open the stats report: %s", err)
+        return {"path": str(path)}
 
     def running_session(self) -> dict | None:
         """A copy of the running session; a call's counts until now."""
@@ -794,6 +898,13 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
 
 
 # --------------------------------------------------------------- platform ---
+
+
+def report_file_name(name) -> str:
+    """What the Save dialog offers for a report: `name` with only letters, digits, '-', '_' and '.', ending in .html."""
+    stem = re.sub(r"[^\w.-]+", "-", str(name or "")).strip(".-")
+    stem = re.sub(r"\.html?$", "", stem, flags=re.IGNORECASE)[:120] or "buzyist-stats"
+    return stem + ".html"
 
 
 def clear_webview_cache() -> None:

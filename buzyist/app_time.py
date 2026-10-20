@@ -13,6 +13,18 @@ from pathlib import Path
 from buzyist.blocker import APP_PRESETS, app_key, exe_label
 from buzyist.constants import APP, now_ms
 from buzyist.site_rules import is_day_key
+from buzyist.stats_common import (
+    DEFAULT_SPAN,
+    buckets,
+    earliest_day,
+    minutes_of,
+    range_info,
+    sum_rows,
+    summary,
+    top,
+    totals,
+    window,
+)
 from buzyist.storage import read_json, write_json
 
 log = logging.getLogger(APP)
@@ -47,11 +59,6 @@ KNOWN_NAMES = {
     "busyist": "buZyist",
     "buzyist": "buZyist",
 }
-
-
-def _minutes(seconds: float) -> int:
-    """Whole minutes, halves up (round() would make 150 s 2 minutes)."""
-    return int(seconds / 60 + 0.5)
 
 
 def app_name(image: str) -> str:
@@ -165,48 +172,61 @@ class AppTime:
         except OSError:
             log.warning("couldn't write %s", self.path.name, exc_info=True)
 
-    def stats(self, span: int = 30) -> dict:
+    def day_totals(self) -> dict[str, tuple[float, float]]:
+        """{day: (seconds, seconds during a work phase)} over every row, for the Focus section (pc_time)."""
+        with self.lock:
+            return {
+                d: (sum(t for t, _ in rows.values()), sum(f for _, f in rows.values())) for d, rows in self.days.items()
+            }
+
+    def earliest(self) -> str | None:
+        """The oldest day with time counted."""
+        with self.lock:
+            return earliest_day(self.days)
+
+    def stats(self, today: date, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
         """
-        What the Stats tab shows: one {day, focus, other} per day for the last
-        `span` days (minutes in any app during a work phase, and outside one;
-        oldest first, today last), totals for today, 7 and `span` days, and
-        the apps with the most time over `span` days (minutes today, this
-        week and over `span`, and the share of it during focus).
+        The Time in apps section for the range `offset` spans of `span` days
+        back from `today` (stats_common.window): `range_info`'s fields;
+        `bars`, its days (or weeks, for a year) with {focus, other}, minutes
+        in any app during a work phase and outside one; `totals` and `change`
+        (stats_common.summary); and the apps with the most time in the range
+        ({key, name, range, focus: minutes in the range and during focus in
+        it, today: only when the range ends today}).
         """
-        today = date.today()
-        days = [(today - timedelta(days=i)).isoformat() for i in range(span - 1, -1, -1)]
-        recent = set(days[-7:])
-        per_day = []
+        info = range_info(today, span, offset)
+        days = window(today, span, offset)
+        keys = ("focus", "other")
         apps: dict[str, dict] = {}
         with self.lock:
+
+            def per_day(ds: list[str]) -> list[dict]:
+                rows = []
+                for d in ds:
+                    total = sum(t for t, _ in self.days.get(d, {}).values())
+                    focus = sum(f for _, f in self.days.get(d, {}).values())
+                    rows.append({"day": d, "focus": minutes_of(focus), "other": minutes_of(total - focus)})
+                return rows
+
+            rows = per_day(days)
+            tiles = summary(
+                lambda ds: totals(per_day(ds), keys), today, span, offset, lambda t: t["focus"] + t["other"]
+            )
             for d in days:
-                total = focus = 0.0
                 for key, (t, f) in self.days.get(d, {}).items():
-                    total, focus = total + t, focus + f
-                    row = apps.setdefault(key, {"key": key, "today": 0.0, "week": 0.0, "span": 0.0, "focus": 0.0})
-                    row["span"] += t
+                    row = apps.setdefault(key, {"key": key, "today": 0.0, "range": 0.0, "focus": 0.0})
+                    row["range"] += t
                     row["focus"] += f
-                    if d in recent:
-                        row["week"] += t
-                    if d == days[-1]:
+                    if d == today.isoformat():
                         row["today"] += t
-                per_day.append({"day": d, "focus": _minutes(focus), "other": _minutes(total - focus)})
-
-        def total(rows):
-            return {k: sum(r[k] for r in rows) for k in ("focus", "other")}
-
-        top = sorted(apps.values(), key=lambda a: (-a["span"], a["key"]))
+        shown = ("range", "focus", "today") if offset == 0 else ("range", "focus")
         return {
-            "days": per_day,
-            "totals": {"today": total(per_day[-1:]), "week": total(per_day[-7:]), "span": total(per_day)},
-            "span": span,
+            **info,
+            "bars": sum_rows(rows, buckets(days, info["by"]), keys),
+            **tiles,
             "apps": [
-                {
-                    "key": a["key"],
-                    "name": self.name(a["key"]),
-                    **{k: _minutes(a[k]) for k in ("today", "week", "span", "focus")},
-                }
-                for a in top[:MAX_APPS]
-                if a["span"] >= 30  # under half a minute rounds to nothing
+                {"key": a["key"], "name": self.name(a["key"]), **{k: minutes_of(a[k]) for k in shown}}
+                for a in top(apps.values(), lambda a: (-a["range"], a["key"]), MAX_APPS)
+                if a["range"] >= 30  # under half a minute rounds to nothing
             ],
         }

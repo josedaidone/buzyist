@@ -66,7 +66,8 @@
       "updating": "Updating…",
       "ext_title": "The browser extension is out of date",
       "ext": "Reload extension",
-      "settings": "Settings"
+      "settings": "Settings",
+      "stats": "Stats"
     },
     "bar": {
       "looking": "Looking for the bar",
@@ -350,7 +351,6 @@
       "apps": "Apps",
       "sites": "Websites",
       "limits": "Limits",
-      "stats": "Stats",
       "general": "General",
       "about": "About"
     },
@@ -359,7 +359,7 @@
       "language_help": "The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.",
       "activities": "Activities",
       "add_activity": "Add an activity, e.g. Planning",
-      "activities_help": "Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.",
+      "activities_help": "Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. Stats adds up focus time per activity, and renaming one keeps its time.",
       "change_icon": "Change the icon",
       "icon_for": "Icon for {name}",
       "icons_for": "Icons for {name}",
@@ -766,13 +766,44 @@
     }
   },
   "stats": {
-    "_": "The Stats tab (Settings). Day names and numbers come from formatDate/formatNumber.",
+    "_": "Stats (its own panel, opened from the chart button in the header). Day names and numbers come from formatDate/formatNumber.",
+    "title": "Stats",
+    "close": "Close",
     "today": "Today",
-    "week": "Last 7 days",
     "span": {
       "one": "Last {n} day",
       "other": "Last {n} days"
     },
+    "range": {
+      "_": "The picker at the top of the tab: one period for all three sections, and the arrows that move it back.",
+      "picker": "Period",
+      "span_1": "1 day",
+      "span_7": "7 days",
+      "span_30": "30 days",
+      "span_90": "90 days",
+      "span_365": "1 year",
+      "label": "{first} – {last}",
+      "older": "Earlier period",
+      "newer": "Later period"
+    },
+    "tiles": {
+      "range": "This period",
+      "previous": {
+        "one": "Previous {n} day",
+        "other": "Previous {n} days"
+      },
+      "yesterday": "Yesterday",
+      "day_before": "The day before",
+      "average": "Daily average",
+      "per_day": "per day"
+    },
+    "change": {
+      "one": "{change} on the previous {n} day",
+      "other": "{change} on the previous {n} days"
+    },
+    "change_day": "{change} on the day before",
+    "week_tip": "{first} – {last}",
+    "chart_keys": "Use the left and right arrow keys to read each bar.",
     "focus": {
       "title": "Focus",
       "pomodoros": {
@@ -797,18 +828,21 @@
       },
       "streak": "Streak: {current} in a row · best {best}",
       "skip_weekends": "Weekends don't break the streak",
-      "chart": {
-        "one": "Focus per day over the last {n} day: {duration} in all.",
-        "other": "Focus per day over the last {n} days: {duration} in all."
-      },
+      "pc_switch": "Count the time I use the PC outside focus",
+      "outside": "{duration} on the PC outside focus",
+      "share": "{share} of your PC time in focus",
+      "legend_focus": "Focus",
+      "legend_outside": "On the PC outside focus",
+      "chart": "Focus from {first} to {last}: {duration} in all.",
       "tip_none": "No pomodoros",
-      "by_activity": "Focus by activity, last 30 days",
+      "by_activity": "Focus by activity",
       "activity_task": "Todoist tasks",
       "activity_other": "Other",
       "activities_empty": "Pick an activity under “What are you working on?” to see where your focus goes.",
-      "top_tasks": "Most focused tasks, last 30 days",
+      "top_tasks": "Most focused tasks",
       "tasks_empty": "No pomodoros yet. Pick a task and start the timer.",
-      "help": "Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist."
+      "help": "Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist.",
+      "pc_help": "Time on the PC is every minute you touched the keyboard or mouse, whatever was in front; outside focus is that time during breaks, pauses and with no session running. It stays on this PC, in pc_time.json, with no app names."
     },
     "apps": {
       "title": "Time in apps",
@@ -816,15 +850,13 @@
       "legend_focus": "During focus",
       "legend_other": "Outside focus",
       "during_focus": "{duration} during focus",
-      "chart": {
-        "one": "Time in apps per day over the last {n} day: {duration} in all.",
-        "other": "Time in apps per day over the last {n} days: {duration} in all."
-      },
+      "chart": "Time in apps from {first} to {last}: {duration} in all.",
       "tip": "{focus} during focus · {other} outside",
       "tip_none": "Nothing counted",
-      "most_apps": "Most used apps, last 30 days",
-      "most_sites": "Most used websites, last 30 days",
-      "row": "{today} today · {week} this week · {share} in focus",
+      "most_apps": "Most used apps",
+      "most_sites": "Most used websites",
+      "row": "{today} today · {share} in focus",
+      "row_past": "{share} in focus",
       "show_all_apps": {
         "one": "Show all {n} apps",
         "other": "Show all {n} apps"
@@ -845,19 +877,35 @@
       "legend_focus": "During focus",
       "legend_limit": "Over a limit",
       "split": "{focus} focus · {limit} limit",
-      "chart": {
-        "one": "Blocks per day over the last {n} day: {focus} during focus, {limit} over a limit.",
-        "other": "Blocks per day over the last {n} days: {focus} during focus, {limit} over a limit."
-      },
+      "chart": "Blocks from {first} to {last}: {focus} during focus, {limit} over a limit.",
       "tip": "{focus} during focus · {limit} over a limit",
       "tip_none": "Nothing blocked",
       "count": {
         "one": "{n} block",
         "other": "{n} blocks"
       },
-      "most": "Most blocked, last 30 days",
+      "most": "Most blocked",
       "empty": "Nothing blocked yet. Turn on blocking in the Websites tab, or add a website limit.",
       "help": "Counted each time the Chrome extension shows its block page: during a work phase, or when a website limit is used up or in its blocked hours. Every browser profile on this PC adds to the same counts."
+    },
+    "filter": {
+      "_": "The chip above the Focus tiles while they show one activity or task (a click on its row); {name} is its name.",
+      "activity": "Only {name}",
+      "task": "Only the task {name}",
+      "clear": "Show all focus",
+      "pick": "Show only {name}",
+      "note": "Time on the PC isn't split by activity or task, so it is left out here."
+    },
+    "report": {
+      "_": "Export report: the period on show saved as one HTML page that opens in any browser.",
+      "export": "Export report",
+      "export_title": "Save this period's stats as an HTML page",
+      "exporting": "Saving…",
+      "saved": "Report saved to {path}",
+      "doc_title": "buZyist stats · {range}",
+      "heading": "Stats",
+      "made": "Made with buZyist {version} on {date} at {time}.",
+      "apps_off": "Time in apps wasn't being counted."
     }
   },
   "tray": {
@@ -1143,6 +1191,14 @@
       "download_failed": "The download failed ({error}).",
       "checksum": "The downloaded installer doesn't match the release's checksum; not installing it.",
       "lock_failed": "Couldn't lock the downloaded installer (Windows error {error}); not installing it."
+    },
+    "stats": {
+      "filter": "That activity or task isn't in your stats any more."
+    },
+    "report": {
+      "empty": "There are no stats to export yet.",
+      "write": "Couldn't save the report: {error}",
+      "no_window": "The window isn't ready yet. Try again in a moment."
     }
   },
   "defaults": {

@@ -54,7 +54,7 @@ menu, and starts it.
   window gets narrower.
 - **Activities**: the "What are you working on?" field offers your activities (Email, Messages,
   Programming, Reading... edit them in Settings → General). Pick one, then type a detail after it
-  if you like ("Email · inbox zero"). The Stats tab adds up focus time per activity, and an
+  if you like ("Email · inbox zero"). Stats adds up focus time per activity, and an
   activity can block different apps and websites (see below).
 - **Tasks with a duration**: a Todoist task with a duration gets its own tomatoes, that much focus
   time in all with your usual breaks on top: up to 20 minutes is one tomato, longer tasks are split
@@ -125,13 +125,22 @@ menu, and starts it.
   every few minutes it stays there (5 by default; set it per limit). New installs start with
   limits for WhatsApp (30 min a day) and Slack (1 hour a day), set to beep; switch app limits on
   to use them. App limits stay on this PC; they aren't shared through Chrome.
-- **Stats** (Settings → Stats): your focus time, tomatoes, sessions, tasks worked on and done for
-  today, 7 and 30 days, your streak, focus per day, the tasks that got the most and focus per
-  activity; then how often websites were blocked, during focus or over a limit, with the most
-  blocked sites.
+- **Stats** (the chart button next to Settings): your focus time, tomatoes, sessions, tasks worked
+  on and done, your streak, focus per day, the tasks that got the most and focus per activity;
+  then how often websites were blocked, during focus or over a limit, with the most blocked sites.
+  - **Pick the period** at the top (1 day, 7, 30 or 90 days, or a year) and step back through
+    earlier ones with ‹ ›. Each tile compares the period with the one before it.
+  - **Charts**: hover a bar, or focus the chart and use ← →, to read each day (a week, over a year).
+    The focus chart also shows the time you spent on the PC outside focus (switch that off above
+    the chart).
+  - **Click an activity or a task** to see only its focus; click the chip above the tiles to see
+    everything again.
   - **Time in apps** (off by default): turn on **Count the time I spend in each app** to see how
     long each program was in front, and each website was the active tab, split into during and
     outside focus. It stays on this PC.
+  - **Export report** saves the period on show (and the activity or task you clicked, if any) as
+    an HTML page that opens in any browser and prints well: tiles, charts and every list in full.
+    You pick where it goes; it then opens in your browser.
 - **The extension's toolbar button**: its badge shows the time left on the current site's limit
   (otherwise the pomodoro minutes left). Click it to see the current pomodoro, your limits and
   how many times a site was blocked today.
@@ -164,8 +173,10 @@ menu, and starts it.
 - Your settings live in `%APPDATA%\Busyist`: `config.json` (your Todoist token and bar PIN are
   encrypted with Windows' DPAPI, readable only by your Windows account), the session, your
   history, the time spent on limited sites and apps (`usage.json`, `app_usage.json`), the time in
-  apps and websites (`app_time.json`, `site_time.json`) and a log. **Settings → About → Open data
-  folder** takes you there.
+  apps and websites (`app_time.json`, `site_time.json`), the time on the PC (`pc_time.json`, minutes
+  only, no app names), the blocked-site counts (`blocks.json`) and a log. **Settings → About → Open
+  data folder** takes you there. A Stats report is saved only where you choose, and buZyist doesn't
+  send it anywhere.
 - Uninstalling asks whether to delete that folder too.
 
 ## Troubleshooting
@@ -204,13 +215,9 @@ To build the installer and the portable zip into `dist\` (needs [Inno Setup 6](h
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-**Releases** are built by GitHub Actions. Bump `__version__` in `busyist.py`, commit, then
-push a matching tag:
-
-```powershell
-git tag v1.4.0
-git push origin v1.4.0
-```
+**Releases** are built by GitHub Actions. Bump `__version__` in `busyist.py` in a pull request;
+merging it into `main` runs the checks, builds the installer and publishes the release, tagging
+the merged commit `vX.Y.Z`. Merges without a bump publish nothing.
 
 Installed copies update themselves from the latest release, so keep the asset names
 (`Buzyist-Setup-x.y.z.exe`, `SHA256SUMS.txt`) as `build.ps1` makes them.

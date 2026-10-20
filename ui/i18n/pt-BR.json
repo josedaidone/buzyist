@@ -65,7 +65,8 @@
       "updating": "Atualizando…",
       "ext_title": "A extensão do navegador está desatualizada",
       "ext": "Recarregar extensão",
-      "settings": "Configurações"
+      "settings": "Configurações",
+      "stats": "Estatísticas"
     },
     "bar": {
       "looking": "Procurando a BUSY Bar",
@@ -349,7 +350,6 @@
       "apps": "Apps",
       "sites": "Sites",
       "limits": "Limites",
-      "stats": "Estatísticas",
       "general": "Geral",
       "about": "Sobre"
     },
@@ -358,7 +358,7 @@
       "language_help": "O idioma dos textos, datas e números do buZyist. Ao salvar outro, as janelas recarregam.",
       "activities": "Atividades",
       "add_activity": "Adicionar uma atividade, ex.: Planejamento",
-      "activities_help": "Aparecem em “No que você está trabalhando?” para uma sessão sem tarefa. Escolha uma e, se quiser, digite um detalhe depois dela. Clique num ícone para trocá-lo. A aba Estatísticas soma o tempo de foco por atividade, e renomear uma mantém o tempo dela.",
+      "activities_help": "Aparecem em “No que você está trabalhando?” para uma sessão sem tarefa. Escolha uma e, se quiser, digite um detalhe depois dela. Clique num ícone para trocá-lo. As Estatísticas somam o tempo de foco por atividade, e renomear uma mantém o tempo dela.",
       "change_icon": "Trocar o ícone",
       "icon_for": "Ícone de {name}",
       "icons_for": "Ícones para {name}",
@@ -759,13 +759,44 @@
     }
   },
   "stats": {
-    "_": "A aba Estatísticas (Configurações). Nomes de dias e números vêm de formatDate/formatNumber.",
+    "_": "As Estatísticas (painel próprio, aberto pelo botão de gráfico no topo). Nomes de dias e números vêm de formatDate/formatNumber.",
+    "title": "Estatísticas",
+    "close": "Fechar",
     "today": "Hoje",
-    "week": "Últimos 7 dias",
     "span": {
       "one": "Último {n} dia",
       "other": "Últimos {n} dias"
     },
+    "range": {
+      "_": "O seletor no topo da aba: um período para as três seções, e as setas que o levam para trás.",
+      "picker": "Período",
+      "span_1": "1 dia",
+      "span_7": "7 dias",
+      "span_30": "30 dias",
+      "span_90": "90 dias",
+      "span_365": "1 ano",
+      "label": "{first} – {last}",
+      "older": "Período anterior",
+      "newer": "Período seguinte"
+    },
+    "tiles": {
+      "range": "Este período",
+      "previous": {
+        "one": "{n} dia anterior",
+        "other": "{n} dias anteriores"
+      },
+      "yesterday": "Ontem",
+      "day_before": "O dia anterior",
+      "average": "Média por dia",
+      "per_day": "por dia"
+    },
+    "change": {
+      "one": "{change} em relação ao {n} dia anterior",
+      "other": "{change} em relação aos {n} dias anteriores"
+    },
+    "change_day": "{change} em relação ao dia anterior",
+    "week_tip": "{first} – {last}",
+    "chart_keys": "Use as setas para a esquerda e para a direita para ler cada barra.",
     "focus": {
       "title": "Foco",
       "pomodoros": {
@@ -790,18 +821,21 @@
       },
       "streak": "Sequência: {current} seguidos · recorde de {best}",
       "skip_weekends": "Fins de semana não quebram a sequência",
-      "chart": {
-        "one": "Foco por dia no último {n} dia: {duration} no total.",
-        "other": "Foco por dia nos últimos {n} dias: {duration} no total."
-      },
+      "pc_switch": "Contar o tempo que uso o PC fora do foco",
+      "outside": "{duration} no PC fora do foco",
+      "share": "{share} do seu tempo no PC em foco",
+      "legend_focus": "Foco",
+      "legend_outside": "No PC fora do foco",
+      "chart": "Foco de {first} a {last}: {duration} no total.",
       "tip_none": "Nenhum pomodoro",
-      "by_activity": "Foco por atividade, últimos 30 dias",
+      "by_activity": "Foco por atividade",
       "activity_task": "Tarefas do Todoist",
       "activity_other": "Outros",
       "activities_empty": "Escolha uma atividade em “No que você está trabalhando?” para ver para onde vai o seu foco.",
-      "top_tasks": "Tarefas com mais foco, últimos 30 dias",
+      "top_tasks": "Tarefas com mais foco",
       "tasks_empty": "Nenhum pomodoro ainda. Escolha uma tarefa e inicie o timer.",
-      "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist."
+      "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist.",
+      "pc_help": "O tempo no PC é cada minuto em que você tocou no teclado ou no mouse, seja qual for o app em primeiro plano; fora do foco é esse tempo durante os intervalos, com o timer pausado ou sem nenhuma sessão rodando. Tudo fica neste PC, em pc_time.json, sem nomes de apps."
     },
     "apps": {
       "title": "Tempo nos apps",
@@ -809,15 +843,13 @@
       "legend_focus": "Durante o foco",
       "legend_other": "Fora do foco",
       "during_focus": "{duration} durante o foco",
-      "chart": {
-        "one": "Tempo nos apps por dia no último {n} dia: {duration} no total.",
-        "other": "Tempo nos apps por dia nos últimos {n} dias: {duration} no total."
-      },
+      "chart": "Tempo nos apps de {first} a {last}: {duration} no total.",
       "tip": "{focus} durante o foco · {other} fora",
       "tip_none": "Nada contado",
-      "most_apps": "Apps mais usados, últimos 30 dias",
-      "most_sites": "Sites mais usados, últimos 30 dias",
-      "row": "{today} hoje · {week} nesta semana · {share} no foco",
+      "most_apps": "Apps mais usados",
+      "most_sites": "Sites mais usados",
+      "row": "{today} hoje · {share} no foco",
+      "row_past": "{share} no foco",
       "show_all_apps": {
         "one": "Mostrar o {n} app",
         "other": "Mostrar todos os {n} apps"
@@ -838,19 +870,35 @@
       "legend_focus": "Durante o foco",
       "legend_limit": "Acima de um limite",
       "split": "{focus} no foco · {limit} por limite",
-      "chart": {
-        "one": "Bloqueios por dia no último {n} dia: {focus} durante o foco, {limit} acima de um limite.",
-        "other": "Bloqueios por dia nos últimos {n} dias: {focus} durante o foco, {limit} acima de um limite."
-      },
+      "chart": "Bloqueios de {first} a {last}: {focus} durante o foco, {limit} acima de um limite.",
       "tip": "{focus} durante o foco · {limit} acima de um limite",
       "tip_none": "Nada bloqueado",
       "count": {
         "one": "{n} bloqueio",
         "other": "{n} bloqueios"
       },
-      "most": "Mais bloqueados, últimos 30 dias",
+      "most": "Mais bloqueados",
       "empty": "Nada bloqueado ainda. Ative o bloqueio na aba Sites ou adicione um limite de site.",
       "help": "Contado cada vez que a extensão do Chrome mostra a página de bloqueio: durante uma fase de trabalho, ou quando um limite de site se esgota ou está no horário bloqueado. Todos os perfis do navegador neste PC somam nas mesmas contas."
+    },
+    "filter": {
+      "_": "O chip acima dos cards de Foco enquanto mostram uma atividade ou tarefa (um clique na linha); {name} é o nome.",
+      "activity": "Só {name}",
+      "task": "Só a tarefa {name}",
+      "clear": "Mostrar todo o foco",
+      "pick": "Mostrar só {name}",
+      "note": "O tempo no PC não é separado por atividade ou tarefa, então fica de fora aqui."
+    },
+    "report": {
+      "_": "Exportar relatório: o período em tela salvo como uma página HTML que abre em qualquer navegador.",
+      "export": "Exportar relatório",
+      "export_title": "Salvar as estatísticas deste período como página HTML",
+      "exporting": "Salvando…",
+      "saved": "Relatório salvo em {path}",
+      "doc_title": "Estatísticas do buZyist · {range}",
+      "heading": "Estatísticas",
+      "made": "Feito com o buZyist {version} em {date} às {time}.",
+      "apps_off": "O tempo em apps não estava sendo contado."
     }
   },
   "tray": {
@@ -1133,6 +1181,14 @@
       "download_failed": "O download falhou ({error}).",
       "checksum": "O instalador baixado não confere com a soma de verificação da versão; ele não será instalado.",
       "lock_failed": "Não foi possível travar o instalador baixado (erro {error} do Windows); ele não será instalado."
+    },
+    "stats": {
+      "filter": "Essa atividade ou tarefa não está mais nas suas estatísticas."
+    },
+    "report": {
+      "empty": "Ainda não há estatísticas para exportar.",
+      "write": "Não foi possível salvar o relatório: {error}",
+      "no_window": "A janela ainda não está pronta. Tente de novo em instantes."
     }
   },
   "defaults": {

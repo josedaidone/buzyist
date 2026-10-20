@@ -40,6 +40,7 @@ TIMER_PATH = DATA_DIR / "timer.json"  # the timer, when it runs on this PC inste
 USAGE_PATH = DATA_DIR / "usage.json"  # time spent per limited website (site limits)
 APP_USAGE_PATH = DATA_DIR / "app_usage.json"  # time spent per limited Windows app (app limits)
 APP_TIME_PATH = DATA_DIR / "app_time.json"  # time spent in every app, for the Stats tab (app_time_on)
+PC_TIME_PATH = DATA_DIR / "pc_time.json"  # time using the PC at all, in focus or not, for the Stats tab (pc_time_on)
 SITE_TIME_PATH = DATA_DIR / "site_time.json"  # time spent on every website, measured by the extension (app_time_on)
 BLOCKS_PATH = DATA_DIR / "blocks.json"  # how often websites were blocked, for the Stats tab
 SYNC_PATH = DATA_DIR / "sync.json"  # sharing the limits and their time with other PCs

@@ -3,11 +3,13 @@
 import json
 import shutil
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
 from buzyist import app as app_mod
 from buzyist import blocker, config, constants, paths
+from buzyist.stats_common import SPANS
 
 CONFIGS = Path(__file__).parent / "data" / "configs"
 
@@ -172,6 +174,7 @@ def test_a_newer_config_keeps_its_version(start):
         ("blocked_sites", "youtube.com"),
         ("site_limits", {"not": "a list"}),
         ("language", "fr"),
+        ("stats_span", 14),
     ],
 )
 def test_an_invalid_key_falls_back_to_its_default(start, caplog, key, bad):
@@ -232,6 +235,7 @@ def test_a_config_that_isnt_an_object_gives_the_defaults(start, caplog, content)
         ({"busybar_ip": "192.168.1.50/x"}, "“192.168.1.50/x” isn't the bar's address; type one like 192.168.1.50."),
         ({"focus_label": "x" * 61}, "Keep the label to 60 characters or fewer."),
         ({"language": "fr"}, "Pick a language from the list."),
+        ({"stats_span": "14"}, "stats span isn't valid."),
         # Several wrong: the first in the order save_settings always used.
         (
             {"cycles": 0, "work_minutes": 1, "site_mode": "x"},
@@ -254,6 +258,7 @@ def test_settings_tidy_what_they_accept(app):
             "busybar_ip": " http://192.168.1.60/ ",
             "blocked_sites": ["https://www.YouTube.com/"],
             "focus_label": "  deep  ",
+            "stats_span": "90",
             "filters": [],  # not taken from Settings (save_filter does them)
         }
     )
@@ -262,6 +267,7 @@ def test_settings_tidy_what_they_accept(app):
     assert cfg["busybar_ip"] == "192.168.1.60"
     assert cfg["blocked_sites"] == ["youtube.com"]
     assert cfg["focus_label"] == "deep"
+    assert cfg["stats_span"] == 90
     assert cfg["filters"] == [constants.DEFAULT_FILTER]
 
 
@@ -307,3 +313,8 @@ def test_migrations_are_numbered_and_run_in_order(monkeypatch):
     cfg = {}
     config.migrate_config(cfg)
     assert ran == [2, 1, 2]
+
+
+def test_the_stats_ranges_are_the_pickers():
+    assert get_args(config.Config.model_fields["stats_span"].annotation) == SPANS
+    assert config.DEFAULTS["stats_span"] in SPANS
