@@ -838,6 +838,10 @@ button.stat-site[aria-pressed="true"] { background: var(--surface-2); }
 #p_stats .help + h4 { margin-top: 20px; } /* a section's closing note, then the next title */.stat-streak { font-size: 13.5px; color: var(--muted); margin: -4px 0 12px; }
 .stat-streak b { color: var(--ink); }
 #appTimeBody.muted { opacity: .55; }
+/* Stats has its own drawer (not a Settings tab): wider for the charts, Export report next to the title */
+#statsDrawer { width: min(620px, 94vw); }
+#statsDrawer .drawer-head { gap: 8px; }
+#statsDrawer .drawer-body { padding-bottom: 28px; }
 #appTimeMore, #siteTimeMore { margin: -6px 0 12px; }
 
 /* BUSY Bar tab: the bar's screens (bar_screens.py). The preview is the bar's

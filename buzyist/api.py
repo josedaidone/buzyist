@@ -148,6 +148,22 @@ class Api:
         """
         return self._do(self._app.stats, span, offset, only)
 
+    def report_assets(self):
+        """What Export report (ui/report.js) puts in its page besides the stats: the logo, inline, and the version."""
+
+        def go():
+            try:
+                logo = (paths.UI / "img" / "logo.svg").read_text(encoding="utf-8")
+            except OSError:
+                logo = ""
+            return {"logo": logo, "version": app_version()}
+
+        return self._do(go)
+
+    def save_report(self, html, filename):
+        """Export report: save the page ui/report.js built where the user picks (App.save_report)."""
+        return self._do(self._app.save_report, html, filename)
+
     def running_apps(self):
         """The programs running now, for the app names Settings suggests."""
         return self._do(lambda: {"apps": running_apps()})

@@ -65,7 +65,8 @@
       "updating": "Atualizando…",
       "ext_title": "A extensão do navegador está desatualizada",
       "ext": "Recarregar extensão",
-      "settings": "Configurações"
+      "settings": "Configurações",
+      "stats": "Estatísticas"
     },
     "bar": {
       "looking": "Procurando a BUSY Bar",
@@ -349,7 +350,6 @@
       "apps": "Apps",
       "sites": "Sites",
       "limits": "Limites",
-      "stats": "Estatísticas",
       "general": "Geral",
       "about": "Sobre"
     },
@@ -358,7 +358,7 @@
       "language_help": "O idioma dos textos, datas e números do buZyist. Ao salvar outro, as janelas recarregam.",
       "activities": "Atividades",
       "add_activity": "Adicionar uma atividade, ex.: Planejamento",
-      "activities_help": "Aparecem em “No que você está trabalhando?” para uma sessão sem tarefa. Escolha uma e, se quiser, digite um detalhe depois dela. Clique num ícone para trocá-lo. A aba Estatísticas soma o tempo de foco por atividade, e renomear uma mantém o tempo dela.",
+      "activities_help": "Aparecem em “No que você está trabalhando?” para uma sessão sem tarefa. Escolha uma e, se quiser, digite um detalhe depois dela. Clique num ícone para trocá-lo. As Estatísticas somam o tempo de foco por atividade, e renomear uma mantém o tempo dela.",
       "change_icon": "Trocar o ícone",
       "icon_for": "Ícone de {name}",
       "icons_for": "Ícones para {name}",
@@ -759,7 +759,9 @@
     }
   },
   "stats": {
-    "_": "A aba Estatísticas (Configurações). Nomes de dias e números vêm de formatDate/formatNumber.",
+    "_": "As Estatísticas (painel próprio, aberto pelo botão de gráfico no topo). Nomes de dias e números vêm de formatDate/formatNumber.",
+    "title": "Estatísticas",
+    "close": "Fechar",
     "today": "Hoje",
     "span": {
       "one": "Último {n} dia",
@@ -886,6 +888,17 @@
       "clear": "Mostrar todo o foco",
       "pick": "Mostrar só {name}",
       "note": "O tempo no PC não é separado por atividade ou tarefa, então fica de fora aqui."
+    },
+    "report": {
+      "_": "Exportar relatório: o período em tela salvo como uma página HTML que abre em qualquer navegador.",
+      "export": "Exportar relatório",
+      "export_title": "Salvar as estatísticas deste período como página HTML",
+      "exporting": "Salvando…",
+      "saved": "Relatório salvo em {path}",
+      "doc_title": "Estatísticas do buZyist · {range}",
+      "heading": "Estatísticas",
+      "made": "Feito com o buZyist {version} em {date} às {time}.",
+      "apps_off": "O tempo em apps não estava sendo contado."
     }
   },
   "tray": {
@@ -1171,6 +1184,11 @@
     },
     "stats": {
       "filter": "Essa atividade ou tarefa não está mais nas suas estatísticas."
+    },
+    "report": {
+      "empty": "Ainda não há estatísticas para exportar.",
+      "write": "Não foi possível salvar o relatório: {error}",
+      "no_window": "A janela ainda não está pronta. Tente de novo em instantes."
     }
   },
   "defaults": {

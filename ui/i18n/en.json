@@ -66,7 +66,8 @@
       "updating": "Updating…",
       "ext_title": "The browser extension is out of date",
       "ext": "Reload extension",
-      "settings": "Settings"
+      "settings": "Settings",
+      "stats": "Stats"
     },
     "bar": {
       "looking": "Looking for the bar",
@@ -350,7 +351,6 @@
       "apps": "Apps",
       "sites": "Websites",
       "limits": "Limits",
-      "stats": "Stats",
       "general": "General",
       "about": "About"
     },
@@ -359,7 +359,7 @@
       "language_help": "The language of buZyist's text, dates and numbers. Saving a new one reloads the windows.",
       "activities": "Activities",
       "add_activity": "Add an activity, e.g. Planning",
-      "activities_help": "Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. The Stats tab adds up focus time per activity, and renaming one keeps its time.",
+      "activities_help": "Offered under “What are you working on?” for a session with no task. Pick one, then type a detail after it if you like. Click an icon to change it. Stats adds up focus time per activity, and renaming one keeps its time.",
       "change_icon": "Change the icon",
       "icon_for": "Icon for {name}",
       "icons_for": "Icons for {name}",
@@ -766,7 +766,9 @@
     }
   },
   "stats": {
-    "_": "The Stats tab (Settings). Day names and numbers come from formatDate/formatNumber.",
+    "_": "Stats (its own panel, opened from the chart button in the header). Day names and numbers come from formatDate/formatNumber.",
+    "title": "Stats",
+    "close": "Close",
     "today": "Today",
     "span": {
       "one": "Last {n} day",
@@ -893,6 +895,17 @@
       "clear": "Show all focus",
       "pick": "Show only {name}",
       "note": "Time on the PC isn't split by activity or task, so it is left out here."
+    },
+    "report": {
+      "_": "Export report: the period on show saved as one HTML page that opens in any browser.",
+      "export": "Export report",
+      "export_title": "Save this period's stats as an HTML page",
+      "exporting": "Saving…",
+      "saved": "Report saved to {path}",
+      "doc_title": "buZyist stats · {range}",
+      "heading": "Stats",
+      "made": "Made with buZyist {version} on {date} at {time}.",
+      "apps_off": "Time in apps wasn't being counted."
     }
   },
   "tray": {
@@ -1181,6 +1194,11 @@
     },
     "stats": {
       "filter": "That activity or task isn't in your stats any more."
+    },
+    "report": {
+      "empty": "There are no stats to export yet.",
+      "write": "Couldn't save the report: {error}",
+      "no_window": "The window isn't ready yet. Try again in a moment."
     }
   },
   "defaults": {

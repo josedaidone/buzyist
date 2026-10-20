@@ -337,7 +337,7 @@ function renderUpdate() {
 function renderEnded() {
   const e = state.ended;
   $("endedWrap").classList.toggle("on", !!e);
-  $("scrim").classList.toggle("on", !!e || $("drawer").classList.contains("on") || editing !== undefined);
+  $("scrim").classList.toggle("on", !!e || drawerOpen() || editing !== undefined);
   if (!e) return;
   const finished = e.reason === "finished";
   $("endedChip").textContent = t(finished ? "summary.chip_done" : "summary.chip_stopped");
@@ -532,7 +532,7 @@ function openFilterEditor(name) {
 function closeFilterEditor() {
   editing = undefined;
   $("filterWrap").classList.remove("on");
-  if (!(state && state.ended) && !$("drawer").classList.contains("on")) $("scrim").classList.remove("on");
+  if (!(state && state.ended) && !drawerOpen()) $("scrim").classList.remove("on");
 }
 
 function filterBusy(on) {
@@ -1325,10 +1325,41 @@ function showTab(name, focus) {
   }
   for (const p of document.querySelectorAll("[data-panel]")) p.classList.toggle("hidden", p.dataset.panel !== name);
   $("settingsForm").scrollTop = 0;
-  if (name === "stats" && api) loadStats();
 }
 
-// ------------------------------------------------------------- stats tab
+// ---------------------------------------------------------------- stats
+
+// Stats has a drawer of its own (#statsDrawer, the chart button in the
+// header), not a Settings tab. Its switches and the period are saved at once,
+// so it has no Save button; it opens on the period ending today, everything on show.
+const statsValues = (names) => formValues(names, $("statsForm"));
+const drawerOpen = () => $("drawer").classList.contains("on") || $("statsDrawer").classList.contains("on");
+
+async function openStats() {
+  const s = await api.get_settings();
+  for (const input of $("statsForm").querySelectorAll("input[name]")) {
+    if (input.type === "checkbox") input.checked = !!s[input.name];
+    else if (input.type === "radio") input.checked = String(s[input.name]) === input.value;
+  }
+  if ($("drawer").classList.contains("on")) closeSettings();
+  statsOffset = 0;
+  statsFilter = null;
+  appTimeAll = siteTimeAll = false;
+  $("statsForm").scrollTop = 0;
+  $("statsDrawer").classList.add("on");
+  $("scrim").classList.add("on");
+  loadStats();
+  setTimeout(() => $("closeStats").focus(), 220);
+}
+
+function closeStats() {
+  $("statsDrawer").classList.remove("on");
+  if (!(state && state.ended) && !$("drawer").classList.contains("on")) $("scrim").classList.remove("on");
+}
+
+$("openStats").onclick = () => openStats();
+$("closeStats").onclick = closeStats;
+$("statsForm").onsubmit = (e) => e.preventDefault();
 
 // The three sections for one period (Api.stats, App.stats): its `span` (the
 // stats_span setting, the picker at the top) and `statsOffset`, how many
@@ -1336,11 +1367,12 @@ function showTab(name, focus) {
 // within the data, and the answer says whether there is anything older.
 // `statsFilter` narrows the Focus section to one activity or task (a click
 // on its row: {activity: id} or {task: key}); the arrows keep it, a new
-// period or opening Settings drops it.
+// period or opening Stats drops it.
 let statsOffset = 0, statsAsked = 0, statsFilter = null;
+let lastStats = null;  // the answer on show, for Export report (ui/report.js)
 async function loadStats() {
   const asked = ++statsAsked;  // a quick second click wins over a slow first answer
-  const picked = formValues(["stats_span"]).stats_span;
+  const picked = statsValues(["stats_span"]).stats_span;
   const s = await api.stats(picked ? Number(picked) : null, statsOffset, statsFilter);
   if (asked !== statsAsked) return;
   if (!s.ok && statsFilter) {  // gone meanwhile (history trimmed, activity removed): show everything
@@ -1349,6 +1381,7 @@ async function loadStats() {
     return loadStats();
   }
   if (!s.ok) return toast(s.error, true);
+  lastStats = s;
   statsOffset = s.range.offset;
   renderRange(s.range);
   renderFocusStats(s.focus);
@@ -1358,7 +1391,7 @@ async function loadStats() {
 
 for (const radio of document.querySelectorAll('input[name="stats_span"]')) {
   radio.onchange = async () => {
-    const result = await api.save_settings(formValues(["stats_span"]));
+    const result = await api.save_settings(statsValues(["stats_span"]));
     if (!result.ok) return toast(result.error, true);
     statsOffset = 0;
     statsFilter = null;
@@ -1388,13 +1421,18 @@ function filterRow(filter, name, current) {
 
 // "Mar 2 – Mar 31" between the arrows, with the year when it isn't this one;
 // a single day is "Today" or "Wed, Oct 14", and has no charts (.one-day).
-function renderRange(r) {
+// `always` (the report) gives the day itself for today too.
+function rangeLabel(r, always) {
   const thisYear = String(new Date().getFullYear());
-  const withYear = r.first.slice(0, 4) !== thisYear || r.last.slice(0, 4) !== thisYear;
+  const withYear = always || r.first.slice(0, 4) !== thisYear || r.last.slice(0, 4) !== thisYear;
   const day = (iso, weekday) => formatDate(new Date(iso + "T12:00"),
     { ...(weekday ? { weekday: "short" } : {}), day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
-  $("statsRange").textContent = r.span === 1 ? (r.offset ? day(r.last, true) : t("stats.today"))
+  return r.span === 1 ? (r.offset || always ? day(r.last, true) : t("stats.today"))
     : t("stats.range.label", { first: day(r.first), last: day(r.last) });
+}
+
+function renderRange(r) {
+  $("statsRange").textContent = rangeLabel(r);
   $("p_stats").classList.toggle("one-day", r.span === 1);
   for (const radio of document.querySelectorAll('input[name="stats_span"]')) radio.checked = Number(radio.value) === r.span;
   const older = $("statsOlder"), newer = $("statsNewer");
@@ -1407,7 +1445,7 @@ function renderRange(r) {
 
 // Saved at once too; the limiter thread starts or stops counting straight away.
 $("s_app_time_on").onchange = async () => {
-  const result = await api.save_settings(formValues(["app_time_on"]));
+  const result = await api.save_settings(statsValues(["app_time_on"]));
   if (!result.ok) return toast(result.error, true);
   loadStats();
 };
@@ -1417,16 +1455,26 @@ $("s_app_time_on").onchange = async () => {
 let appTimeAll = false, siteTimeAll = false;  // "Show all" pressed
 $("appTimeMore").onclick = () => { appTimeAll = true; loadStats(); };
 $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
+// The section's tiles as {label, number, lines} (statTile; ui/report.js too).
+function appTimeTiles(s) {
+  return statTiles(s).map(([label, tot, kind]) => ({
+    label, number: bigDuration(tot.focus + tot.other), lines: kind === "average"
+      ? [t("stats.tiles.per_day")]
+      : [t("stats.apps.during_focus", { duration: duration(tot.focus) }), ...changeLine(s, kind)],
+  }));
+}
+
+// A chart bar's text in Time in apps and in Websites blocked.
+const appTimeLine = (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none");
+const blocksLine = (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none");
+
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
-  putTiles($("appTimeTiles"), statTiles(s).map(([label, tot, kind]) =>
-    statTile(label, bigDuration(tot.focus + tot.other), kind === "average"
-      ? [t("stats.tiles.per_day")]
-      : [t("stats.apps.during_focus", { duration: duration(tot.focus) }), ...changeLine(s, kind)])));
+  putTiles($("appTimeTiles"), appTimeTiles(s).map((x) => statTile(x.label, x.number, x.lines)));
 
   barChart($("appTimeChart"), s, [["focus", "stat-f"], ["other", "stat-l"]],
     t("stats.apps.chart", { ...rangeDays(s), duration: duration(s.totals.range.focus + s.totals.range.other) }),
-    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), minutes: true });
+    { line: appTimeLine, minutes: true });
 
   timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "stats.apps.show_all_apps", (a) => a.key + ".exe",
     t(s.on ? "stats.apps.apps_empty" : "stats.apps.apps_off"));
@@ -1455,19 +1503,19 @@ function timeRows(list, more, rows, all, moreKey, title, empty) {
 
 // Saved at once, like the streak's switch; the limiter thread starts or stops counting straight away.
 $("s_pc_time_on").onchange = async () => {
-  const result = await api.save_settings(formValues(["pc_time_on"]));
+  const result = await api.save_settings(statsValues(["pc_time_on"]));
   if (!result.ok) return toast(result.error, true);
   loadStats();
 };
 
 // Saved at once (not with Save), so the streak above changes as you click.
 $("s_streak_skip_weekends").onchange = async () => {
-  const result = await api.save_settings(formValues(["streak_skip_weekends"]));
+  const result = await api.save_settings(statsValues(["streak_skip_weekends"]));
   if (!result.ok) return toast(result.error, true);
   loadStats();
 };
 
-// The Stats tab's text in the app language: a share (0..1) as a whole
+// The Stats drawer's text in the app language: a share (0..1) as a whole
 // percent, and a day ("Sat, Oct 17" / "sáb., 17 de out.").
 const percent = (share) => formatNumber(share, { style: "percent", maximumFractionDigits: 0 });
 const statDay = (iso) => formatDate(new Date(iso + "T12:00"), { weekday: "short", day: "numeric", month: "short" });
@@ -1675,10 +1723,17 @@ function keepCounts(text) {
 // Focus from history.json (App.focus_stats): focus time, pomodoros, sessions
 // and tasks for the period, the streak, minutes per bar, top tasks; and, from
 // pc_time.json, the time on the PC outside focus (`outside`, stacked on top).
-function renderFocusStats(s) {
-  const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
-  // counted, now or before; not split by activity or task, so not under a filter
-  const pc = !s.filter && (s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0);
+// The Focus section's pieces, shared with ui/report.js: whether the time on
+// the PC outside focus is shown (counted, now or before; not split by
+// activity or task, so not under a filter), a tile's or task's counts, an
+// activity row's name, the tiles as {label, number, lines}, the streak as
+// [before, the days, after] and a bar's text.
+const focusPc = (s) => !s.filter && (s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0);
+const focusCounts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
+const focusGroupName = (g) => g.id === "_task" ? t("stats.focus.activity_task") : g.id === "_other" ? t("stats.focus.activity_other") : g.name;
+
+function focusTiles(s) {
+  const pc = focusPc(s);
   const pcLines = (tot, kind) => {
     if (!pc) return [];
     const lines = [t("stats.focus.outside", { duration: bigDuration(tot.outside) })];
@@ -1686,23 +1741,39 @@ function renderFocusStats(s) {
     if (kind === "range" && all) lines.push(t("stats.focus.share", { share: percent(tot.minutes / all) }));
     return lines;
   };
-  putTiles($("focusTiles"), statTiles(s).map(([label, tot, kind]) =>
-    statTile(label, bigDuration(tot.minutes), kind === "average"
+  return statTiles(s).map(([label, tot, kind]) => ({
+    label, number: bigDuration(tot.minutes), lines: kind === "average"
       ? [t("stats.tiles.per_day"), ...pcLines(tot, kind)]
-      : [keepCounts(counts(tot)),
+      : [keepCounts(focusCounts(tot)),
          keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })),
          ...pcLines(tot, kind),
-         ...changeLine(s, kind)])));
-  $("focusLegend").classList.toggle("hidden", !pc);
+         ...changeLine(s, kind)],
+  }));
+}
+
+function focusStreak(s) {
   const current = t("stats.focus.days", { n: s.streak.current });
   const [before, after] = splitAround(t("stats.focus.streak", { current, best: t("stats.focus.days", { n: s.streak.best }) }), current);
+  return [before, current, after];
+}
+
+function focusLine(s) {
+  const pc = focusPc(s);
+  const line = (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none");
+  return (d) => pc && d.outside ? line(d) + " · " + t("stats.focus.outside", { duration: duration(d.outside) }) : line(d);
+}
+
+function renderFocusStats(s) {
+  const counts = focusCounts;
+  const pc = focusPc(s);
+  putTiles($("focusTiles"), focusTiles(s).map((x) => statTile(x.label, x.number, x.lines)));
+  $("focusLegend").classList.toggle("hidden", !pc);
+  const [before, current, after] = focusStreak(s);
   $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
-  const focusLine = (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none");
   barChart($("focusChart"), s, pc ? [["minutes", "stat-f"], ["outside", "stat-l"]] : [["minutes", "stat-f"]],
     t("stats.focus.chart", { ...rangeDays(s), duration: duration(s.totals.range.minutes) }),
-    { line: (d) => pc && d.outside ? focusLine(d) + " · " + t("stats.focus.outside", { duration: duration(d.outside) }) : focusLine(d),
-      minutes: true });
+    { line: focusLine(s), minutes: true });
 
   // One row per activity, with Todoist tasks and typed names ("_task",
   // "_other") as their own rows; hidden until an activity has been used,
@@ -1710,7 +1781,7 @@ function renderFocusStats(s) {
   // row, an activity or a task, narrows the section to it (statsFilter).
   const groups = s.activities || [];
   const used = groups.some((g) => !g.id.startsWith("_"));
-  const groupName = (g) => g.id === "_task" ? t("stats.focus.activity_task") : g.id === "_other" ? t("stats.focus.activity_other") : g.name;
+  const groupName = focusGroupName;
   const f = s.filter;
   $("focusFilter").classList.toggle("hidden", !f);
   if (f) {
@@ -1740,16 +1811,22 @@ function renderFocusStats(s) {
 // How often websites were blocked (App.blocks.stats, from blocks.json):
 // totals, one stacked bar per day (focus below, limits above), and the most
 // blocked sites.
-function renderStats(s) {
-  const split = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
-  putTiles($("statTiles"), statTiles(s).map(([label, tot, kind]) =>
-    statTile(label, formatNumber(tot.focus + tot.limit, { maximumFractionDigits: 1 }), kind === "average"
+const blocksSplit = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
+function blocksTiles(s) {
+  return statTiles(s).map(([label, tot, kind]) => ({
+    label, number: formatNumber(tot.focus + tot.limit, { maximumFractionDigits: 1 }), lines: kind === "average"
       ? [t("stats.tiles.per_day")]
-      : [keepCounts(split(tot)), ...changeLine(s, kind)])));
+      : [keepCounts(blocksSplit(tot)), ...changeLine(s, kind)],
+  }));
+}
+
+function renderStats(s) {
+  const split = blocksSplit;
+  putTiles($("statTiles"), blocksTiles(s).map((x) => statTile(x.label, x.number, x.lines)));
 
   barChart($("statChart"), s, [["focus", "stat-f"], ["limit", "stat-l"]],
     t("stats.blocks.chart", { ...rangeDays(s), focus: formatNumber(s.totals.range.focus), limit: formatNumber(s.totals.range.limit) }),
-    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none") });
+    { line: blocksLine });
 
   $("statSites").replaceChildren(...(s.sites.length ? s.sites.map((site) => {
     const row = el("div", "stat-site");
@@ -1834,8 +1911,7 @@ async function openSettings(tab) {
   $("updateResult").textContent = "";
   renderUpdate();
   if (s.use_todoist && !s.has_todoist_token) tab = "todoist";
-  statsOffset = 0;  // Stats opens on the period ending today, everything on show
-  statsFilter = null;
+  if ($("statsDrawer").classList.contains("on")) closeStats();
   showTab(typeof tab === "string" ? tab : settingsTab);
   $("drawer").classList.add("on");
   $("scrim").classList.add("on");
@@ -3266,12 +3342,12 @@ $("installExtension").onclick = async () => {
 
 function closeSettings() {
   $("drawer").classList.remove("on");
-  if (!(state && state.ended)) $("scrim").classList.remove("on");
+  if (!(state && state.ended) && !$("statsDrawer").classList.contains("on")) $("scrim").classList.remove("on");
 }
 
-function formValues(names) {
+function formValues(names, form = $("settingsForm")) {
   const out = {};
-  for (const input of $("settingsForm").querySelectorAll("input[name], select[name]")) {
+  for (const input of form.querySelectorAll("input[name], select[name]")) {
     if (names && !names.includes(input.name)) continue;
     if (input.type === "radio") { if (input.checked) out[input.name] = input.value; continue; }
     out[input.name] = input.type === "checkbox" ? input.checked : input.value;
@@ -3314,6 +3390,7 @@ $("cancelSettings").onclick = closeSettings;
 $("scrim").onclick = () => {
   if (editing !== undefined) closeFilterEditor();
   else if ($("drawer").classList.contains("on")) closeSettings();
+  else if ($("statsDrawer").classList.contains("on")) closeStats();
 };
 $("revealToken").onclick = () => {
   const i = $("s_todoist_token");
@@ -3356,6 +3433,7 @@ $("testBar").onclick = async () => {
 
 document.addEventListener("keydown", (e) => {
   const inDrawer = $("drawer").classList.contains("on");
+  const inStats = $("statsDrawer").classList.contains("on");
   const inEditor = editing !== undefined;
   const menu = $("taskMenu");
   if (menu) {
@@ -3372,12 +3450,13 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (inEditor) return closeFilterEditor();
     if (inDrawer) return closeSettings();
+    if (inStats) return closeStats();
     if (state && state.ended) return $("endedClose").click();
     if ($("search").value) { $("search").value = ""; renderTasks(); return; }
     api.hide_main();
     return;
   }
-  if (inEditor || inDrawer || (state && state.ended)) return;
+  if (inEditor || inDrawer || inStats || (state && state.ended)) return;
   if (e.ctrlKey && !e.altKey && /^[1-9]$/.test(e.key)) {
     e.preventDefault();
     const f = filters[+e.key - 1];

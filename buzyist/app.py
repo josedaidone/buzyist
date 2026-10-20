@@ -8,6 +8,8 @@ app_updates.py, app_windows.py and tray.py.
 from __future__ import annotations
 
 import logging
+import os
+import re
 import shutil
 import socket
 import sys
@@ -15,6 +17,7 @@ import threading
 import time
 import winsound
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import webview
@@ -65,7 +68,7 @@ from buzyist.stats_common import (
     oldest_offset,
     range_info,
 )
-from buzyist.storage import read_json
+from buzyist.storage import read_json, write_bytes_atomic
 from buzyist.sync import load_shared
 from buzyist.todoist import Todoist
 from buzyist.tray import TrayMixin
@@ -394,6 +397,44 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             "sites": self.site_time.stats(today, span, offset)["apps"],
             "extension": self.extension_connected(),
         }
+
+    def save_report(self, html, filename) -> dict:
+        """
+        Export report (Stats): ask where to save `html`, the page ui/report.js
+        built, with Windows' Save dialog (in Documents, named `filename`),
+        write it and open it in the browser. `{path}` is where it went, None
+        when the dialog was cancelled.
+        """
+        if not isinstance(html, str) or not html.strip():
+            raise app_error("errors.report.empty")
+        window = self.main
+        if window is None:
+            raise app_error("errors.report.no_window")
+        folder = Path.home() / "Documents"
+        picked = window.create_file_dialog(
+            webview.FileDialog.SAVE,
+            directory=str(folder) if folder.is_dir() else "",
+            save_filename=report_file_name(filename),
+            file_types=("HTML (*.html;*.htm)",),
+        )
+        if isinstance(picked, (list, tuple)):
+            picked = picked[0] if picked else None
+        if not picked:
+            return {"path": None}
+        path = Path(picked)
+        if path.suffix.lower() not in (".html", ".htm"):
+            path = path.with_name(path.name + ".html")
+        try:
+            write_bytes_atomic(path, html.encode("utf-8"))
+        except OSError as err:
+            log.warning("stats report not saved to %s: %s", path, err)
+            raise app_error("errors.report.write", error=err.strerror or err) from err
+        log.info("stats report saved to %s", path)
+        try:
+            os.startfile(path)
+        except OSError as err:
+            log.warning("couldn't open the stats report: %s", err)
+        return {"path": str(path)}
 
     def running_session(self) -> dict | None:
         """A copy of the running session; a call's counts until now."""
@@ -857,6 +898,13 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
 
 
 # --------------------------------------------------------------- platform ---
+
+
+def report_file_name(name) -> str:
+    """What the Save dialog offers for a report: `name` with only letters, digits, '-', '_' and '.', ending in .html."""
+    stem = re.sub(r"[^\w.-]+", "-", str(name or "")).strip(".-")
+    stem = re.sub(r"\.html?$", "", stem, flags=re.IGNORECASE)[:120] or "buzyist-stats"
+    return stem + ".html"
 
 
 def clear_webview_cache() -> None:
