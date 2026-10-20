@@ -427,6 +427,36 @@ def test_app_time_skips_buzyist_itself(make_app, desktop, clock):
     assert app.app_time.stats(clock.now().date())["apps"] == []
 
 
+def test_pc_time_counts_any_use_split_by_focus(make_app, desktop, clock, monkeypatch):
+    app = make_app()  # app_time_on off: no app names, but the PC's time is counted
+    assert app.cfg["pc_time_on"] is True and app.cfg["app_time_on"] is False
+    calls = []
+    monkeypatch.setattr(limits_mod, "foreground_app", lambda: calls.append(1) or (100, "slack.exe"))
+    focus = {"active": False}
+    monkeypatch.setattr(app, "focus", lambda: focus)
+    run(app, clock, 61)
+    focus["active"] = True
+    run(app, clock, 30)
+    desktop.idle = APP_IDLE_S  # away: not counted
+    run(app, clock, 60)
+    assert calls == []  # what's in front isn't even asked for
+    assert app.app_time.days == {}
+    assert list(app.pc_time.day_totals().values()) == [(90.0, 30.0)]
+    s = app.focus_stats()
+    assert s["pc_on"] is True and s["totals"]["today"]["outside"] == 1  # 60 s outside a work phase
+    app.pc_time.flush(force=True)
+    assert list(read_json(paths.PC_TIME_PATH, {})["days"].values()) == [{"pc": [90.0, 30.0]}]
+
+
+def test_pc_time_can_be_turned_off(make_app, desktop, clock):
+    app = make_app({"pc_time_on": False})
+    desktop.front = (100, "slack.exe")
+    run(app, clock, 30)
+    assert app.pc_time.days == {}
+    assert app.focus_stats()["pc_on"] is False
+    assert not (app.app_limiter.rules() or app.app_limiter.tracking() or app.app_limiter.counting_pc())  # it sleeps
+
+
 def test_app_time_stats_of_an_earlier_range(tmp_path):
     t = AppTime(tmp_path / "app_time.json")
     today = datetime(2026, 10, 14).date()

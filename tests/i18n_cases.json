@@ -89,6 +89,7 @@
     {"lang": "en", "key": "stats.change", "values": {"change": "+12%", "n": 30}, "out": "+12% on the previous 30 days"},
     {"lang": "pt-BR", "key": "stats.change", "values": {"change": "−5%", "n": 7}, "out": "−5% em relação aos 7 dias anteriores"},
     {"lang": "en", "key": "stats.tiles.previous", "values": {"n": 90}, "out": "Previous 90 days"},
+    {"lang": "pt-BR", "key": "stats.change_day", "values": {"change": "+50%"}, "out": "+50% em relação ao dia anterior"},
     {"lang": "pt-BR", "key": "stats.tiles.previous", "values": {"n": 365}, "out": "365 dias anteriores"},
 
     {"lang": "en", "key": "main.timer.plan", "values": {"n": 1, "work": 25, "rest": 5}, "out": "1 pomodoro of 25 min, no break"},

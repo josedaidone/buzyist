@@ -76,7 +76,7 @@ def test_stats_cover_the_last_30_days(clock):
     )
     clock.advance(days=10)  # the oldest of them is now 12 days back
     log.add([block(clock, 5, host="news.ycombinator.com")])
-    s = log.stats(clock.now().date())
+    s = log.stats(clock.now().date(), span=30)
     assert s["span"] == 30 and len(s["bars"]) == 30
     today = clock.now().date().isoformat()
     assert s["bars"][-1] == {"day": today, "last": today, "days": 1, "focus": 1, "limit": 0}

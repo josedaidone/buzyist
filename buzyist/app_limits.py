@@ -197,15 +197,18 @@ def closed_text(rule: dict, status: dict) -> tuple[str, str]:
 
 class AppLimiter:
     """
-    Counts the time the limited apps spend in front and acts on their limits,
-    and, while app_time_on is set, the time of every app in front (AppTime,
-    app_time.json, for the Stats tab; split by whether a work phase runs).
+    Counts the time the limited apps spend in front and acts on their limits;
+    while app_time_on is set, the time of every app in front (AppTime,
+    app_time.json, for the Stats tab); and while pc_time_on is set, the time
+    the PC is in use at all (pc_time.json, one row, no app names). Both are
+    split by whether a work phase runs.
 
     The thread sleeps on an Event while app limits are off or there are none
-    and app_time_on is off; save_settings() pokes it. Otherwise, every TICK seconds, the program whose
-    window is in front gets the time since the last tick, unless nobody has
-    touched the keyboard or mouse for APP_IDLE_S (time goes to every enabled
-    rule that lists it, into app_usage.json). Then each reached limit acts:
+    and neither time is counted; save_settings() pokes it. Otherwise, every TICK
+    seconds, unless nobody has touched the keyboard or mouse for APP_IDLE_S,
+    the time since the last tick goes to the PC, and the program whose window
+    is in front gets it (time goes to every enabled rule that lists it, into
+    app_usage.json). Then each reached limit acts:
 
     - "close": its apps are asked to close (WM_CLOSE) and ended CLOSE_GRACE
       seconds later, or at once without a window, as long as the limit holds,
@@ -255,10 +258,14 @@ class AppLimiter:
         """Whether every app's time is counted for the Stats tab."""
         return bool(self.app.cfg.get("app_time_on"))
 
+    def counting_pc(self) -> bool:
+        """Whether the time on the PC at all is counted for the Focus section."""
+        return bool(self.app.cfg.get("pc_time_on"))
+
     def _loop(self) -> None:
         while not self.app.quitting:
             rules = self.rules()
-            if rules or self.tracking():
+            if rules or self.tracking() or self.counting_pc():
                 try:
                     self.step(rules)
                 except Exception:
@@ -270,6 +277,7 @@ class AppLimiter:
                 self._denied.clear()
                 self.app.app_usage.flush(force=True)
                 self.app.app_time.flush(force=True)
+                self.app.pc_time.flush(force=True)
                 self.wake.wait()  # idle until the settings change
             self.wake.clear()
 
@@ -278,7 +286,10 @@ class AppLimiter:
         # A long gap (sleep, a stalled thread) isn't time spent in the app.
         elapsed = 0.0 if self._last is None else min(mono - self._last, 3 * self.TICK)
         self._last = mono
-        pid, exe = (0, "") if idle_seconds() >= APP_IDLE_S else foreground_app()
+        in_use = idle_seconds() < APP_IDLE_S
+        tracking = self.tracking()
+        # Which program is in front matters only to the limits and the time per app.
+        pid, exe = foreground_app() if in_use and (rules or tracking) else (0, "")
         front = app_key(exe) if exe and pid not in self._own_pids else ""
         usage = self.app.app_usage
         focused = {r["id"] for r in rules if front and front in {app_key(a) for a in r["apps"]}}
@@ -287,10 +298,16 @@ class AppLimiter:
             for r in rules:
                 if r["id"] in focused:
                     usage.add(r["id"], minute, elapsed)
-            if front and self.tracking():
-                self.app.app_time.add(exe, elapsed, elapsed if self.app.focus()["active"] else 0.0)
+            pc = in_use and self.counting_pc()
+            if (front and tracking) or pc:
+                focus_s = elapsed if self.app.focus()["active"] else 0.0
+                if front and tracking:
+                    self.app.app_time.add(exe, elapsed, focus_s)
+                if pc:  # buZyist itself in front counts too: the PC is in use
+                    self.app.pc_time.add("pc", elapsed, focus_s)
         usage.flush()
         self.app.app_time.flush()
+        self.app.pc_time.flush()
         now = datetime.now()
         to_close: dict[str, tuple[dict, dict]] = {}  # app_key -> (rule, status) of the rule that closes it
         for r in rules:

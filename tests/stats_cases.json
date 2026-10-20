@@ -8,7 +8,9 @@
     {"today": "2027-01-05", "span": 7, "offset": 0, "first": "2026-12-30", "last": "2027-01-05"},
     {"today": "2027-01-05", "span": 90, "offset": 1, "first": "2026-07-10", "last": "2026-10-07"},
     {"today": "2026-10-14", "span": 365, "offset": 0, "first": "2025-10-15", "last": "2026-10-14"},
-    {"today": "2028-03-01", "span": 7, "offset": 0, "first": "2028-02-24", "last": "2028-03-01"}
+    {"today": "2028-03-01", "span": 7, "offset": 0, "first": "2028-02-24", "last": "2028-03-01"},
+    {"today": "2026-10-14", "span": 1, "offset": 0, "first": "2026-10-14", "last": "2026-10-14"},
+    {"today": "2027-01-01", "span": 1, "offset": 1, "first": "2026-12-31", "last": "2026-12-31"}
   ],
   "buckets": [
     {"_": "by day: one bar per day", "today": "2026-10-14", "span": 7, "by": "day", "bars": [
@@ -39,6 +41,7 @@
     {"today": "2026-10-14", "span": 7, "earliest": "2025-10-14", "max": 52},
     {"today": "2026-10-14", "span": 365, "earliest": "2025-10-15", "max": 0},
     {"today": "2026-10-14", "span": 365, "earliest": "2025-10-14", "max": 1},
-    {"_": "data dated after today", "today": "2026-10-14", "span": 7, "earliest": "2026-10-20", "max": 0}
+    {"_": "data dated after today", "today": "2026-10-14", "span": 7, "earliest": "2026-10-20", "max": 0},
+    {"_": "a day at a time", "today": "2026-10-14", "span": 1, "earliest": "2026-10-04", "max": 10}
   ]
 }

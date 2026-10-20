@@ -17,6 +17,7 @@ from buzyist.stats_common import (
     DEFAULT_SPAN,
     buckets,
     earliest_day,
+    minutes_of,
     range_info,
     sum_rows,
     summary,
@@ -58,11 +59,6 @@ KNOWN_NAMES = {
     "busyist": "buZyist",
     "buzyist": "buZyist",
 }
-
-
-def _minutes(seconds: float) -> int:
-    """Whole minutes, halves up (round() would make 150 s 2 minutes)."""
-    return int(seconds / 60 + 0.5)
 
 
 def app_name(image: str) -> str:
@@ -176,6 +172,13 @@ class AppTime:
         except OSError:
             log.warning("couldn't write %s", self.path.name, exc_info=True)
 
+    def day_totals(self) -> dict[str, tuple[float, float]]:
+        """{day: (seconds, seconds during a work phase)} over every row, for the Focus section (pc_time)."""
+        with self.lock:
+            return {
+                d: (sum(t for t, _ in rows.values()), sum(f for _, f in rows.values())) for d, rows in self.days.items()
+            }
+
     def earliest(self) -> str | None:
         """The oldest day with time counted."""
         with self.lock:
@@ -202,7 +205,7 @@ class AppTime:
                 for d in ds:
                     total = sum(t for t, _ in self.days.get(d, {}).values())
                     focus = sum(f for _, f in self.days.get(d, {}).values())
-                    rows.append({"day": d, "focus": _minutes(focus), "other": _minutes(total - focus)})
+                    rows.append({"day": d, "focus": minutes_of(focus), "other": minutes_of(total - focus)})
                 return rows
 
             rows = per_day(days)
@@ -222,7 +225,7 @@ class AppTime:
             "bars": sum_rows(rows, buckets(days, info["by"]), keys),
             **tiles,
             "apps": [
-                {"key": a["key"], "name": self.name(a["key"]), **{k: _minutes(a[k]) for k in shown}}
+                {"key": a["key"], "name": self.name(a["key"]), **{k: minutes_of(a[k]) for k in shown}}
                 for a in top(apps.values(), lambda a: (-a["range"], a["key"]), MAX_APPS)
                 if a["range"] >= 30  # under half a minute rounds to nothing
             ],

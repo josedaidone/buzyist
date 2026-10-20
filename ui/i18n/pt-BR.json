@@ -768,6 +768,7 @@
     "range": {
       "_": "O seletor no topo da aba: um período para as três seções, e as setas que o levam para trás.",
       "picker": "Período",
+      "span_1": "1 dia",
       "span_7": "7 dias",
       "span_30": "30 dias",
       "span_90": "90 dias",
@@ -782,6 +783,8 @@
         "one": "{n} dia anterior",
         "other": "{n} dias anteriores"
       },
+      "yesterday": "Ontem",
+      "day_before": "O dia anterior",
       "average": "Média por dia",
       "per_day": "por dia"
     },
@@ -789,6 +792,7 @@
       "one": "{change} em relação ao {n} dia anterior",
       "other": "{change} em relação aos {n} dias anteriores"
     },
+    "change_day": "{change} em relação ao dia anterior",
     "week_tip": "{first} – {last}",
     "focus": {
       "title": "Foco",
@@ -814,6 +818,11 @@
       },
       "streak": "Sequência: {current} seguidos · recorde de {best}",
       "skip_weekends": "Fins de semana não quebram a sequência",
+      "pc_switch": "Contar o tempo que uso o PC fora do foco",
+      "outside": "{duration} no PC fora do foco",
+      "share": "{share} do seu tempo no PC em foco",
+      "legend_focus": "Foco",
+      "legend_outside": "No PC fora do foco",
       "chart": "Foco de {first} a {last}: {duration} no total.",
       "tip_none": "Nenhum pomodoro",
       "by_activity": "Foco por atividade",
@@ -822,7 +831,8 @@
       "activities_empty": "Escolha uma atividade em “No que você está trabalhando?” para ver para onde vai o seu foco.",
       "top_tasks": "Tarefas com mais foco",
       "tasks_empty": "Nenhum pomodoro ainda. Escolha uma tarefa e inicie o timer.",
-      "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist."
+      "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist.",
+      "pc_help": "O tempo no PC é cada minuto em que você tocou no teclado ou no mouse, seja qual for o app em primeiro plano; fora do foco é esse tempo durante os intervalos, com o timer pausado ou sem nenhuma sessão rodando. Tudo fica neste PC, em pc_time.json, sem nomes de apps."
     },
     "apps": {
       "title": "Tempo nos apps",

@@ -13,9 +13,14 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from datetime import date, timedelta
 
-SPANS = (7, 30, 90, 365)  # the range picker's choices
-DEFAULT_SPAN = 30
+SPANS = (1, 7, 30, 90, 365)  # the range picker's choices; 1 is a single day, with no chart
+DEFAULT_SPAN = 7
 WEEKLY_FROM = 365  # a range this long gets one bar per week
+
+
+def minutes_of(seconds: float) -> int:
+    """Whole minutes, halves up (round() would make 150 s 2 minutes)."""
+    return int(seconds / 60 + 0.5)
 
 
 def clamp_span(span) -> int:

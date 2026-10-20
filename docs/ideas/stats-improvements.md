@@ -160,6 +160,10 @@ also takes `filter`), built on `stats_common`. **No `date.today()` inside**;
   already weekly, and their tooltip names the week ("Mon, Oct 12 – Today"). PR 3 still owns
   the axes, the keyboard and `niceTicks`.
 
+- Added after PR 2, on request: a 1-day period (`SPANS` now starts at 1; the picker starts on 7
+  days) with two tiles and no charts, and the time on the PC outside focus in the Focus section
+  (`pc_time.json`, `pc_time_on`, on by default).
+
 ## Order of work (one PR each, each green on ruff + pytest + node tests)
 
 1. **`stats_common` + refactor, no visible change**: move the three modules

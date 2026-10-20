@@ -94,7 +94,10 @@ DEFAULTS = {
     # break it (one with a tomato still counts).
     "streak_skip_weekends": False,
     # The Stats tab's range, in days (stats_common.SPANS), picked at its top.
-    "stats_span": 30,
+    "stats_span": 7,
+    # Count the time the PC is in use (any app, keyboard or mouse touched in the
+    # last minute; no app names), in focus or not, for the Focus section.
+    "pc_time_on": True,
     # What the "What are you working on?" field offers for a session with no
     # task (see buzyist/activities.py); the Stats tab adds up time per activity.
     "activities": copy.deepcopy(DEFAULT_ACTIVITIES),
@@ -396,7 +399,8 @@ class Config(BaseModel):
     sync_owner: str = _default("sync_owner")
     sync_session: bool = _default("sync_session")
     streak_skip_weekends: bool = _default("streak_skip_weekends")
-    stats_span: Literal[7, 30, 90, 365] = _default("stats_span")  # stats_common.SPANS
+    stats_span: Literal[1, 7, 30, 90, 365] = _default("stats_span")  # stats_common.SPANS
+    pc_time_on: bool = _default("pc_time_on")
     activities: list[dict] = _default("activities")  # kept as dicts: clean_activities is the schema
     call_detect: bool = _default("call_detect")
     call_activity: Annotated[str, Field(max_length=24)] = _default("call_activity")

@@ -102,6 +102,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.app_usage = SiteUsage(paths.APP_USAGE_PATH)  # time on the limited Windows apps
         self.app_time = AppTime(paths.APP_TIME_PATH)  # time in every app, for the Stats tab (app_time_on)
         self.site_time = AppTime(paths.SITE_TIME_PATH, site_key, str)  # and on every website, from the extension
+        # And on the PC at all, one row ("pc"), without what was in front (pc_time_on).
+        self.pc_time = AppTime(paths.PC_TIME_PATH, str, str)
         self.blocks = BlockLog(paths.BLOCKS_PATH)  # websites the extension blocked, for the Stats tab
         self.sync_lock = threading.Lock()  # guards self.shared
         self.shared = load_shared()
@@ -152,8 +154,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.blocker = AppBlocker(self)
         self.focus_hooks.append(self.blocker.poke)
         # Counts time on the apps with a limit and acts on those limits, all
-        # day, and the time in every app while app_time_on is set; idle while
-        # both are off.
+        # day, the time in every app while app_time_on is set and on the PC
+        # while pc_time_on is; idle while all are off.
         self.app_limiter = AppLimiter(self)
         # Starts a call session while the mic or camera is in use; idle while call_detect is off.
         self.calls = CallWatcher(self)
@@ -340,7 +342,13 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             history = list(self.history)
         oldest = earliest_day(
             d
-            for d in (earliest(history), self.blocks.earliest(), self.app_time.earliest(), self.site_time.earliest())
+            for d in (
+                earliest(history),
+                self.blocks.earliest(),
+                self.app_time.earliest(),
+                self.site_time.earliest(),
+                self.pc_time.earliest(),
+            )
             if d
         )
         offset = clamp_offset(offset, today, span, oldest)
@@ -353,11 +361,15 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         }
 
     def focus_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
-        """The Stats tab's Focus section (focus_stats.focus_stats), with the running session."""
+        """
+        The Stats tab's Focus section (focus_stats.focus_stats), with the
+        running session and the time on the PC outside focus; `pc_on` is
+        whether that is being counted.
+        """
         with self.lock:
             history, session = list(self.history), self.running_session()
         cfg = self.cfg.view()
-        return focus_stats(
+        stats = focus_stats(
             history,
             session,
             today or date.today(),
@@ -365,7 +377,9 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             skip_weekends=cfg.get("streak_skip_weekends"),
             activities=cfg.get("activities"),
             offset=offset,
+            pc=self.pc_time.day_totals(),
         )
+        return {**stats, "pc_on": bool(cfg.get("pc_time_on"))}
 
     def app_time_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
         """The Stats tab's Time in apps section: the apps' (AppTime.stats), plus the websites' rows."""

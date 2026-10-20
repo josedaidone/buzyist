@@ -38,31 +38,73 @@ def test_totals_for_today_the_range_and_the_range_before():
         completed(20, "t3"),
         ran(40, "t9", "Too old", 8),  # the 30 days before
     ]
-    s = focus_stats(history, None, TODAY)
+    s = focus_stats(history, None, TODAY, span=30)
     assert (s["span"], s["offset"], s["by"], s["first"], s["last"]) == (30, 0, "day", day(29), day(0))
-    assert s["totals"]["today"] == {"minutes": 75, "pomodoros": 3, "sessions": 2, "tasks": 2, "completed": 1}
-    assert s["totals"]["range"] == {"minutes": 200, "pomodoros": 8, "sessions": 4, "tasks": 3, "completed": 2}
-    assert s["totals"]["previous"] == {"minutes": 200, "pomodoros": 8, "sessions": 1, "tasks": 1, "completed": 0}
-    assert s["totals"]["average"] == {"minutes": 6.7, "pomodoros": 0.3, "sessions": 0.1, "tasks": 0.1, "completed": 0.1}
+    assert s["totals"]["today"] == {
+        "minutes": 75,
+        "pomodoros": 3,
+        "sessions": 2,
+        "tasks": 2,
+        "completed": 1,
+        "outside": 0,
+    }
+    assert s["totals"]["range"] == {
+        "minutes": 200,
+        "pomodoros": 8,
+        "sessions": 4,
+        "tasks": 3,
+        "completed": 2,
+        "outside": 0,
+    }
+    assert s["totals"]["previous"] == {
+        "minutes": 200,
+        "pomodoros": 8,
+        "sessions": 1,
+        "tasks": 1,
+        "completed": 0,
+        "outside": 0,
+    }
+    assert s["totals"]["average"] == {
+        "minutes": 6.7,
+        "pomodoros": 0.3,
+        "sessions": 0.1,
+        "tasks": 0.1,
+        "completed": 0.1,
+        "outside": 0.0,
+    }
     assert s["change"] == 0.0
     assert len(s["bars"]) == 30
-    assert s["bars"][-1] == {"day": day(0), "last": day(0), "days": 1, "minutes": 75, "pomodoros": 3}
-    assert s["bars"][-4] == {"day": day(3), "last": day(3), "days": 1, "minutes": 100, "pomodoros": 4}
+    assert s["bars"][-1] == {"day": day(0), "last": day(0), "days": 1, "minutes": 75, "pomodoros": 3, "outside": 0}
+    assert s["bars"][-4] == {"day": day(3), "last": day(3), "days": 1, "minutes": 100, "pomodoros": 4, "outside": 0}
     assert s["bars"][0]["day"] == day(29)
-    assert focus_stats(history[:-1], None, TODAY)["change"] is None  # nothing before: no change to show
+    assert focus_stats(history[:-1], None, TODAY, span=30)["change"] is None  # nothing before: no change to show
 
 
 def test_a_year_has_a_bar_per_week():
     s = focus_stats([ran(0), ran(1), ran(300, pomodoros=1)], None, TODAY, span=365)
     assert s["by"] == "week" and len(s["bars"]) == 53
     assert sum(b["minutes"] for b in s["bars"]) == s["totals"]["range"]["minutes"] == 125
-    assert s["bars"][-1] == {"day": day(2), "last": day(0), "days": 3, "minutes": 100, "pomodoros": 4}  # Mon-Wed
+    assert s["bars"][-1] == {
+        "day": day(2),
+        "last": day(0),
+        "days": 3,
+        "minutes": 100,
+        "pomodoros": 4,
+        "outside": 0,
+    }  # Mon-Wed
 
 
 def test_the_running_session_counts_today():
     session = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
     s = focus_stats([ran(0, pomodoros=1)], session, TODAY)
-    assert s["totals"]["today"] == {"minutes": 50, "pomodoros": 2, "sessions": 2, "tasks": 1, "completed": 0}
+    assert s["totals"]["today"] == {
+        "minutes": 50,
+        "pomodoros": 2,
+        "sessions": 2,
+        "tasks": 1,
+        "completed": 0,
+        "outside": 0,
+    }
     assert s["tasks"] == [{"content": "Write the tests", "minutes": 50, "pomodoros": 2, "sessions": 2}]
 
 
@@ -107,7 +149,14 @@ def test_the_streak_can_skip_weekends():
 
 def test_nothing_yet_and_odd_entries():
     s = focus_stats([{"date": 5}, "junk", {"date": "not a day", "pomodoros": 1, "reason": "finished"}], None, TODAY)
-    assert s["totals"]["range"] == {"minutes": 0, "pomodoros": 0, "sessions": 0, "tasks": 0, "completed": 0}
+    assert s["totals"]["range"] == {
+        "minutes": 0,
+        "pomodoros": 0,
+        "sessions": 0,
+        "tasks": 0,
+        "completed": 0,
+        "outside": 0,
+    }
     assert s["tasks"] == []
     assert s["streak"] == {"current": 0, "best": 0}
 
@@ -143,10 +192,17 @@ def test_an_earlier_range():
         ran(70, "t9", pomodoros=8),
     ]
     running = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
-    s = focus_stats(history, running, TODAY, offset=1)
+    s = focus_stats(history, running, TODAY, span=30, offset=1)
     assert (s["first"], s["last"], s["offset"]) == (day(59), day(30), 1)
     assert s["bars"][-1]["day"] == day(30)
-    assert s["totals"]["range"] == {"minutes": 75, "pomodoros": 3, "sessions": 1, "tasks": 1, "completed": 1}
+    assert s["totals"]["range"] == {
+        "minutes": 75,
+        "pomodoros": 3,
+        "sessions": 1,
+        "tasks": 1,
+        "completed": 1,
+        "outside": 0,
+    }
     assert s["totals"]["previous"]["minutes"] == 200
     assert "today" not in s["totals"]  # not in this range
     assert s["change"] == round((75 - 200) / 200, 4)
@@ -191,4 +247,24 @@ def test_the_stats_tab_answer(make_app, clock):
     assert Api(app).stats(None, -1)["range"]["offset"] == 0
     year = Api(app).stats(365, 0)
     assert year["range"]["by"] == "week" and year["range"]["has_older"] is False
-    assert Api(app).stats(14)["range"]["span"] == 30  # not one of the picker's: the default
+    assert Api(app).stats(14)["range"]["span"] == 7  # not one of the picker's: the default
+
+
+def test_time_on_the_pc_outside_focus():
+    pc = {day(0): (3600.0, 1500.0), day(1): (600.0, 0.0), day(8): (1200.0, 0.0), day(2): (100.0, 200.0)}
+    s = focus_stats([ran(0, pomodoros=1)], None, TODAY, span=7, pc=pc)
+    assert s["totals"]["today"]["outside"] == 35  # an hour on the PC, 25 min of it in a work phase
+    assert s["totals"]["range"]["outside"] == 35 + 10  # focus over the total can't make it negative
+    assert s["totals"]["previous"]["outside"] == 20
+    assert [b["outside"] for b in s["bars"]][-3:] == [0, 10, 35]
+
+
+def test_a_single_day():
+    history = [ran(0, pomodoros=1), ran(1, "t2", "Review", 2)]
+    s = focus_stats(history, None, TODAY, span=1)
+    assert (s["first"], s["last"], s["by"], len(s["bars"])) == (day(0), day(0), "day", 1)
+    assert s["totals"]["range"] == s["totals"]["today"]
+    assert s["totals"]["previous"]["minutes"] == 50
+    assert s["change"] == -0.5
+    yesterday = focus_stats(history, None, TODAY, span=1, offset=1)
+    assert yesterday["first"] == day(1) and yesterday["tasks"][0]["content"] == "Review"

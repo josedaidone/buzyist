@@ -404,6 +404,7 @@
       <!-- One period for the three sections (App.stats): stats_span is saved at once, the arrows aren't saved. -->
       <div class="stat-range">
         <div class="seg" role="radiogroup" aria-label="Period" data-i18n-aria-label="stats.range.picker">
+          <label><input type="radio" name="stats_span" value="1"><span data-i18n="stats.range.span_1">1 day</span></label>
           <label><input type="radio" name="stats_span" value="7"><span data-i18n="stats.range.span_7">7 days</span></label>
           <label><input type="radio" name="stats_span" value="30"><span data-i18n="stats.range.span_30">30 days</span></label>
           <label><input type="radio" name="stats_span" value="90"><span data-i18n="stats.range.span_90">90 days</span></label>
@@ -420,6 +421,10 @@
       <div class="stat-streak" id="focusStreak"></div>
       <div class="toggles">
         <label class="switch" data-i18n="stats.focus.skip_weekends"><input type="checkbox" name="streak_skip_weekends" id="s_streak_skip_weekends"><span class="knob"></span>Weekends don't break the streak</label>
+        <label class="switch" data-i18n="stats.focus.pc_switch"><input type="checkbox" name="pc_time_on" id="s_pc_time_on"><span class="knob"></span>Count the time I use the PC outside focus</label>
+      </div>
+      <div class="stat-legend" id="focusLegend" aria-hidden="true">
+        <span data-i18n="stats.focus.legend_focus"><i class="stat-sw stat-f"></i>Focus</span><span data-i18n="stats.focus.legend_outside"><i class="stat-sw stat-l"></i>On the PC outside focus</span>
       </div>
       <div class="stat-chart" id="focusChart" role="img"></div>
       <div class="stat-axis"><span id="focusFirst"></span><span id="focusLast"></span></div>
@@ -428,6 +433,7 @@
       <h4 data-i18n="stats.focus.top_tasks">Most focused tasks</h4>
       <div class="stat-sites" id="focusTasks"></div>
       <div class="help" data-i18n="stats.focus.help">Focus time counts finished pomodoros. Sessions count once they have a finished pomodoro; tasks worked on got at least one pomodoro, tasks done were completed in buZyist.</div>
+      <div class="help" data-i18n="stats.focus.pc_help">Time on the PC is every minute you touched the keyboard or mouse, whatever was in front; outside focus is that time during breaks, pauses and with no session running. It stays on this PC, in pc_time.json, with no app names.</div>
 
       <!-- Time in apps: see buzyist/app_time.py. app_time_on is saved at once, like the streak switch. -->
       <h4 data-i18n="stats.apps.title">Time in apps</h4>

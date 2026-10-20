@@ -1359,12 +1359,16 @@ for (const radio of document.querySelectorAll('input[name="stats_span"]')) {
 $("statsOlder").onclick = () => { statsOffset += 1; loadStats(); };
 $("statsNewer").onclick = () => { statsOffset = Math.max(0, statsOffset - 1); loadStats(); };
 
-// "Mar 2 – Mar 31" between the arrows, with the year when it isn't this one.
+// "Mar 2 – Mar 31" between the arrows, with the year when it isn't this one;
+// a single day is "Today" or "Wed, Oct 14", and has no charts (.one-day).
 function renderRange(r) {
   const thisYear = String(new Date().getFullYear());
   const withYear = r.first.slice(0, 4) !== thisYear || r.last.slice(0, 4) !== thisYear;
-  const day = (iso) => formatDate(new Date(iso + "T12:00"), { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
-  $("statsRange").textContent = t("stats.range.label", { first: day(r.first), last: day(r.last) });
+  const day = (iso, weekday) => formatDate(new Date(iso + "T12:00"),
+    { ...(weekday ? { weekday: "short" } : {}), day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
+  $("statsRange").textContent = r.span === 1 ? (r.offset ? day(r.last, true) : t("stats.today"))
+    : t("stats.range.label", { first: day(r.first), last: day(r.last) });
+  $("p_stats").classList.toggle("one-day", r.span === 1);
   for (const radio of document.querySelectorAll('input[name="stats_span"]')) radio.checked = Number(radio.value) === r.span;
   const older = $("statsOlder"), newer = $("statsNewer");
   older.disabled = !r.has_older;
@@ -1388,7 +1392,7 @@ $("appTimeMore").onclick = () => { appTimeAll = true; loadStats(); };
 $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
-  $("appTimeTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+  putTiles($("appTimeTiles"), statTiles(s).map(([label, tot, kind]) =>
     statTile(label, duration(Math.round(tot.focus + tot.other)), kind === "average"
       ? [t("stats.tiles.per_day")]
       : [t("stats.apps.during_focus", { duration: duration(tot.focus) }), ...changeLine(s, kind)])));
@@ -1423,6 +1427,13 @@ function timeRows(list, more, rows, all, moreKey, title, empty) {
   more.textContent = t(moreKey, { n: rows.length });
 }
 
+// Saved at once, like the streak's switch; the limiter thread starts or stops counting straight away.
+$("s_pc_time_on").onchange = async () => {
+  const result = await api.save_settings(formValues(["pc_time_on"]));
+  if (!result.ok) return toast(result.error, true);
+  loadStats();
+};
+
 // Saved at once (not with Save), so the streak above changes as you click.
 $("s_streak_skip_weekends").onchange = async () => {
   const result = await api.save_settings(formValues(["streak_skip_weekends"]));
@@ -1435,14 +1446,24 @@ $("s_streak_skip_weekends").onchange = async () => {
 const percent = (share) => formatNumber(share, { style: "percent", maximumFractionDigits: 0 });
 const statDay = (iso) => formatDate(new Date(iso + "T12:00"), { weekday: "short", day: "numeric", month: "short" });
 
-// A section's three tiles, [title, totals, kind]: Today, the period and the
-// one before while the period ends today; further back, the period, the one
-// before and the daily average.
+// A section's tiles, [title, totals, kind]: Today, the period and the one
+// before while the period ends today; further back, the period, the one
+// before and the daily average. A single day has two: it and the day before.
 function statTiles(s) {
+  if (s.span === 1) {
+    return [[s.offset ? statDay(s.last) : t("stats.today"), s.totals.range, "range"],
+            [t(s.offset ? "stats.tiles.day_before" : "stats.tiles.yesterday"), s.totals.previous, "previous"]];
+  }
   const range = [s.offset ? t("stats.tiles.range") : t("stats.span", { n: s.span }), s.totals.range, "range"];
   const before = [t("stats.tiles.previous", { n: s.span }), s.totals.previous, "previous"];
   if (s.offset) return [range, before, [t("stats.tiles.average"), s.totals.average, "average"]];
   return [[t("stats.today"), s.totals.today, "today"], range, before];
+}
+
+// The tiles into their row (two to a row for a single day).
+function putTiles(box, tiles) {
+  box.replaceChildren(...tiles);
+  box.classList.toggle("two", tiles.length === 2);
 }
 
 function statTile(label, number, lines) {
@@ -1456,7 +1477,7 @@ function statTile(label, number, lines) {
 function changeLine(s, kind) {
   if (kind !== "range" || s.change == null) return [];
   const change = formatNumber(s.change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" });
-  return [t("stats.change", { change, n: s.span })];
+  return [s.span === 1 ? t("stats.change_day", { change }) : t("stats.change", { change, n: s.span })];
 }
 
 // A chart's first and last day, for its aria text, and under it (the last
@@ -1507,22 +1528,35 @@ function keepCounts(text) {
 }
 
 // Focus from history.json (App.focus_stats): focus time, pomodoros, sessions
-// and tasks for the period, the streak, minutes per bar, top tasks.
+// and tasks for the period, the streak, minutes per bar, top tasks; and, from
+// pc_time.json, the time on the PC outside focus (`outside`, stacked on top).
 function renderFocusStats(s) {
   const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
-  $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+  const pc = s.pc_on || s.totals.range.outside > 0 || s.totals.previous.outside > 0;  // counted, now or before
+  const pcLines = (tot, kind) => {
+    if (!pc) return [];
+    const lines = [t("stats.focus.outside", { duration: duration(Math.round(tot.outside)) })];
+    const all = tot.minutes + tot.outside;
+    if (kind === "range" && all) lines.push(t("stats.focus.share", { share: percent(tot.minutes / all) }));
+    return lines;
+  };
+  putTiles($("focusTiles"), statTiles(s).map(([label, tot, kind]) =>
     statTile(label, duration(Math.round(tot.minutes)), kind === "average"
-      ? [t("stats.tiles.per_day")]
+      ? [t("stats.tiles.per_day"), ...pcLines(tot, kind)]
       : [keepCounts(counts(tot)),
          keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })),
+         ...pcLines(tot, kind),
          ...changeLine(s, kind)])));
+  $("focusLegend").classList.toggle("hidden", !pc);
   const current = t("stats.focus.days", { n: s.streak.current });
   const [before, after] = splitAround(t("stats.focus.streak", { current, best: t("stats.focus.days", { n: s.streak.best }) }), current);
   $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
-  barChart($("focusChart"), s.bars, [["minutes", "stat-f"]],
+  const focusLine = (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none");
+  barChart($("focusChart"), s.bars, pc ? [["minutes", "stat-f"], ["outside", "stat-l"]] : [["minutes", "stat-f"]],
     t("stats.focus.chart", { ...rangeDays(s), duration: duration(s.totals.range.minutes) }),
-    { line: (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none"), max: duration, today: !s.offset });
+    { line: (d) => pc && d.outside ? focusLine(d) + " · " + t("stats.focus.outside", { duration: duration(d.outside) }) : focusLine(d),
+      max: duration, today: !s.offset });
   axisEnds(s, "focusFirst", "focusLast");
 
   // One row per activity, with Todoist tasks and typed names ("_task",
@@ -1552,7 +1586,7 @@ function renderFocusStats(s) {
 // blocked sites.
 function renderStats(s) {
   const split = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
-  $("statTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+  putTiles($("statTiles"), statTiles(s).map(([label, tot, kind]) =>
     statTile(label, formatNumber(tot.focus + tot.limit, { maximumFractionDigits: 1 }), kind === "average"
       ? [t("stats.tiles.per_day")]
       : [keepCounts(split(tot)), ...changeLine(s, kind)])));

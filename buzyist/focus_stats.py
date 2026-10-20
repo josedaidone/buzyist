@@ -8,7 +8,17 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from buzyist.stats_common import DEFAULT_SPAN, buckets, earliest_day, range_info, sum_rows, summary, top, window
+from buzyist.stats_common import (
+    DEFAULT_SPAN,
+    buckets,
+    earliest_day,
+    minutes_of,
+    range_info,
+    sum_rows,
+    summary,
+    top,
+    window,
+)
 
 # How a session ended, as finish() logs it; the other entries are completed tasks.
 SESSION_REASONS = ("finished", "stopped", "replaced")
@@ -43,6 +53,7 @@ def focus_stats(
     skip_weekends: bool = False,
     activities: list[dict] | None = None,
     offset: int = 0,
+    pc: dict[str, tuple[float, float]] | None = None,
 ) -> dict:
     """
     The Focus section for the range `offset` spans of `span` days back from
@@ -65,6 +76,10 @@ def focus_stats(
     `activities` (the setting) names the groups of the time per activity:
     one per activity used, plus "_task" (Todoist tasks) and "_other"
     (sessions with only a typed name); see _by_activity.
+
+    `pc` is the time the PC was in use per day, `{day: (seconds, seconds
+    during a work phase)}` (App.pc_time): the bars and totals get `outside`,
+    the minutes of it outside work phases (breaks, pauses, no session).
     """
     info = range_info(today, span, offset)
     first, last = info["first"], info["last"]
@@ -85,6 +100,12 @@ def focus_stats(
     streak = _streak({h["date"] for h in _sessions(entries) if h.get("pomodoros")}, today, skip_weekends)
     sessions = _sessions(entries)
 
+    pc = pc or {}
+
+    def outside(d: str) -> int:
+        seconds, focus_s = pc.get(d, (0.0, 0.0))
+        return minutes_of(max(0.0, seconds - focus_s))
+
     def total(days: list[str]) -> dict:
         lo, hi = days[0], days[-1]
         mine = [h for h in sessions if lo <= h["date"] <= hi]
@@ -94,10 +115,11 @@ def focus_stats(
             "sessions": sum(1 for h in mine if _counted(h)),
             "tasks": len({_task_key(h) for h in mine if h.get("pomodoros") and h.get("kind") != "call"}),
             "completed": sum(1 for h in entries if h.get("completed") and lo <= h["date"] <= hi),
+            "outside": sum(outside(d) for d in days),
         }
 
     days = window(today, span, offset)
-    per_day = {d: {"day": d, "minutes": 0, "pomodoros": 0} for d in days}
+    per_day = {d: {"day": d, "minutes": 0, "pomodoros": 0, "outside": outside(d)} for d in days}
     in_range = [h for h in sessions if first <= h["date"] <= last]
     for h in in_range:
         per_day[h["date"]]["minutes"] += int(h.get("minutes") or 0)
@@ -116,7 +138,7 @@ def focus_stats(
 
     return {
         **info,
-        "bars": sum_rows(list(per_day.values()), buckets(days, info["by"]), ("minutes", "pomodoros")),
+        "bars": sum_rows(list(per_day.values()), buckets(days, info["by"]), ("minutes", "pomodoros", "outside")),
         **summary(total, today, span, offset, lambda t: t["minutes"]),
         "streak": streak,
         "tasks": most,
