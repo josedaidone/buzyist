@@ -770,6 +770,11 @@ body.instant .modal, body.instant .scrim { transition: none; }
 /* Two series validated with the dataviz checker on Nata: Tomate (focus) and a
    deeper Manteiga (limits; under 3:1 alone, so every count is also written out). */
 :root { --stat-focus: var(--bz-tomate); --stat-limit: #C98A12; }
+/* The period picker and its arrows, above the three sections */
+.stat-range { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 6px; }
+.stat-range .seg { margin: 0; }
+.stat-nav { display: flex; align-items: center; gap: 2px; }
+#statsRange { min-width: 128px; text-align: center; font-size: 13.5px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .stat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
 .stat-tile { background: var(--surface); border-radius: var(--r-row); padding: 10px 12px; }
 .stat-label { font-size: 12px; font-weight: 700; color: var(--muted); }

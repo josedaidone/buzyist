@@ -153,6 +153,13 @@ also takes `filter`), built on `stats_common`. **No `date.today()` inside**;
   the config, `has_older`, and an unknown filter refused with an `AppError`.
 - `tests/test_i18n_python.py` / `test_i18n.py` catch missing keys.
 
+## Status
+
+- PR 1 (stats_common, today/span/offset): done.
+- PR 2 (`Api.stats`, `stats_span`, picker, arrows, tiles and change): done. A year's bars are
+  already weekly, and their tooltip names the week ("Mon, Oct 12 – Today"). PR 3 still owns
+  the axes, the keyboard and `niceTicks`.
+
 ## Order of work (one PR each, each green on ruff + pytest + node tests)
 
 1. **`stats_common` + refactor, no visible change**: move the three modules

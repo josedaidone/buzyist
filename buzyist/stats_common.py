@@ -111,3 +111,31 @@ def clamp_offset(offset, today: date, span: int, earliest: str | None) -> int:
 def earliest_day(days: Iterable[str]) -> str | None:
     """The oldest of `days`, or None when there is none."""
     return min(days, default=None)
+
+
+def range_info(today: date, span: int, offset: int) -> dict:
+    """What every section's answer starts with: `{span, offset, by, first, last}`."""
+    days = window(today, span, offset)
+    return {"span": span, "offset": offset, "by": bar_size(span), "first": days[0], "last": days[-1]}
+
+
+def summary(
+    total: Callable[[list[str]], dict],
+    today: date,
+    span: int,
+    offset: int,
+    main: Callable[[dict], float],
+) -> dict:
+    """
+    A section's tiles: `totals` = {range, previous (the range before it),
+    average (per day of the range), today (only when the range ends
+    today)}, each what `total(days)` gives for those days, and `change`,
+    how much `main(totals)` grew on the range before (None with nothing
+    before).
+    """
+    days = window(today, span, offset)
+    now, before = total(days), total(window(today, span, offset + 1))
+    totals_ = {"range": now, "previous": before, "average": {k: round(v / span, 1) for k, v in now.items()}}
+    if offset == 0:
+        totals_["today"] = total(days[-1:])
+    return {"totals": totals_, "change": change(main(now), main(before))}

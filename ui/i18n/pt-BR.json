@@ -761,11 +761,35 @@
   "stats": {
     "_": "A aba Estatísticas (Configurações). Nomes de dias e números vêm de formatDate/formatNumber.",
     "today": "Hoje",
-    "week": "Últimos 7 dias",
     "span": {
       "one": "Último {n} dia",
       "other": "Últimos {n} dias"
     },
+    "range": {
+      "_": "O seletor no topo da aba: um período para as três seções, e as setas que o levam para trás.",
+      "picker": "Período",
+      "span_7": "7 dias",
+      "span_30": "30 dias",
+      "span_90": "90 dias",
+      "span_365": "1 ano",
+      "label": "{first} – {last}",
+      "older": "Período anterior",
+      "newer": "Período seguinte"
+    },
+    "tiles": {
+      "range": "Este período",
+      "previous": {
+        "one": "{n} dia anterior",
+        "other": "{n} dias anteriores"
+      },
+      "average": "Média por dia",
+      "per_day": "por dia"
+    },
+    "change": {
+      "one": "{change} em relação ao {n} dia anterior",
+      "other": "{change} em relação aos {n} dias anteriores"
+    },
+    "week_tip": "{first} – {last}",
     "focus": {
       "title": "Foco",
       "pomodoros": {
@@ -790,16 +814,13 @@
       },
       "streak": "Sequência: {current} seguidos · recorde de {best}",
       "skip_weekends": "Fins de semana não quebram a sequência",
-      "chart": {
-        "one": "Foco por dia no último {n} dia: {duration} no total.",
-        "other": "Foco por dia nos últimos {n} dias: {duration} no total."
-      },
+      "chart": "Foco de {first} a {last}: {duration} no total.",
       "tip_none": "Nenhum pomodoro",
-      "by_activity": "Foco por atividade, últimos 30 dias",
+      "by_activity": "Foco por atividade",
       "activity_task": "Tarefas do Todoist",
       "activity_other": "Outros",
       "activities_empty": "Escolha uma atividade em “No que você está trabalhando?” para ver para onde vai o seu foco.",
-      "top_tasks": "Tarefas com mais foco, últimos 30 dias",
+      "top_tasks": "Tarefas com mais foco",
       "tasks_empty": "Nenhum pomodoro ainda. Escolha uma tarefa e inicie o timer.",
       "help": "O tempo de foco conta os pomodoros concluídos. Uma sessão conta quando tem um pomodoro concluído; tarefas trabalhadas tiveram pelo menos um pomodoro, e tarefas concluídas foram concluídas no buZyist."
     },
@@ -809,15 +830,13 @@
       "legend_focus": "Durante o foco",
       "legend_other": "Fora do foco",
       "during_focus": "{duration} durante o foco",
-      "chart": {
-        "one": "Tempo nos apps por dia no último {n} dia: {duration} no total.",
-        "other": "Tempo nos apps por dia nos últimos {n} dias: {duration} no total."
-      },
+      "chart": "Tempo nos apps de {first} a {last}: {duration} no total.",
       "tip": "{focus} durante o foco · {other} fora",
       "tip_none": "Nada contado",
-      "most_apps": "Apps mais usados, últimos 30 dias",
-      "most_sites": "Sites mais usados, últimos 30 dias",
-      "row": "{today} hoje · {week} nesta semana · {share} no foco",
+      "most_apps": "Apps mais usados",
+      "most_sites": "Sites mais usados",
+      "row": "{today} hoje · {share} no foco",
+      "row_past": "{share} no foco",
       "show_all_apps": {
         "one": "Mostrar o {n} app",
         "other": "Mostrar todos os {n} apps"
@@ -838,17 +857,14 @@
       "legend_focus": "Durante o foco",
       "legend_limit": "Acima de um limite",
       "split": "{focus} no foco · {limit} por limite",
-      "chart": {
-        "one": "Bloqueios por dia no último {n} dia: {focus} durante o foco, {limit} acima de um limite.",
-        "other": "Bloqueios por dia nos últimos {n} dias: {focus} durante o foco, {limit} acima de um limite."
-      },
+      "chart": "Bloqueios de {first} a {last}: {focus} durante o foco, {limit} acima de um limite.",
       "tip": "{focus} durante o foco · {limit} acima de um limite",
       "tip_none": "Nada bloqueado",
       "count": {
         "one": "{n} bloqueio",
         "other": "{n} bloqueios"
       },
-      "most": "Mais bloqueados, últimos 30 dias",
+      "most": "Mais bloqueados",
       "empty": "Nada bloqueado ainda. Ative o bloqueio na aba Sites ou adicione um limite de site.",
       "help": "Contado cada vez que a extensão do Chrome mostra a página de bloqueio: durante uma fase de trabalho, ou quando um limite de site se esgota ou está no horário bloqueado. Todos os perfis do navegador neste PC somam nas mesmas contas."
     }

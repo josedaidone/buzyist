@@ -402,10 +402,11 @@ def test_app_time_counts_every_app_in_front_with_no_limit(make_app, desktop, clo
     run(app, clock, 120)
     desktop.idle = APP_IDLE_S
     run(app, clock, 60)
-    stats = Api(app).app_time_stats()
-    assert stats["ok"] and stats["on"] is True
-    assert {a["name"]: a["span"] for a in stats["apps"]} == {"Word": 2, "Slack": 2}  # 120 s and 90 s, in minutes
-    assert stats["totals"]["today"] == {"focus": 3, "other": 1}  # 150 s during focus, 60 s outside
+    stats = Api(app).stats()
+    assert stats["ok"] and stats["apps"]["on"] is True
+    apps = stats["apps"]["apps"]
+    assert {a["name"]: (a["range"], a["today"]) for a in apps} == {"Word": (2, 2), "Slack": (2, 2)}  # 120 s, 90 s
+    assert stats["apps"]["totals"]["today"] == {"focus": 3, "other": 1}  # 150 s during focus, 60 s outside
     app.app_time.flush(force=True)
     saved = read_json(paths.APP_TIME_PATH, {})["days"]
     assert list(saved.values()) == [{"slack": [90.0, 30.0], "winword": [120.0, 120.0]}]  # one day, the clock's
@@ -433,10 +434,13 @@ def test_app_time_stats_of_an_earlier_range(tmp_path):
     t.add("slack.exe", 120, 0, (today - timedelta(days=13)).isoformat())
     t.add("winword.exe", 60, 60, today.isoformat())
     s = t.stats(today, span=7, offset=1)
-    assert len(s["days"]) == 7 and s["days"][-1]["day"] == (today - timedelta(days=7)).isoformat()
-    assert s["totals"]["span"] == {"focus": 5, "other": 7}
-    assert [(a["name"], a["span"], a["focus"], a["today"]) for a in s["apps"]] == [("Slack", 12, 5, 0)]
-    assert [a["name"] for a in t.stats(today, span=7)["apps"]] == ["Word"]
+    assert len(s["bars"]) == 7 and s["last"] == (today - timedelta(days=7)).isoformat()
+    assert s["totals"]["range"] == {"focus": 5, "other": 7}
+    assert s["apps"] == [{"key": "slack", "name": "Slack", "range": 12, "focus": 5}]  # no "today": not in it
+    now = t.stats(today, span=7)
+    assert now["apps"] == [{"key": "winword", "name": "Word", "range": 1, "focus": 1, "today": 1}]
+    assert now["totals"]["previous"] == s["totals"]["range"]
+    assert t.earliest() == (today - timedelta(days=13)).isoformat()
 
 
 def test_app_time_keeps_days_and_drops_unreadable_entries(tmp_path):

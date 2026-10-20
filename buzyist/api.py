@@ -141,17 +141,9 @@ class Api:
         """The latest names of sessions with no task, for the "What are you working on?" list."""
         return self._do(lambda: {"recent": self._app.recent_free()})
 
-    def focus_stats(self):
-        """Focus time, tomatoes, sessions and tasks over the last 30 days, for the Stats tab."""
-        return self._do(self._app.focus_stats)
-
-    def block_stats(self):
-        """How often websites were blocked over the last 30 days, for the Stats tab."""
-        return self._do(self._app.block_stats)
-
-    def app_time_stats(self):
-        """Time in each app and on each website over the last 30 days, focus or not, for the Stats tab."""
-        return self._do(self._app.app_time_stats)
+    def stats(self, span=None, offset=0):
+        """The Stats tab for `span` days, `offset` ranges back from today (App.stats; span None: the setting)."""
+        return self._do(self._app.stats, span, offset)
 
     def running_apps(self):
         """The programs running now, for the app names Settings suggests."""

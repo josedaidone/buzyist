@@ -1330,14 +1330,48 @@ function showTab(name, focus) {
 
 // ------------------------------------------------------------- stats tab
 
-// How often websites were blocked (Api.block_stats, from blocks.json): totals,
-// one stacked bar per day for 30 days (focus below, limits above), and the
-// most blocked sites.
+// The three sections for one period (Api.stats, App.stats): its `span` (the
+// stats_span setting, the picker at the top) and `statsOffset`, how many
+// periods back from today (the arrows; not saved). Python keeps the offset
+// within the data, and the answer says whether there is anything older.
+let statsOffset = 0, statsAsked = 0;
 async function loadStats() {
-  const [f, r, a] = await Promise.all([api.focus_stats(), api.block_stats(), api.app_time_stats()]);
-  if (f.ok) renderFocusStats(f);
-  if (r.ok) renderStats(r);
-  if (a.ok) renderAppTime(a);
+  const asked = ++statsAsked;  // a quick second click wins over a slow first answer
+  const picked = formValues(["stats_span"]).stats_span;
+  const s = await api.stats(picked ? Number(picked) : null, statsOffset);
+  if (asked !== statsAsked) return;
+  if (!s.ok) return toast(s.error, true);
+  statsOffset = s.range.offset;
+  renderRange(s.range);
+  renderFocusStats(s.focus);
+  renderAppTime(s.apps);
+  renderStats(s.blocks);
+}
+
+for (const radio of document.querySelectorAll('input[name="stats_span"]')) {
+  radio.onchange = async () => {
+    const result = await api.save_settings(formValues(["stats_span"]));
+    if (!result.ok) return toast(result.error, true);
+    statsOffset = 0;
+    loadStats();
+  };
+}
+$("statsOlder").onclick = () => { statsOffset += 1; loadStats(); };
+$("statsNewer").onclick = () => { statsOffset = Math.max(0, statsOffset - 1); loadStats(); };
+
+// "Mar 2 – Mar 31" between the arrows, with the year when it isn't this one.
+function renderRange(r) {
+  const thisYear = String(new Date().getFullYear());
+  const withYear = r.first.slice(0, 4) !== thisYear || r.last.slice(0, 4) !== thisYear;
+  const day = (iso) => formatDate(new Date(iso + "T12:00"), { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
+  $("statsRange").textContent = t("stats.range.label", { first: day(r.first), last: day(r.last) });
+  for (const radio of document.querySelectorAll('input[name="stats_span"]')) radio.checked = Number(radio.value) === r.span;
+  const older = $("statsOlder"), newer = $("statsNewer");
+  older.disabled = !r.has_older;
+  newer.disabled = r.offset === 0;
+  // An arrow that just went off would drop the keyboard focus: hand it to the other one.
+  if (older.disabled && document.activeElement === older && !newer.disabled) newer.focus();
+  if (newer.disabled && document.activeElement === newer && !older.disabled) older.focus();
 }
 
 // Saved at once too; the limiter thread starts or stops counting straight away.
@@ -1347,24 +1381,22 @@ $("s_app_time_on").onchange = async () => {
   loadStats();
 };
 
-// Time in every app (Api.app_time_stats, from app_time.json): totals, one
+// Time in every app (App.app_time_stats, from app_time.json): totals, one
 // stacked bar per day (during focus below, outside above), the apps by time.
 let appTimeAll = false, siteTimeAll = false;  // "Show all" pressed
 $("appTimeMore").onclick = () => { appTimeAll = true; loadStats(); };
 $("siteTimeMore").onclick = () => { siteTimeAll = true; loadStats(); };
 function renderAppTime(s) {
   $("appTimeBody").classList.toggle("muted", !s.on);
-  $("appTimeTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
-    const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.focus + tot.other)),
-                el("div", "help", t("stats.apps.during_focus", { duration: duration(tot.focus) })));
-    return tile;
-  }));
+  $("appTimeTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+    statTile(label, duration(Math.round(tot.focus + tot.other)), kind === "average"
+      ? [t("stats.tiles.per_day")]
+      : [t("stats.apps.during_focus", { duration: duration(tot.focus) }), ...changeLine(s, kind)])));
 
-  barChart($("appTimeChart"), s.days, [["focus", "stat-f"], ["other", "stat-l"]],
-    t("stats.apps.chart", { n: s.span, duration: duration(s.totals.span.focus + s.totals.span.other) }),
-    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), max: duration });
-  $("appTimeFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
+  barChart($("appTimeChart"), s.bars, [["focus", "stat-f"], ["other", "stat-l"]],
+    t("stats.apps.chart", { ...rangeDays(s), duration: duration(s.totals.range.focus + s.totals.range.other) }),
+    { line: (d) => d.focus + d.other ? t("stats.apps.tip", { focus: duration(d.focus), other: duration(d.other) }) : t("stats.apps.tip_none"), max: duration, today: !s.offset });
+  axisEnds(s, "appTimeFirst", "appTimeLast");
 
   timeRows($("appTimeApps"), $("appTimeMore"), s.apps, appTimeAll, "stats.apps.show_all_apps", (a) => a.key + ".exe",
     t(s.on ? "stats.apps.apps_empty" : "stats.apps.apps_off"));
@@ -1373,16 +1405,17 @@ function renderAppTime(s) {
 }
 
 // The 8 rows with the most time (all of them once "Show all" was pressed);
-// `moreKey` is the "Show all" button's text.
+// `moreKey` is the "Show all" button's text. A row has `today` only when
+// the period ends today.
 function timeRows(list, more, rows, all, moreKey, title, empty) {
   const SHOWN = 8;
   const shown = all ? rows : rows.slice(0, SHOWN);
   list.replaceChildren(...(shown.length ? shown.map((a) => {
     const row = el("div", "stat-site");
-    const share = a.span ? a.focus / a.span : 0;
+    const share = percent(a.range ? a.focus / a.range : 0);
     row.append(el("span", "stat-host", a.name),
-               el("span", "help", t("stats.apps.row", { today: duration(a.today), week: duration(a.week), share: percent(share) })),
-               el("b", "", duration(a.span)));
+               el("span", "help", a.today == null ? t("stats.apps.row_past", { share }) : t("stats.apps.row", { today: duration(a.today), share })),
+               el("b", "", duration(a.range)));
     row.title = title(a);
     return row;
   }) : [el("div", "help", empty)]));
@@ -1397,22 +1430,58 @@ $("s_streak_skip_weekends").onchange = async () => {
   loadStats();
 };
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-// The Stats tab's text in the app language: its three tiles' titles, a share
-// (0..1) as a whole percent, and a day ("Sat, Oct 17" / "sáb., 17 de out.").
-const statTiles = (s) => [[t("stats.today"), s.totals.today], [t("stats.week"), s.totals.week], [t("stats.span", { n: s.span }), s.totals.span]];
+// The Stats tab's text in the app language: a share (0..1) as a whole
+// percent, and a day ("Sat, Oct 17" / "sáb., 17 de out.").
 const percent = (share) => formatNumber(share, { style: "percent", maximumFractionDigits: 0 });
 const statDay = (iso) => formatDate(new Date(iso + "T12:00"), { weekday: "short", day: "numeric", month: "short" });
 
-// One column per day, stacked from `series` ([key, css class] pairs, the
-// first at the bottom); `tip(day)` is the hover line, `label` the aria text.
-function barChart(chart, days, series, label, tip) {
-  const top = Math.max(1, ...days.map((d) => series.reduce((sum, [k]) => sum + d[k], 0)));
+// A section's three tiles, [title, totals, kind]: Today, the period and the
+// one before while the period ends today; further back, the period, the one
+// before and the daily average.
+function statTiles(s) {
+  const range = [s.offset ? t("stats.tiles.range") : t("stats.span", { n: s.span }), s.totals.range, "range"];
+  const before = [t("stats.tiles.previous", { n: s.span }), s.totals.previous, "previous"];
+  if (s.offset) return [range, before, [t("stats.tiles.average"), s.totals.average, "average"]];
+  return [[t("stats.today"), s.totals.today, "today"], range, before];
+}
+
+function statTile(label, number, lines) {
+  const tile = el("div", "stat-tile");
+  tile.append(el("div", "stat-label", label), el("div", "stat-num", number), ...lines.map((line) => el("div", "help", line)));
+  return tile;
+}
+
+// "+12% on the previous 30 days", under the period's tile; nothing when the
+// period before had nothing to compare with.
+function changeLine(s, kind) {
+  if (kind !== "range" || s.change == null) return [];
+  const change = formatNumber(s.change, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" });
+  return [t("stats.change", { change, n: s.span })];
+}
+
+// A chart's first and last day, for its aria text, and under it (the last
+// is "Today" while the period ends today).
+const rangeDays = (s) => ({ first: statDay(s.first), last: statDay(s.last) });
+function axisEnds(s, first, last) {
+  $(first).textContent = statDay(s.first);
+  $(last).textContent = s.offset ? statDay(s.last) : t("stats.today");
+}
+
+// What a bar covers: its day, "Today", or for a week "Mon, Oct 12 – Today".
+function barDay(d, isToday) {
+  if (d.days > 1) return t("stats.week_tip", { first: statDay(d.day), last: isToday ? t("stats.today") : statDay(d.last) });
+  return isToday ? t("stats.today") : statDay(d.day);
+}
+
+// One column per bar (a day, or a week for a year), stacked from `series`
+// ([key, css class] pairs, the first at the bottom); `tip.line(bar)` is the
+// hover line, `tip.today` whether the last bar holds today, `label` the aria text.
+function barChart(chart, bars, series, label, tip) {
+  const top = Math.max(1, ...bars.map((d) => series.reduce((sum, [k]) => sum + d[k], 0)));
   const box = el("div", "stat-tip hidden");
   chart.replaceChildren(el("div", "stat-max", tip.max ? tip.max(top) : formatNumber(top)), box);
   chart.setAttribute("aria-label", label);
-  days.forEach((d, i) => {
+  bars.forEach((d, i) => {
     const col = el("div", "stat-col");
     for (const [key, cls] of series) {  // column-reverse: the first is at the bottom
       if (!d[key]) continue;
@@ -1421,7 +1490,7 @@ function barChart(chart, days, series, label, tip) {
       col.append(seg);
     }
     col.onmouseenter = () => {
-      box.replaceChildren(el("b", "", i === days.length - 1 ? t("stats.today") : statDay(d.day)), el("span", "", tip.line(d)));
+      box.replaceChildren(el("b", "", barDay(d, tip.today && i === bars.length - 1)), el("span", "", tip.line(d)));
       box.classList.remove("hidden");
       const x = col.offsetLeft + col.offsetWidth / 2;
       box.style.left = Math.min(Math.max(x, 90), chart.clientWidth - 90) + "px";
@@ -1437,25 +1506,24 @@ function keepCounts(text) {
   return text.split(" · ").map((part) => part.replace(/^(\S+) /, "$1 ")).join(" · ");
 }
 
-// Focus from history.json (Api.focus_stats): focus time, pomodoros, sessions
-// and tasks for today / 7 / 30 days, the streak, minutes per day, top tasks.
+// Focus from history.json (App.focus_stats): focus time, pomodoros, sessions
+// and tasks for the period, the streak, minutes per bar, top tasks.
 function renderFocusStats(s) {
   const counts = (c) => t("stats.focus.pomodoros", { n: c.pomodoros }) + " · " + t("stats.focus.sessions", { n: c.sessions });
-  $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
-    const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", duration(tot.minutes)),
-                el("div", "help", keepCounts(counts(tot))),
-                el("div", "help", keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed }))));
-    return tile;
-  }));
+  $("focusTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+    statTile(label, duration(Math.round(tot.minutes)), kind === "average"
+      ? [t("stats.tiles.per_day")]
+      : [keepCounts(counts(tot)),
+         keepCounts(t("stats.focus.tasks", { n: tot.tasks }) + " · " + t("stats.focus.completed", { n: tot.completed })),
+         ...changeLine(s, kind)])));
   const current = t("stats.focus.days", { n: s.streak.current });
   const [before, after] = splitAround(t("stats.focus.streak", { current, best: t("stats.focus.days", { n: s.streak.best }) }), current);
   $("focusStreak").replaceChildren(before, el("b", "", current), after);
 
-  barChart($("focusChart"), s.days, [["minutes", "stat-f"]],
-    t("stats.focus.chart", { n: s.span, duration: duration(s.totals.span.minutes) }),
-    { line: (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none"), max: duration });
-  $("focusFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
+  barChart($("focusChart"), s.bars, [["minutes", "stat-f"]],
+    t("stats.focus.chart", { ...rangeDays(s), duration: duration(s.totals.range.minutes) }),
+    { line: (d) => d.minutes ? duration(d.minutes) + " · " + t("stats.focus.pomodoros", { n: d.pomodoros }) : t("stats.focus.tip_none"), max: duration, today: !s.offset });
+  axisEnds(s, "focusFirst", "focusLast");
 
   // One row per activity, with Todoist tasks and typed names ("_task",
   // "_other") as their own rows; hidden until an activity has been used.
@@ -1466,7 +1534,7 @@ function renderFocusStats(s) {
     const row = el("div", "stat-site");
     const name = el("span", "stat-host stat-activity");
     name.append(g.icon ? activityIcon(g.icon) : el("i", "stat-noicon"), groupName(g));
-    const share = s.totals.span.minutes ? g.minutes / s.totals.span.minutes : 0;
+    const share = s.totals.range.minutes ? g.minutes / s.totals.range.minutes : 0;
     row.append(name, el("span", "help", t("stats.focus.pomodoros", { n: g.pomodoros }) + " · " + percent(share)), el("b", "", duration(g.minutes)));
     return row;
   }) : [el("div", "help", t("stats.focus.activities_empty"))]));
@@ -1479,19 +1547,20 @@ function renderFocusStats(s) {
   }) : [el("div", "help", t("stats.focus.tasks_empty"))]));
 }
 
+// How often websites were blocked (App.blocks.stats, from blocks.json):
+// totals, one stacked bar per day (focus below, limits above), and the most
+// blocked sites.
 function renderStats(s) {
   const split = (c) => t("stats.blocks.split", { focus: formatNumber(c.focus), limit: formatNumber(c.limit) });
-  $("statTiles").replaceChildren(...statTiles(s).map(([label, tot]) => {
-    const tile = el("div", "stat-tile");
-    tile.append(el("div", "stat-label", label), el("div", "stat-num", formatNumber(tot.focus + tot.limit)),
-                el("div", "help", keepCounts(split(tot))));
-    return tile;
-  }));
+  $("statTiles").replaceChildren(...statTiles(s).map(([label, tot, kind]) =>
+    statTile(label, formatNumber(tot.focus + tot.limit, { maximumFractionDigits: 1 }), kind === "average"
+      ? [t("stats.tiles.per_day")]
+      : [keepCounts(split(tot)), ...changeLine(s, kind)])));
 
-  barChart($("statChart"), s.days, [["focus", "stat-f"], ["limit", "stat-l"]],
-    t("stats.blocks.chart", { n: s.span, focus: formatNumber(s.totals.span.focus), limit: formatNumber(s.totals.span.limit) }),
-    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none") });
-  $("statFirst").textContent = s.days.length ? statDay(s.days[0].day) : "";
+  barChart($("statChart"), s.bars, [["focus", "stat-f"], ["limit", "stat-l"]],
+    t("stats.blocks.chart", { ...rangeDays(s), focus: formatNumber(s.totals.range.focus), limit: formatNumber(s.totals.range.limit) }),
+    { line: (d) => d.focus + d.limit ? t("stats.blocks.tip", { focus: formatNumber(d.focus), limit: formatNumber(d.limit) }) : t("stats.blocks.tip_none"), today: !s.offset });
+  axisEnds(s, "statFirst", "statLast");
 
   $("statSites").replaceChildren(...(s.sites.length ? s.sites.map((site) => {
     const row = el("div", "stat-site");
@@ -1525,7 +1594,7 @@ async function openSettings(tab) {
   const form = $("settingsForm");
   for (const input of form.querySelectorAll("input[name]")) {
     if (input.type === "checkbox") input.checked = !!s[input.name];
-    else if (input.type === "radio") input.checked = s[input.name] === input.value;
+    else if (input.type === "radio") input.checked = String(s[input.name]) === input.value;
     else input.value = s[input.name] ?? "";
   }
   $("testResult").textContent = "";
@@ -1576,6 +1645,7 @@ async function openSettings(tab) {
   $("updateResult").textContent = "";
   renderUpdate();
   if (s.use_todoist && !s.has_todoist_token) tab = "todoist";
+  statsOffset = 0;  // Stats opens on the period ending today
   showTab(typeof tab === "string" ? tab : settingsTab);
   $("drawer").classList.add("on");
   $("scrim").classList.add("on");

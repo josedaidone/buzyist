@@ -51,12 +51,20 @@ from buzyist.constants import (
     now_ms,
 )
 from buzyist.focus_server import FocusServer
-from buzyist.focus_stats import SESSION_REASONS, focus_stats, session_minutes
+from buzyist.focus_stats import SESSION_REASONS, earliest, focus_stats, session_minutes
 from buzyist.hotkey import GlobalHotkey
 from buzyist.i18n import app_error, english, t
 from buzyist.plan import plan_session
 from buzyist.secrets_dpapi import SECRET_KEYS, unprotect_secrets
 from buzyist.session import SessionMixin
+from buzyist.stats_common import (
+    DEFAULT_SPAN,
+    clamp_offset,
+    clamp_span,
+    earliest_day,
+    oldest_offset,
+    range_info,
+)
 from buzyist.storage import read_json
 from buzyist.sync import load_shared
 from buzyist.todoist import Todoist
@@ -319,32 +327,53 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             minutes += session_minutes(self.running_session())
         return {"pomodoros": count, "minutes": minutes, "completed": completed}
 
-    def focus_stats(self) -> dict:
-        """Focus time, tomatoes, sessions and tasks over the last 30 days, for the Stats tab."""
+    def stats(self, span=None, offset=0) -> dict:
+        """
+        The Stats tab: `range` ({span, offset, first, last, has_older}) and its
+        three sections for it. `span` is one of stats_common.SPANS (None: the
+        stats_span setting); `offset` counts ranges back from today and is
+        kept within the oldest data any section holds.
+        """
+        today = date.today()
+        span = clamp_span(self.cfg.get("stats_span") if span is None else span)
+        with self.lock:
+            history = list(self.history)
+        oldest = earliest_day(
+            d
+            for d in (earliest(history), self.blocks.earliest(), self.app_time.earliest(), self.site_time.earliest())
+            if d
+        )
+        offset = clamp_offset(offset, today, span, oldest)
+        info = range_info(today, span, offset)
+        return {
+            "range": {**info, "has_older": offset < oldest_offset(today, span, oldest)},
+            "focus": self.focus_stats(today, span, offset),
+            "apps": self.app_time_stats(today, span, offset),
+            "blocks": self.blocks.stats(today, span, offset),
+        }
+
+    def focus_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
+        """The Stats tab's Focus section (focus_stats.focus_stats), with the running session."""
         with self.lock:
             history, session = list(self.history), self.running_session()
         cfg = self.cfg.view()
         return focus_stats(
             history,
             session,
-            date.today(),
+            today or date.today(),
+            span,
             skip_weekends=cfg.get("streak_skip_weekends"),
             activities=cfg.get("activities"),
+            offset=offset,
         )
 
-    def block_stats(self) -> dict:
-        """How often websites were blocked over the last 30 days, for the Stats tab."""
-        return self.blocks.stats(date.today())
-
-    def app_time_stats(self) -> dict:
-        """Time in each app and on each website over the last 30 days, focus or not, for the Stats tab."""
-        today = date.today()
-        sites = self.site_time.stats(today)
+    def app_time_stats(self, today: date | None = None, span: int = DEFAULT_SPAN, offset: int = 0) -> dict:
+        """The Stats tab's Time in apps section: the apps' (AppTime.stats), plus the websites' rows."""
+        today = today or date.today()
         return {
             "on": bool(self.cfg.get("app_time_on")),
-            **self.app_time.stats(today),
-            "sites": sites["apps"],
-            "site_totals": sites["totals"],
+            **self.app_time.stats(today, span, offset),
+            "sites": self.site_time.stats(today, span, offset)["apps"],
             "extension": self.extension_connected(),
         }
 

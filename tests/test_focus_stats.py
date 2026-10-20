@@ -2,7 +2,8 @@
 
 from datetime import date, timedelta
 
-from buzyist.focus_stats import focus_stats
+from buzyist.api import Api
+from buzyist.focus_stats import earliest, focus_stats
 
 TODAY = date(2026, 10, 14)
 
@@ -26,7 +27,7 @@ def completed(ago, task_id="t1"):
     return {"date": day(ago), "task_id": task_id, "content": "Write the tests", "completed": True}
 
 
-def test_totals_for_today_the_week_and_the_month():
+def test_totals_for_today_the_range_and_the_range_before():
     history = [
         ran(0),
         ran(0, "t2", "Review", 1, "stopped"),
@@ -35,16 +36,27 @@ def test_totals_for_today_the_week_and_the_month():
         ran(3, "t1", pomodoros=4),
         ran(20, "t3", "Plan", 1),
         completed(20, "t3"),
-        ran(40, "t9", "Too old", 8),
+        ran(40, "t9", "Too old", 8),  # the 30 days before
     ]
     s = focus_stats(history, None, TODAY)
+    assert (s["span"], s["offset"], s["by"], s["first"], s["last"]) == (30, 0, "day", day(29), day(0))
     assert s["totals"]["today"] == {"minutes": 75, "pomodoros": 3, "sessions": 2, "tasks": 2, "completed": 1}
-    assert s["totals"]["week"] == {"minutes": 175, "pomodoros": 7, "sessions": 3, "tasks": 2, "completed": 1}
-    assert s["totals"]["span"] == {"minutes": 200, "pomodoros": 8, "sessions": 4, "tasks": 3, "completed": 2}
-    assert len(s["days"]) == 30
-    assert s["days"][-1] == {"day": day(0), "minutes": 75, "pomodoros": 3}
-    assert s["days"][-4] == {"day": day(3), "minutes": 100, "pomodoros": 4}
-    assert s["days"][0]["day"] == day(29)
+    assert s["totals"]["range"] == {"minutes": 200, "pomodoros": 8, "sessions": 4, "tasks": 3, "completed": 2}
+    assert s["totals"]["previous"] == {"minutes": 200, "pomodoros": 8, "sessions": 1, "tasks": 1, "completed": 0}
+    assert s["totals"]["average"] == {"minutes": 6.7, "pomodoros": 0.3, "sessions": 0.1, "tasks": 0.1, "completed": 0.1}
+    assert s["change"] == 0.0
+    assert len(s["bars"]) == 30
+    assert s["bars"][-1] == {"day": day(0), "last": day(0), "days": 1, "minutes": 75, "pomodoros": 3}
+    assert s["bars"][-4] == {"day": day(3), "last": day(3), "days": 1, "minutes": 100, "pomodoros": 4}
+    assert s["bars"][0]["day"] == day(29)
+    assert focus_stats(history[:-1], None, TODAY)["change"] is None  # nothing before: no change to show
+
+
+def test_a_year_has_a_bar_per_week():
+    s = focus_stats([ran(0), ran(1), ran(300, pomodoros=1)], None, TODAY, span=365)
+    assert s["by"] == "week" and len(s["bars"]) == 53
+    assert sum(b["minutes"] for b in s["bars"]) == s["totals"]["range"]["minutes"] == 125
+    assert s["bars"][-1] == {"day": day(2), "last": day(0), "days": 3, "minutes": 100, "pomodoros": 4}  # Mon-Wed
 
 
 def test_the_running_session_counts_today():
@@ -95,7 +107,7 @@ def test_the_streak_can_skip_weekends():
 
 def test_nothing_yet_and_odd_entries():
     s = focus_stats([{"date": 5}, "junk", {"date": "not a day", "pomodoros": 1, "reason": "finished"}], None, TODAY)
-    assert s["totals"]["span"] == {"minutes": 0, "pomodoros": 0, "sessions": 0, "tasks": 0, "completed": 0}
+    assert s["totals"]["range"] == {"minutes": 0, "pomodoros": 0, "sessions": 0, "tasks": 0, "completed": 0}
     assert s["tasks"] == []
     assert s["streak"] == {"current": 0, "best": 0}
 
@@ -132,15 +144,51 @@ def test_an_earlier_range():
     ]
     running = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
     s = focus_stats(history, running, TODAY, offset=1)
-    assert (s["days"][0]["day"], s["days"][-1]["day"]) == (day(59), day(30))
-    assert s["totals"]["span"] == {"minutes": 75, "pomodoros": 3, "sessions": 1, "tasks": 1, "completed": 1}
-    assert s["totals"]["today"]["minutes"] == 0  # the range's last day, not today
+    assert (s["first"], s["last"], s["offset"]) == (day(59), day(30), 1)
+    assert s["bars"][-1]["day"] == day(30)
+    assert s["totals"]["range"] == {"minutes": 75, "pomodoros": 3, "sessions": 1, "tasks": 1, "completed": 1}
+    assert s["totals"]["previous"]["minutes"] == 200
+    assert "today" not in s["totals"]  # not in this range
+    assert s["change"] == round((75 - 200) / 200, 4)
     assert [t["content"] for t in s["tasks"]] == ["Plan"]  # not the running session, not the newer ones
     # The streak still runs up to today, the running session included.
     assert s["streak"] == focus_stats(history, running, TODAY)["streak"] == {"current": 1, "best": 1}
-    assert focus_stats(history, None, TODAY, span=7, offset=10)["totals"]["span"]["pomodoros"] == 8
+    assert focus_stats(history, None, TODAY, span=7, offset=10)["totals"]["range"]["pomodoros"] == 8
+
+
+def test_the_earliest_day():
+    assert earliest([ran(3), completed(40), {"date": "junk"}, "junk"]) == day(40)
+    assert earliest([]) is None
 
 
 def test_the_running_session_keeps_the_streak_going():
     running = {"task": {"id": "t1", "content": "Write the tests"}, "done": 1, "work_ms": 25 * 60_000}
     assert focus_stats([ran(1)], running, TODAY)["streak"] == {"current": 2, "best": 2}
+
+
+def test_the_stats_tab_answer(make_app, clock):
+    app = make_app({"stats_span": 7})
+    today = clock.now().date()
+
+    def back(n: int) -> str:
+        return (today - timedelta(days=n)).isoformat()
+
+    app.history = [{**ran(0), "date": back(0)}, {**ran(0), "date": back(20)}]
+    s = Api(app).stats()
+    assert s["ok"] and s["range"] == {
+        "span": 7,
+        "offset": 0,
+        "by": "day",
+        "first": back(6),
+        "last": back(0),
+        "has_older": True,  # 20 days back is two weeks before this one
+    }
+    assert s["focus"]["span"] == s["apps"]["span"] == s["blocks"]["span"] == 7
+    assert s["focus"]["totals"]["range"]["minutes"] == 50
+    older = Api(app).stats(None, 2)["range"]
+    assert (older["offset"], older["last"], older["has_older"]) == (2, back(14), False)
+    assert Api(app).stats(None, 99)["range"]["offset"] == 2  # no further back than the data
+    assert Api(app).stats(None, -1)["range"]["offset"] == 0
+    year = Api(app).stats(365, 0)
+    assert year["range"]["by"] == "week" and year["range"]["has_older"] is False
+    assert Api(app).stats(14)["range"]["span"] == 30  # not one of the picker's: the default
