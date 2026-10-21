@@ -13,6 +13,7 @@ route, with switches to take a route down or refuse the PIN.
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -340,19 +341,22 @@ def test_skip_moves_work_to_rest_and_the_last_work_stops(engine, deferred_thread
     app.step()
     (entry,) = app.history
     assert (entry["reason"], entry["pomodoros"]) == ("stopped", 1)
+    # ...but its focus time is what it ran: 10 min, then a work phase skipped at once.
+    assert entry["minutes"] == 10
     assert app.ended["reason"] == "stopped"
 
 
-def test_stop_counts_the_finished_work_phases(engine, deferred_threads):
+def test_stop_counts_the_time_the_work_phases_ran(engine, deferred_threads):
     app = engine({"cycles": 4})
     start(app, deferred_threads, "t1")
     app.step(minutes=25 + 5 + 10)  # 10 min into the 2nd work phase
     app.control("stop")
     app.step()
     (entry,) = app.history
-    assert (entry["reason"], entry["pomodoros"], entry["minutes"]) == ("stopped", 1, 25)
+    # The finished tomato and the 10 min of the one stopped; the break doesn't count.
+    assert (entry["reason"], entry["pomodoros"], entry["minutes"]) == ("stopped", 1, 35)
     assert app.ended["reason"] == "stopped"
-    assert app.todoist.comments[0][1].startswith("🍅 × 1 (25 min focus)")  # noqa: RUF001
+    assert app.todoist.comments[0][1].startswith("🍅 × 1 (35 min focus)")  # noqa: RUF001
 
 
 def test_stop_ends_the_session_at_once_on_the_bar(engine, deferred_threads, device):
@@ -366,14 +370,46 @@ def test_stop_ends_the_session_at_once_on_the_bar(engine, deferred_threads, devi
     assert app.timer_view() is None
 
 
-def test_stop_before_the_first_tomato_logs_no_comment(engine, deferred_threads):
+def test_stop_before_the_first_tomato_counts_its_time(engine, deferred_threads):
     app = engine()
     start(app, deferred_threads, "t1")
     app.step(minutes=5)
     app.control("stop")
     app.step()
-    assert app.history[0]["pomodoros"] == 0
+    assert (app.history[0]["pomodoros"], app.history[0]["minutes"]) == (0, 5)
+    assert app.todoist.comments[0][1].startswith("🍅 × 0 (5 min focus)")  # noqa: RUF001
+
+
+def test_stop_at_once_logs_no_comment(engine, deferred_threads):
+    app = engine()
+    start(app, deferred_threads, "t1")
+    app.step(seconds=20)
+    app.control("stop")
+    app.step()
+    assert (app.history[0]["pomodoros"], app.history[0]["minutes"]) == (0, 0)
     assert app.todoist.comments == []
+
+
+def test_paused_time_doesnt_count(engine, deferred_threads):
+    app = engine({"use_todoist": False})
+    start(app, deferred_threads)
+    app.step(minutes=8)
+    app.control("pause")
+    app.step(minutes=30)
+    app.control("resume")
+    app.step(minutes=4)
+    app.control("stop")
+    app.step()
+    assert app.history[0]["minutes"] == 12
+
+
+def test_the_focus_so_far_survives_a_restart(engine, deferred_threads):
+    app = engine({"use_todoist": False})
+    start(app, deferred_threads)
+    app.step(minutes=3)
+    app.step(minutes=3)
+    saved = json.loads(paths.SESSION_PATH.read_text(encoding="utf-8"))
+    assert saved["partial_ms"] >= 5 * 60000
 
 
 # ------------------------------------------------------------ old snapshots ---

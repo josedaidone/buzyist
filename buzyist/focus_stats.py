@@ -1,7 +1,7 @@
 """
 The Stats tab's focus numbers, worked out from history.json (plus the
 running session): focus time, tomatoes, sessions and tasks per day, the
-streak of days with a tomato, and the tasks that got the most focus.
+streak of days with focus, and the tasks that got the most focus.
 """
 
 from __future__ import annotations
@@ -27,18 +27,27 @@ SESSION_REASONS = ("finished", "stopped", "replaced")
 
 def session_minutes(session: dict) -> int:
     """
-    A session's focus minutes so far: its finished tomatoes, or for a call
-    (kind "call" in the history) the time its devices were in use.
+    A session's focus minutes so far, to the nearest minute: the time its
+    work phases ran, a stopped or skipped one included (session.track_focus),
+    or for a call (kind "call" in the history) the time its devices were in
+    use. A session saved before that was tracked counts its finished tomatoes.
     """
     call = session.get("call")
     if call:
         return max(0, call["seen_ms"] - call["started_ms"]) // 60000
+    if "focus_ms" in session:
+        return (int(session["focus_ms"]) + int(session.get("partial_ms") or 0) + 30000) // 60000
     return session.get("done", 0) * session["work_ms"] // 60000
 
 
 def _counted(entry: dict) -> bool:
-    """A session that counts: one with a finished tomato, or a call of a minute or more."""
-    return bool(entry.get("pomodoros")) or (entry.get("kind") == "call" and int(entry.get("minutes") or 0) > 0)
+    """A session that counts: one that gave a minute of focus or more (a call too)."""
+    return int(entry.get("minutes") or 0) > 0 or bool(entry.get("pomodoros"))
+
+
+def _worked(entry: dict) -> bool:
+    """A session that counts as work on its task: a counted one that isn't a call."""
+    return _counted(entry) and entry.get("kind") != "call"
 
 
 def _task_key(entry: dict) -> str:
@@ -65,15 +74,14 @@ def focus_stats(
     on, completed}; the streak; the 10 tasks with the most focus in the
     range and the time per activity.
 
-    Minutes count finished work phases only, as the history does, plus the
-    time on calls (calls.py). A session counts once it has a finished tomato
-    (one stopped before that, or brought back by a restart and ended at once,
-    is noise), a call once it lasted a minute; calls add to the minutes, the
-    sessions and the activities, not to the tasks or the streak. The running
-    session counts today with its tomatoes (or call minutes) so far, so only
-    in the range that ends today. The streak always runs up to `today`,
-    whatever the range; with `skip_weekends`, a Saturday or Sunday without a
-    tomato doesn't break it.
+    Minutes count the time work phases ran, as the history does (a stopped
+    or skipped one too; older entries hold finished tomatoes only), plus the
+    time on calls (calls.py). A session counts once it gave a minute of
+    focus, finished tomato or not; calls add to the minutes, the sessions
+    and the activities, not to the tasks or the streak. The running session
+    counts today with its focus so far, so only in the range that ends
+    today. The streak always runs up to `today`, whatever the range; with
+    `skip_weekends`, a Saturday or Sunday without focus doesn't break it.
 
     `activities` (the setting) names the groups of the time per activity:
     one per activity used, plus "_task" (Todoist tasks) and "_other"
@@ -108,7 +116,7 @@ def focus_stats(
                 **({"kind": "call"} if session.get("call") else {}),
             }
         )
-    streak = _streak({h["date"] for h in _sessions(entries) if h.get("pomodoros")}, today, skip_weekends)
+    streak = _streak({h["date"] for h in _sessions(entries) if _worked(h)}, today, skip_weekends)
     sessions = _sessions(entries)
     done = [h for h in entries if h.get("completed")]
     picked = check_filter(sessions, activities or [], only)
@@ -136,7 +144,7 @@ def focus_stats(
             "minutes": sum(int(h.get("minutes") or 0) for h in mine),
             "pomodoros": sum(int(h.get("pomodoros") or 0) for h in mine),
             "sessions": sum(1 for h in mine if _counted(h)),
-            "tasks": len({_task_key(h) for h in mine if h.get("pomodoros") and h.get("kind") != "call"}),
+            "tasks": len({_task_key(h) for h in mine if _worked(h)}),
             "completed": sum(1 for h in done if lo <= h["date"] <= hi),
             "outside": sum(outside(d) for d in days),
         }
@@ -150,7 +158,7 @@ def focus_stats(
 
     tasks: dict[str, dict] = {}
     for h in in_range:
-        if not h.get("pomodoros") or h.get("kind") == "call":
+        if not _worked(h):
             continue
         key = _task_key(h)
         task = tasks.setdefault(key, {"key": key, "content": "", "minutes": 0, "pomodoros": 0, "sessions": 0})
