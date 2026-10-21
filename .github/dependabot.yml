@@ -10,9 +10,14 @@ updates:
       actions:
         patterns: ["*"]
 
-  # Python requirements (runtime, build and dev).
+  # Python requirements (runtime, build and dev): no version-update PRs. Dependabot
+  # recompiles the locks on Linux, which drops the Windows-only packages (colorama,
+  # so CI's --require-hashes install fails) and adds Linux-only ones (python-xlib);
+  # they have to be recompiled on Windows instead (CLAUDE.md, "Data and packaging").
+  # Vulnerabilities still reach us: the repo's Dependabot alerts are on, and CI's
+  # pip-audit fails on any known CVE in the three lock files.
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
