@@ -10,6 +10,7 @@ import webbrowser
 from typing import TYPE_CHECKING
 
 from buzyist import paths
+from buzyist.bar import BarUnreachable
 from buzyist.bar_display import png, render
 from buzyist.bar_screens import fill_text
 from buzyist.bar_sound import chime
@@ -17,7 +18,7 @@ from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
-from buzyist.i18n import ENGLISH, app_error, language, languages, raw_catalog, t
+from buzyist.i18n import ENGLISH, app_error, english, language, languages, raw_catalog, t
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -242,6 +243,22 @@ class Api:
     def bar_themes(self):
         """The themes the bar has, for the screen pickers (the card's first)."""
         return self._do(lambda: {"themes": self._app.bar.themes()})
+
+    def bar_apps(self):
+        """The apps the bar can open after a session (VeryBUSY firmware), for its picker."""
+
+        def go():
+            if self._app.bar.is_local:
+                raise app_error("errors.bar.off")
+            try:
+                return {"apps": self._app.bar.apps()}
+            except BarUnreachable:
+                raise
+            except AppError as err:
+                log.info("the bar lists no apps: %s", english(err))
+                raise app_error("errors.bar_end_app_firmware") from err
+
+        return self._do(go)
 
     def play_bar_sound(self):
         """The reminders' chime on the bar, for Settings' Play button (whatever bar_sound says)."""

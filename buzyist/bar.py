@@ -572,6 +572,77 @@ class Bar:
 
         self.run(go, device=True)
 
+    # The apps (bar_apps.py; VeryBUSY only: stock firmware answers 404).
+
+    def apps(self) -> list[dict]:
+        """
+        The apps this bar can open, as [{value, name}] (`value` is a
+        bar_end_app): the built-in ones (the timer's own left out), then the
+        installed ones, by name.
+        """
+
+        def go(bar: BusyBar) -> list[dict]:
+            system = bar._request("GET", "/api/apps/system")
+            builtin = [
+                {"value": f"system:{a['appid']}", "name": a.get("name") or a["appid"]}
+                for a in system.get("list", [])
+                if a.get("group") == "apps" and not a.get("blocked") and a.get("appid") not in ("", TIMER_APPID)
+            ]
+            installed = [*_installed_faps(bar), *_script_apps(bar)]
+            return builtin + sorted(installed, key=lambda a: a["name"].casefold())
+
+        return self.run(go, device=True)
+
+    def running_app(self) -> dict:
+        """What runs on the bar: {name, runtime, app_id} (name "AppsMenu" on the Apps list)."""
+        return self.run(lambda bar: bar._request("GET", "/api/apps/running"), device=True)
+
+    def open_app(self, runtime: str, app_id: str) -> None:
+        """Open an app (on its Start screen); press_ok then starts it."""
+        params = {"id": app_id, "runtime": runtime}
+        self.run(lambda bar: bar._request("POST", "/api/apps/launch", params=params, data=b""), device=True)
+
+    def press_ok(self) -> None:
+        """Press the bar's OK (the wheel)."""
+        self.run(lambda bar: bar._request("POST", "/api/input", params={"key": "ok"}, data=b""), device=True)
+
+
+APPS_DIR = "/ext/apps"  # installed apps, /ext/apps/<category>/<name>.fap
+SCRIPTS_DIR = "/ext/user_assets"  # script apps, <id>/appmeta/manifest.json and <id>/scripts/
+TIMER_APPID = "busy"
+
+
+def _installed_faps(bar: BusyBar) -> list[dict]:
+    found = []
+    for folder in (e.name for e in bar.storage_list(APPS_DIR).list if e.type == "dir"):
+        for entry in bar.storage_list(f"{APPS_DIR}/{folder}").list:
+            if entry.type == "file" and entry.name.endswith(".fap"):
+                path = f"{APPS_DIR}/{folder}/{entry.name}"
+                found.append({"value": f"fap:{path}", "name": entry.name.removesuffix(".fap")})
+    return found
+
+
+def _script_apps(bar: BusyBar) -> list[dict]:
+    """JavaScript and MicroPython apps: a folder with appmeta/ and scripts/ (others are app data)."""
+    try:
+        folders = [e.name for e in bar.storage_list(SCRIPTS_DIR).list if e.type == "dir"]
+    except exceptions.BusyBarAPIError:
+        return []
+    found = []
+    for folder in folders:
+        base = f"{SCRIPTS_DIR}/{folder}"
+        try:
+            if {"appmeta", "scripts"} - {e.name for e in bar.storage_list(base).list}:
+                continue
+            scripts = [e.name for e in bar.storage_list(f"{base}/scripts").list]
+            manifest = json.loads(bar.storage_read(f"{base}/appmeta/manifest.json"))
+        except (exceptions.BusyBarAPIError, ValueError):
+            continue
+        runtime = "js" if any(n.endswith(".js") for n in scripts) else "python"
+        app_id = str(manifest.get("id") or folder)
+        found.append({"value": f"{runtime}:{app_id}", "name": str(manifest.get("name") or app_id)})
+    return found
+
 
 def picture_name(picture: bytes) -> str:
     """The file name a picture goes under on the bar: from its content (see put_theme)."""

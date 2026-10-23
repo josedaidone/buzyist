@@ -1946,6 +1946,9 @@ async function openSettings(tab) {
   renderExtension(s.extension_connected, s.extension_outdated);
   barScreens = JSON.parse(JSON.stringify(s.bar_screens || {}));
   renderBarScreens();
+  barEndApp = s.bar_end_app || "";
+  barApps = null;
+  renderEndApps();
   loadBarThemes();
   showBarFields();
   showTodoistFields();
@@ -2066,6 +2069,7 @@ function showBarFields() {
   $("noBarHelp").classList.toggle("hidden", on);
 }
 $("s_use_busybar").onchange = () => { showBarFields(); loadBarThemes(); };
+$("s_bar_end_app").onchange = () => { barEndApp = $("s_bar_end_app").value; };
 
 // ------------------------------------------------------------ bar screens
 // What the bar's front screen shows during our sessions (BUSY Bar tab), as
@@ -2114,6 +2118,7 @@ async function loadBarThemes() {
   note.textContent = "";
   if (!$("s_use_busybar").checked) return;
   loadBarPower();
+  loadBarApps();
   const result = await api.bar_themes();
   if (!result.ok) {
     note.textContent = t("settings.bar.themes_error", { error: result.error });
@@ -2121,6 +2126,49 @@ async function loadBarThemes() {
   }
   barThemes = result.themes;
   renderBarScreens();
+}
+
+// The app the bar opens after a session (bar_end_app, VeryBUSY only): the
+// bar's apps (Api.bar_apps), or only the saved one while they're unknown.
+let barEndApp = "";
+let barApps = null;  // [{value, name}] once read
+const endAppLabel = (value) => {
+  const [runtime, ...rest] = value.split(":");
+  const id = rest.join(":");
+  if (runtime === "fap") return id.split("/").pop().replace(/\.fap$/, "");
+  return runtime === "system" ? id[0].toUpperCase() + id.slice(1) : id;
+};
+
+function renderEndApps() {
+  const select = $("s_bar_end_app");
+  const none = el("option", "", t("settings.bar.end_app_none"));
+  none.value = "";
+  const options = (barApps || []).map(({ value, name }) => {
+    const option = el("option", "", name);
+    option.value = value;
+    return option;
+  });
+  if (barEndApp && !(barApps || []).some((a) => a.value === barEndApp)) {
+    const name = endAppLabel(barEndApp);
+    const option = el("option", "", barApps ? t("settings.bar.end_app_missing", { name }) : name);
+    option.value = barEndApp;
+    options.push(option);
+  }
+  select.replaceChildren(none, ...options);
+  select.value = barEndApp;
+}
+
+async function loadBarApps() {
+  const note = $("barAppsNote");
+  note.classList.add("hidden");
+  const result = await api.bar_apps();
+  if (!result.ok) {
+    note.textContent = t("settings.bar.end_app_error", { error: result.error });
+    note.classList.remove("hidden");
+    return;
+  }
+  barApps = result.apps;
+  renderEndApps();
 }
 
 function showBarScreenFields() {

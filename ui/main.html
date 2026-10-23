@@ -285,6 +285,13 @@
         <div class="help" data-i18n="settings.bar.sound_help">A long pause and the app limits that beep play a chime on the bar instead of beeping on this PC. Never during a call. When the bar can't be reached, this PC beeps.</div>
         <button type="button" class="btn" id="playBarSound" data-i18n="settings.bar.sound_test">Play the chime</button>
         <div class="test-result" id="barSoundResult"></div>
+        <h4 class="bar-screens-title" data-i18n="settings.bar.end_app_title">After a session</h4>
+        <div class="field">
+          <label for="s_bar_end_app" data-i18n="settings.bar.end_app">Then open on the bar</label>
+          <select class="input" id="s_bar_end_app" name="bar_end_app"></select>
+        </div>
+        <div class="help" data-i18n="settings.bar.end_app_help">When the end of session screen has gone, the bar opens this app and starts it, if it's on the Apps list. Needs the VeryBUSY firmware.</div>
+        <div class="help hidden" id="barAppsNote"></div>
         <h4 class="bar-screens-title" data-i18n="settings.bar.screens_title">Bar screens</h4>
         <div class="toggles">
           <label class="switch" data-i18n="settings.bar.screens_on"><input type="checkbox" name="bar_screens_on" id="s_bar_screens_on"><span class="knob"></span>Choose what the bar shows during sessions</label>
