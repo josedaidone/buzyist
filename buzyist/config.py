@@ -65,6 +65,9 @@ DEFAULTS = {
     # screen; an activity may replace the focus one (its `bar`).
     "bar_screens_on": True,
     "bar_screens": copy.deepcopy(DEFAULT_BAR_SCREENS),
+    # The reminders (a long pause, an app limit that beeps) ring the bar's
+    # speaker instead of beeping here, while the bar is in reach (App.beep).
+    "bar_sound": True,
     "work_minutes": 25,
     "rest_minutes": 5,
     "cycles": 4,
@@ -364,6 +367,7 @@ class Config(BaseModel):
     usb_fallback: bool = _default("usb_fallback")
     bar_screens_on: bool = _default("bar_screens_on")
     bar_screens: dict = _default("bar_screens")  # kept as a dict: clean_bar_screens is the schema
+    bar_sound: bool = _default("bar_sound")
     work_minutes: Minutes = _default("work_minutes")
     rest_minutes: Minutes = _default("rest_minutes")
     cycles: Annotated[int, Field(ge=CYCLES_MIN, le=CYCLES_MAX)] = _default("cycles")

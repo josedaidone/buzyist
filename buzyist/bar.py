@@ -19,6 +19,7 @@ from busylib.features.timer import THEMES_PATH
 
 from buzyist import paths
 from buzyist.bar_screens import OWN_THEME_PREFIX
+from buzyist.bar_sound import sound_name
 from buzyist.constants import APP, BAR_CYCLES_MIN, BAR_PROBE_S, USB_ADDR, AppError, now_ms
 from buzyist.i18n import app_error, english, t
 from buzyist.storage import read_json, write_json
@@ -548,6 +549,29 @@ class Bar:
 
         self.run(go)
 
+    def play_sound(self, sound: bytes) -> None:
+        """
+        Play `sound` (a .snd, bar_sound) on the bar's speaker, from DRAW_DIR,
+        where it goes under a name made from its content. The folder is
+        looked at every time: firmware 27.5 answers OK to playing a file it
+        doesn't have (and plays nothing), and a reset bar has lost it.
+        Plays whatever the timer is doing (a sound leaves the snapshot alone).
+        """
+        file = sound_name(sound)
+
+        def go(bar: BusyBar) -> None:
+            try:
+                there = {e.name for e in bar.storage_list(DRAW_DIR).list}
+            except exceptions.BusyBarAPIError:  # no folder yet
+                there = set()
+                with contextlib.suppress(exceptions.BusyBarAPIError):
+                    bar.storage_mkdir(DRAW_DIR)
+            if file not in there:
+                _write_raw(bar, f"{DRAW_DIR}/{file}", sound)
+            bar.audio_play(path=file, application_name=DRAW_APP)
+
+        self.run(go, device=True)
+
 
 def picture_name(picture: bytes) -> str:
     """The file name a picture goes under on the bar: from its content (see put_theme)."""
@@ -557,7 +581,12 @@ def picture_name(picture: bytes) -> str:
 def _write_png(bar: BusyBar, path: str, picture: bytes) -> None:
     # Straight to the bar: storage_write re-encodes PNGs (busylib's
     # converter) into files the bar refuses ("Bad Request").
-    bar._request("POST", "/api/storage/write", params={"path": path}, data=picture)
+    _write_raw(bar, path, picture)
+
+
+def _write_raw(bar: BusyBar, path: str, data: bytes) -> None:
+    """Write `data` to `path` on the bar as it is (storage_write may convert it)."""
+    bar._request("POST", "/api/storage/write", params={"path": path}, data=data)
 
 
 def phase_ms(interval: int, settings: types.BusySnapshotIntervalSettings) -> int:

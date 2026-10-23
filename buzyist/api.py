@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from buzyist import paths
 from buzyist.bar_display import png, render
 from buzyist.bar_screens import fill_text
+from buzyist.bar_sound import chime
 from buzyist.blocker import running_apps
 from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
@@ -232,6 +233,16 @@ class Api:
     def bar_themes(self):
         """The themes the bar has, for the screen pickers (the card's first)."""
         return self._do(lambda: {"themes": self._app.bar.themes()})
+
+    def play_bar_sound(self):
+        """The reminders' chime on the bar, for Settings' Play button (whatever bar_sound says)."""
+
+        def go():
+            if self._app.bar.is_local:
+                raise app_error("errors.bar.off")
+            self._app.bar.play_sound(chime())
+
+        return self._do(go)
 
     def bar_preview(self, text, color, minutes=18):
         """A text screen as the bar would show it: a PNG data URL (bar_display.render)."""
