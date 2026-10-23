@@ -68,6 +68,7 @@ import pytest
 
 import busyist
 from buzyist import app as app_mod
+from buzyist import bar as bar_mod
 from buzyist import constants, i18n, paths, storage
 from buzyist import focus_server as focus_server_mod
 
@@ -90,6 +91,21 @@ def app_source() -> str:
     root = Path(busyist.__file__).parent
     files = [root / "busyist.py", *sorted((root / "buzyist").rglob("*.py"))]
     return "\n".join(f.read_text(encoding="utf-8") for f in files)
+
+
+def stock_firmware(monkeypatch) -> None:
+    """
+    Every Bar made from here on knows it talks to a stock-firmware bar (its
+    snapshot holds the time left at its stamp), so its first read of an old
+    stamp doesn't take Bar._read's second look, which moves a FakeClock 1.5 s.
+    """
+    init = bar_mod.Bar.__init__
+
+    def stock_init(self, *args, **kwargs):
+        init(self, *args, **kwargs)
+        self.live_left = False
+
+    monkeypatch.setattr(bar_mod.Bar, "__init__", stock_init)
 
 
 def patch_everywhere(monkeypatch, name: str, value, *, only=None) -> None:

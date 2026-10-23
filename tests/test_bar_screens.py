@@ -26,6 +26,7 @@ from buzyist.api import Api
 from buzyist.bar_display import THEME_SLOTS, render
 from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens, fill_text
 from buzyist.constants import AppError
+from conftest import stock_firmware
 
 ROOT = Path(__file__).resolve().parent.parent
 BAR_CONFIG = {"use_busybar": True, "busybar_ip": "10.0.0.9", "busybar_pin": "", "usb_fallback": False}
@@ -294,6 +295,7 @@ class Client:
 def device(monkeypatch) -> Device:
     bar = Device()
     monkeypatch.setattr(bar_mod, "BusyBar", bar)
+    stock_firmware(monkeypatch)
     return bar
 
 
