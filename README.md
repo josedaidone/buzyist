@@ -100,6 +100,9 @@ menu, and starts it.
   yours such as the task's name, with the minutes left in the corner), and what it shows when a
   session is done. An activity can show something else while you focus. Breaks and pauses always
   show the bar's own REST and PAUSED.
+- **Bar sound** (Settings → BUSY Bar, on by default): the reminders ring the bar instead of
+  beeping on the PC: every 5 minutes of a pause, and app limits set to **Beep**. **Play the chime**
+  lets you hear it. Nothing rings during a call, and the PC beeps when the bar can't be reached.
 - **Website limits** (Settings → Limits): time budgets for websites, enforced all day,
   with or without a pomodoro running.
   - Give a site (or a group of sites that share the time) one or more limits, such as *30 min
