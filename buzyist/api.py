@@ -78,9 +78,18 @@ class Api:
     def control(self, action):
         return self._do(self._app.control, str(action))
 
-    def complete(self, task_id, offer_parent=False, content=""):
-        """`offer_parent`: say when this was its parent's last open subtask."""
-        return self._do(self._app.complete_task, str(task_id), bool(offer_parent), str(content or ""))
+    def complete(self, task_id, offer_parent=False, content="", followup=False, comment=""):
+        """`offer_parent`: say when this was its parent's last open subtask.
+        `followup`: create a copy due tomorrow before closing it.
+        `comment`: an optional note added to the task (and so carried over) before a followup."""
+        return self._do(
+            self._app.complete_task,
+            str(task_id),
+            bool(offer_parent),
+            str(content or ""),
+            bool(followup),
+            str(comment or ""),
+        )
 
     def dismiss_ended(self):
         with self._app.lock:

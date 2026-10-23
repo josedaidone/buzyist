@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from busylib.features import timer_state
 
@@ -22,6 +22,39 @@ from buzyist.plan import plan_session
 from buzyist.storage import write_json
 
 log = logging.getLogger(APP)
+
+# How often a running session's focus time so far is saved to session.json.
+FOCUS_SAVE_MS = 60_000
+
+
+def track_focus(session: dict, state) -> bool:
+    """
+    Bring the session's focus time up to `state` (busylib's timer_state of an
+    interval timer): `focus_ms` holds the work phases behind us (`counted` of
+    them), `partial_ms` the time spent so far in the one running (paused or
+    not). A work phase that ran out counts in full; one skipped counts what
+    it ran (control). Work phases the bar runs past the session's `rounds`
+    never count. True while a work phase of the session runs.
+    """
+    work = int(session.get("work_ms") or 0)
+    rounds = int(session.get("rounds") or 0) or None
+    session.setdefault("focus_ms", 0)
+    session.setdefault("counted", 0)
+    if state.is_finished:
+        behind, running = rounds or int(session.get("done") or 0), False
+    else:
+        interval = state.interval or 0
+        behind, current = (interval + 1) // 2, interval // 2
+        # Even intervals are work; one already counted (skipped) is a stale reading.
+        running = interval % 2 == 0 and current >= session["counted"] and (not rounds or current < rounds)
+    if rounds:
+        behind = min(behind, rounds)
+    if behind > session["counted"]:
+        session["focus_ms"] += (behind - session["counted"]) * work
+        session["counted"] = behind
+    left = int(state.time_left_ms or 0)
+    session["partial_ms"] = max(0, min(work, work - left)) if running else 0
+    return running
 
 
 class SessionMixin:
@@ -52,11 +85,12 @@ class SessionMixin:
                 if reason:
                     session["call"]["seen_ms"] = now_ms()
             elif state.mode != "interval":
-                reason = "stopped"
+                reason = "stopped"  # its focus time is as last seen (or noted by control)
             elif state.is_finished:
                 reason = "finished"
                 count = inner.interval_settings.interval_work_cycles_count
                 session["done"] = min(count, int(rounds)) if rounds else count
+                track_focus(session, state)
             else:
                 reason = None
                 # Even intervals are work, odd ones rest: the work phases
@@ -64,10 +98,15 @@ class SessionMixin:
                 interval = state.interval or 0
                 done = max(session["done"], (interval + 1) // 2)
                 session["done"] = min(done, int(rounds)) if rounds else done
+                track_focus(session, state)
                 if rounds and interval >= rounds * 2 - 1:
                     # Fewer rounds than the bar runs: our session ends here.
                     reason, stop_bar = "finished", True
                     session["done"] = rounds
+                elif interval == session.get("interval", 0) and now_ms() - session.get("saved_ms", 0) >= FOCUS_SAVE_MS:
+                    # The focus time so far survives a restart (or a crash).
+                    session["saved_ms"] = now_ms()
+                    write_json(paths.SESSION_PATH, session)
                 elif interval != session.get("interval", 0):
                     session["interval"] = interval
                     write_json(paths.SESSION_PATH, session)
@@ -110,7 +149,7 @@ class SessionMixin:
         call = session.get("call")
         problems = []
         linked = bool(task["id"]) and self.todoist_on  # a free session has no task
-        if linked and done and self.cfg["log_comments"]:
+        if linked and (done or minutes) and self.cfg["log_comments"]:
             try:
                 # Written once, in the language of the moment; never rewritten.
                 when = datetime.now().strftime(t("todoist.when"))
@@ -337,13 +376,28 @@ class SessionMixin:
             pass
         self.notify_focus()
 
-    def complete_task(self, task_id: str, offer_parent: bool = False, content: str = "") -> dict:
+    def complete_task(
+        self,
+        task_id: str,
+        offer_parent: bool = False,
+        content: str = "",
+        followup: bool = False,
+        comment: str = "",
+    ) -> dict:
         """
         Close the task in Todoist and count it in today's history (`content` names
         a task the list doesn't hold). With `offer_parent`, a subtask that was its
         parent's last open one returns that parent ({"parent": {id, content}}) so
-        the UI can offer to complete it too.
+        the UI can offer to complete it too. With `followup`, a copy of the task due
+        tomorrow is created before it is closed (returned as {"followup": {content}});
+        `comment` is an optional note added to the task first, so it is carried over too.
         """
+        made = None
+        if followup:
+            when = (date.today() + timedelta(days=1)).strftime(t("todoist.carry_when"))
+            note = t("todoist.carried_over", date=when)
+            user = comment.strip()
+            made = self.todoist.copy_to_tomorrow(task_id, f"{user}\n\n{note}" if user else note)
         self.todoist.close(task_id)
         with self.lock:
             task = self.tasks.pop(task_id, None) or (self.ended and self.ended["task"]) or {"content": content}
@@ -360,16 +414,20 @@ class SessionMixin:
             )
             self.history = self.history[-HISTORY_KEEP:]
             write_json(paths.HISTORY_PATH, self.history)
+        result: dict = {}
+        if made:
+            result["followup"] = {"content": task.get("content", "")}
         parent_id = task.get("parent_id")
         if not (offer_parent and parent_id):
-            return {}
+            return result
         try:
             if self.todoist.open_children(parent_id):
-                return {}
+                return result
         except AppError as err:
             log.warning("couldn't check the parent's other subtasks: %s", english(err))
-            return {}
-        return {"parent": {"id": parent_id, "content": task.get("parent", "")}}
+            return result
+        result["parent"] = {"id": parent_id, "content": task.get("parent", "")}
+        return result
 
     def _label_task(self, session: dict) -> None:
         label = session["label"]
@@ -393,6 +451,29 @@ class SessionMixin:
                 raise
             return call()
 
+    def _note_focus(self) -> bool:
+        """
+        Bring the running session's focus time up to now (track_focus), from
+        the last reading of the bar. True while one of its work phases runs.
+        """
+        with self.lock:
+            session, snap = self.session, self.snap
+            if not session or session.get("call") or snap is None:
+                return False
+            if snap.snapshot_timestamp_ms < session["stamp"]:
+                return False
+            state = timer_state(snap)
+            return state.mode == "interval" and track_focus(session, state)
+
+    def _skipped_work(self) -> None:
+        """The work phase that ran has been skipped: it counts what it ran, not its full length."""
+        with self.lock:
+            session = self.session
+            if session:
+                session["focus_ms"] = session.get("focus_ms", 0) + session.get("partial_ms", 0)
+                session["counted"] = session.get("counted", 0) + 1
+                session["partial_ms"] = 0
+
     def control(self, action: str) -> None:
         with self.lock:
             on_call = bool(self.session and self.session.get("call"))
@@ -400,6 +481,7 @@ class SessionMixin:
             raise app_error("errors.session.call_control")
         try:
             if action == "stop":
+                self._note_focus()  # the time up to the stop, not to the last poll
                 self._on_bar(self.bar.stop)
             elif action == "pause":
                 self._on_bar(lambda: self.bar.set_paused(True))
@@ -407,7 +489,13 @@ class SessionMixin:
                 self._on_bar(lambda: self.bar.set_paused(False))
                 self.show_mini()
             elif action == "skip":
-                self._on_bar(self.bar.next_phase)
+                # Held so no fresh reading of the bar comes between the skip
+                # and its bookkeeping (it would count the phase in full).
+                with self.bar.lock:
+                    working = self._note_focus()
+                    self._on_bar(self.bar.next_phase)
+                    if working:
+                        self._skipped_work()
         except BarUnreachable:
             # Nothing to run the timer from here (the app started with the
             # bar already gone): a stop still ends the session.

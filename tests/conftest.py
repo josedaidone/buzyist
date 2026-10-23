@@ -703,6 +703,7 @@ class FakeTodoist:
         self.labels: dict[str, list[str]] = {}
         self.comments: list[tuple[str, str]] = []
         self.closed: list[str] = []
+        self.followups: list[str] = []  # task ids copied to tomorrow
         self.children: dict[str, list[dict]] = {}  # task id -> its open subtasks (open_children)
         self.errors: dict[str, BaseException] = {}
 
@@ -770,6 +771,13 @@ class FakeTodoist:
     def close(self, task_id: str) -> None:
         self._record("close", task_id)
         self.closed.append(task_id)
+
+    def copy_to_tomorrow(self, task_id: str, note: str = "") -> dict:
+        self._record("copy_to_tomorrow", task_id, note)
+        self.followups.append(task_id)
+        if note:
+            self.comments.append((task_id, note))
+        return {"id": f"{task_id}-followup", "content": "copy"}
 
 
 # -------------------------------------------------------------------- app ---

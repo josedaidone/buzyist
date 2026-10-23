@@ -10,7 +10,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from buzyist.constants import APP, TODOIST_API, AppError
 from buzyist.i18n import app_error, english
@@ -184,12 +184,71 @@ class Todoist:
     def comment(self, task_id: str, text: str) -> None:
         self.call("POST", "/comments", body={"task_id": task_id, "content": text})
 
+    def comments(self, task_id: str) -> list[str]:
+        """The text of every comment on a task, oldest first (raw, so Markdown is kept)."""
+        if not task_id:
+            return []
+        return [c["content"] for c in self.pages("/comments", {"task_id": task_id}) if c.get("content")]
+
     def close(self, task_id: str) -> None:
         self.call("POST", f"/tasks/{task_id}/close")
+
+    def copy_to_tomorrow(self, task_id: str, note: str = "") -> dict | None:
+        """Create a followup copy of a task due tomorrow, copying its description, priority, labels,
+        duration, comments and open subtasks (recursively). When `note` is given it is added as a
+        comment on the original first, so the copy (which inherits every comment) carries the
+        history of each carry-over. Returns the new top task."""
+        item = self.call("GET", f"/tasks/{task_id}") or {}
+        if note:
+            self.comment(task_id, note)
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        return self._copy_task(item, due_date=tomorrow)
+
+    def _copy_task(self, item: dict, parent_id: str = "", due_date: str = "") -> dict:
+        """Create a copy of `item` (a raw Todoist task), then copy its comments and open subtasks
+        under the copy. `parent_id` places it under an already-copied parent (a subtask inherits
+        that parent's project); `due_date` overrides the due date (the top task, carried to tomorrow)."""
+        body: dict = {"content": item.get("content", "")}
+        for key in ("description", "priority", "labels"):
+            if item.get(key):
+                body[key] = item[key]
+        duration = item.get("duration")
+        if duration and duration.get("amount") and duration.get("unit"):
+            body["duration"] = duration["amount"]
+            body["duration_unit"] = duration["unit"]
+        if parent_id:
+            body["parent_id"] = parent_id  # a subtask inherits its parent's project and section
+        else:
+            for key in ("project_id", "section_id", "parent_id"):
+                if item.get(key):
+                    body[key] = item[key]
+        body.update(_due_fields(item.get("due"), due_date))
+        new = self.call("POST", "/tasks", body=body) or {}
+        new_id = new.get("id")
+        if new_id:
+            for text in self.comments(item.get("id", "")):
+                self.comment(new_id, text)
+            for child in self.open_children(item.get("id", "")):
+                self._copy_task(child, parent_id=new_id)
+        return new
 
 
 def is_open(item: dict) -> bool:
     return not item.get("checked") and not item.get("is_deleted")
+
+
+def _due_fields(due: dict | None, override_date: str) -> dict:
+    """The create-task due fields: `override_date` (YYYY-MM-DD) wins; otherwise keep the task's
+    own due (its time if it has one), or nothing when it has no due date."""
+    if override_date:
+        return {"due_date": override_date}
+    if not due:
+        return {}
+    if due.get("datetime"):
+        return {"due_datetime": due["datetime"]}
+    if due.get("date"):
+        return {"due_date": due["date"]}
+    return {}
 
 
 def descendants(task_id: str, children: dict[str, list[dict]], depth: int = 1, seen=None):

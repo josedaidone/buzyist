@@ -32,13 +32,15 @@
     },
     "none": "Nenhum pomodoro completo desta vez. Tudo bem.",
     "complete": "Concluir tarefa",
+    "followup": "Concluir e passar para amanhã",
     "again": "Outra sessão",
     "close": "Fechar",
     "completed": "Concluída no Todoist.",
     "parent_confirm": "Essa era a última subtarefa de “{parent}”. Concluir essa também?",
     "parent_unnamed": "a tarefa principal",
     "both_completed": "As duas concluídas no Todoist.",
-    "task_gone": "Essa tarefa não está mais na lista."
+    "task_gone": "Essa tarefa não está mais na lista.",
+    "carried_over": "Passada para amanhã."
   },
   "main": {
     "today": {
@@ -266,6 +268,7 @@
       },
       "complete_in_focus": "“{task}” está em foco. Interromper a sessão e marcar como concluída?",
       "completed": "Concluída no Todoist.",
+      "carried_over": "Passada para amanhã.",
       "keys_choose": "↑ ↓ escolher",
       "keys_start": "Enter iniciar",
       "keys_filter": "Ctrl+1–9 filtro",
@@ -275,6 +278,7 @@
       "start": "Iniciar sessão",
       "start_usual": "Iniciar com seus pomodoros de sempre, de {work} min",
       "done": "Marcar como concluída",
+      "done_carry": "Concluir e passar para amanhã",
       "todoist": "Ver no Todoist"
     },
     "picker": {
@@ -285,6 +289,14 @@
         "one": "{work} min",
         "other": "{n} × {work}"
       }
+    },
+    "carry": {
+      "title": "Passar para amanhã",
+      "note": "Adicionar uma nota (opcional)",
+      "placeholder": "ex.: o que falta fazer",
+      "help": "Adicionada como comentário e levada para a nova tarefa. Deixe em branco para pular.",
+      "cancel": "Cancelar",
+      "confirm": "Passar para amanhã"
     },
     "filters": {
       "aria": "Filtros salvos",
@@ -1213,6 +1225,8 @@
   "todoist": {
     "comment_bar": "🍅 × {n} ({minutes} min de foco) na BUSY Bar, encerrada em {when}",
     "comment_local": "🍅 × {n} ({minutes} min de foco), encerrada em {when}",
-    "when": "%d/%m/%Y %H:%M"
+    "when": "%d/%m/%Y %H:%M",
+    "carried_over": "> Passada para {date}",
+    "carry_when": "%d/%m/%Y"
   }
 }

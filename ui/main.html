@@ -567,6 +567,7 @@
     <div class="problems" id="endedProblems"></div>
     <div class="modal-actions">
       <button class="btn good" id="endedComplete" data-i18n="summary.complete"><svg><use href="#i-check"/></svg>Complete task</button>
+      <button class="btn" id="endedFollowup" data-i18n="summary.followup"><svg><use href="#i-check"/></svg>Complete &amp; carry over</button>
       <button class="btn" id="endedAgain" data-i18n="summary.again"><svg><use href="#i-play"/></svg>Another session</button>
       <button class="btn ghost" id="endedClose" data-i18n="summary.close">Close</button>
     </div>
@@ -595,6 +596,23 @@
       <button type="button" class="btn" id="filterPreview" data-i18n="main.filters.test">Test</button>
       <button type="button" class="btn ghost" id="filterCancel" data-i18n="main.filters.cancel">Cancel</button>
       <button type="submit" class="btn primary" id="filterSave" data-i18n="main.filters.save">Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-wrap" id="carryWrap">
+  <form class="modal form-modal" id="carryForm" role="dialog" aria-modal="true" aria-labelledby="carryTitle" autocomplete="off">
+    <h3 id="carryTitle" data-i18n="main.carry.title">Carry over to tomorrow</h3>
+    <p class="task-name" id="carryTask"></p>
+    <div class="field">
+      <label for="carryComment" data-i18n="main.carry.note">Add a note (optional)</label>
+      <textarea class="input area" id="carryComment" rows="3" maxlength="500" placeholder="e.g. what's left to do" data-i18n-placeholder="main.carry.placeholder"></textarea>
+      <div class="help" data-i18n="main.carry.help">Added as a comment and carried over to the new task. Leave it empty to skip.</div>
+    </div>
+    <div class="form-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="carryCancel" data-i18n="main.carry.cancel">Cancel</button>
+      <button type="submit" class="btn primary" id="carrySave" data-i18n="main.carry.confirm">Carry over</button>
     </div>
   </form>
 </div>

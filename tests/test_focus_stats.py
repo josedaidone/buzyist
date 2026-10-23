@@ -344,3 +344,30 @@ def test_an_unknown_filter_is_refused(make_app):
         answer = api.stats(7, 0, bad)
         assert not answer["ok"] and answer["error"] == "That activity or task isn't in your stats any more.", bad
     assert api.stats(7, 0, None)["focus"]["filter"] is None
+
+
+def test_a_session_stopped_before_its_first_tomato_counts():
+    """Its minutes, the session, the task worked on and the streak; not a tomato."""
+    history = [
+        {
+            "date": TODAY.isoformat(),
+            "task_id": "t1",
+            "content": "Write",
+            "pomodoros": 0,
+            "minutes": 12,
+            "reason": "stopped",
+        },
+        {
+            "date": TODAY.isoformat(),
+            "task_id": "t2",
+            "content": "Noise",
+            "pomodoros": 0,
+            "minutes": 0,
+            "reason": "stopped",
+        },
+    ]
+    s = focus_stats(history, None, TODAY)
+    today = s["totals"]["today"]
+    assert (today["minutes"], today["pomodoros"], today["sessions"], today["tasks"]) == (12, 0, 1, 1)
+    assert [t["key"] for t in s["tasks"]] == ["t1"]
+    assert s["streak"]["current"] == 1
