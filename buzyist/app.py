@@ -35,6 +35,7 @@ from buzyist.app_updates import UpdatesMixin
 from buzyist.app_windows import WindowsMixin
 from buzyist.bar import Bar, BarUnreachable
 from buzyist.bar_display import BarScreens
+from buzyist.bar_sound import chime
 from buzyist.blocker import AppBlocker
 from buzyist.blocks import BlockLog
 from buzyist.calls import CallWatcher
@@ -677,7 +678,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         return True
 
     def pause_reminder(self) -> None:
-        """Every PAUSE_REMIND_S of a pause, flash the mini timer and beep 3 times."""
+        """Every PAUSE_REMIND_S of a pause, flash the mini timer and ring (beep)."""
         view = self.timer_view() if self.bar_ok else None
         if not view or not view["paused"]:
             self._paused_since = None
@@ -698,12 +699,17 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.beep()
 
     def beep(self, times: int = 3) -> None:
-        """Beep a few times, on a thread of its own. Silent while on a call."""
+        """
+        Ring, on a thread of its own: the chime on the bar (bar_sound on, the
+        bar in reach), else a few beeps on this PC. Silent while on a call.
+        """
         with self.lock:
             if self.session and self.session.get("call"):
                 return
 
         def run():
+            if self.ring_bar():
+                return
             for _ in range(times):
                 try:
                     winsound.Beep(880, 180)
@@ -712,6 +718,17 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
                 time.sleep(0.15)
 
         threading.Thread(target=run, daemon=True, name="beep").start()
+
+    def ring_bar(self) -> bool:
+        """Play the chime on the bar; False when it isn't on, there's no bar or it didn't answer (beep here)."""
+        if not self.cfg.get("use_busybar") or not self.cfg.get("bar_sound") or self.bar.standalone:
+            return False
+        try:
+            self.bar.play_sound(chime())
+        except AppError as err:
+            log.warning("bar sound: %s; beeping here", english(err))
+            return False
+        return True
 
     def alert(self, title: str, message: str) -> None:
         """Beep and show a silent toast (the toast only with notifications on): a "beep" app limit."""

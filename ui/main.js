@@ -3475,6 +3475,19 @@ $("testBar").onclick = async () => {
   loadBarPower();
 };
 
+// The reminders' chime, on the bar as saved (the connection fields first, as Test connection does).
+$("playBarSound").onclick = async () => {
+  const out = $("barSoundResult");
+  out.className = "test-result";
+  out.textContent = t("settings.bar.sound_playing");
+  const { clear_busybar_pin } = secretClears();
+  const saved = await api.save_settings({ ...formValues(["use_busybar", "busybar_ip", "busybar_pin", "usb_fallback"]), clear_busybar_pin });
+  if (!saved.ok) { out.className = "test-result bad"; out.textContent = saved.error; return; }
+  const result = await api.play_bar_sound();
+  out.className = "test-result " + (result.ok ? "ok" : "bad");
+  out.textContent = result.ok ? t("settings.bar.sound_played") : result.error;
+};
+
 // ------------------------------------------------------------- keyboard
 
 document.addEventListener("keydown", (e) => {
