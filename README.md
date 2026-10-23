@@ -62,6 +62,8 @@ menu, and starts it.
   play to use your usual settings instead. Change or turn this off in Settings → Todoist.
 - **Subtasks**: playing a task with open subtasks asks what to start on: one of the subtasks, or
   the whole task. Completing the last open subtask offers to complete its parent too.
+- **Comments**: a task with comments shows how many ("2 comments") on its row; click it to read
+  them under the task, with their dates and attached files. buZyist's own session logs are left out.
 - **The hotkey cycles**: window → mini timer only → everything in the tray → window again. If the
   window is open but behind other apps, the hotkey brings it to the front first.
 - **Saved filters**: the tabs above the list are Todoist filter queries you name yourself

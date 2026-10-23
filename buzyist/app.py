@@ -71,7 +71,7 @@ from buzyist.stats_common import (
 )
 from buzyist.storage import read_json, write_bytes_atomic
 from buzyist.sync import load_shared
-from buzyist.todoist import Todoist
+from buzyist.todoist import Todoist, shape_comment
 from buzyist.tray import TrayMixin
 from buzyist.updater import UPDATABLE, app_dir_writable
 from buzyist.usage import SiteUsage
@@ -124,6 +124,12 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         # Every task any filter has shown, by id, so a start still finds its
         # task if the list was switched while the request was in flight.
         self.tasks: dict[str, dict] = {}
+        # The comments on open tasks (task_comments), comment id -> its raw dict, kept up to date
+        # with the Sync API from `notes_cursor`; guarded by notes_lock, which also lets one sync run at a time.
+        self.notes_lock = threading.Lock()
+        self.notes: dict[str, dict] = {}
+        self.notes_cursor = "*"
+        self.notes_owner = ""  # the token they came with: another account starts over
         self.session: dict | None = read_json(paths.SESSION_PATH, None)
         self.recovering = self.session is not None
         self.snap: types.BusySnapshot | None = None
@@ -210,6 +216,38 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             for t in tasks
         ]
         return {"tasks": tasks, "filters": self.cfg["filters"], "active": active["name"]}
+
+    def task_comments(self, ids) -> dict:
+        """{task id: the comments people wrote on it, oldest first} for the tasks among `ids` that
+        have any. One Sync API request brings what changed since the last one; when it fails, what
+        was already known is answered (an error only when nothing ever came)."""
+        with self.notes_lock:
+            account = str(self.cfg.get("todoist_token") or "")
+            if account != self.notes_owner:
+                self.notes, self.notes_cursor, self.notes_owner = {}, "*", account
+            try:
+                changed = self.todoist.notes_since(self.notes_cursor)
+            except AppError as err:
+                if self.notes_cursor == "*":
+                    raise
+                log.warning("couldn't refresh the task comments: %s", english(err))
+            else:
+                if changed["full"]:
+                    self.notes = {}
+                for note in changed["notes"]:
+                    if note.get("is_deleted"):
+                        self.notes.pop(str(note["id"]), None)
+                    else:
+                        self.notes[str(note["id"])] = note
+                self.notes_cursor = changed["token"]
+            notes = list(self.notes.values())
+        wanted = {str(i) for i in ids}
+        found: dict[str, list[dict]] = {}
+        for note in sorted(notes, key=lambda n: str(n.get("posted_at") or "")):
+            task_id = str(note.get("item_id") or "")
+            if task_id in wanted and (comment := shape_comment(note)):
+                found.setdefault(task_id, []).append(comment)
+        return {"comments": found}
 
     def check_query(self, query: str) -> list[dict]:
         """The tasks a query finds; also proves Todoist accepts it."""

@@ -242,6 +242,13 @@
         "other": "{n} subtarefas"
       },
       "subtasks_title": "O play deixa escolher uma delas, ou a tarefa inteira",
+      "comments": {
+        "one": "{n} comentário",
+        "other": "{n} comentários"
+      },
+      "comments_title": "Mostrar o que escreveram nesta tarefa no Todoist",
+      "comments_aria": "Comentários em {task}",
+      "attachment": "Abrir o arquivo anexado no navegador",
       "priority": {
         "p1": "Urgente",
         "p2": "Alta",

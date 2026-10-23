@@ -243,6 +243,13 @@
         "other": "{n} subtasks"
       },
       "subtasks_title": "Play lets you pick one of them, or the whole task",
+      "comments": {
+        "one": "{n} comment",
+        "other": "{n} comments"
+      },
+      "comments_title": "Show what people wrote on this task in Todoist",
+      "comments_aria": "Comments on {task}",
+      "attachment": "Open the attached file in your browser",
       "priority": {
         "p1": "Urgent",
         "p2": "High",

@@ -54,6 +54,10 @@ class Api:
     def get_tasks(self, filter_name=None):
         return self._do(self._app.task_list, None if filter_name is None else str(filter_name))
 
+    def task_comments(self, ids):
+        """{comments: {task id: [{id, text, at, file}]}}: what people wrote on the listed tasks."""
+        return self._do(self._app.task_comments, [str(i) for i in (ids or [])])
+
     def save_filter(self, old_name, name, query):
         return self._do(self._app.save_filter, None if old_name is None else str(old_name), str(name), str(query))
 
