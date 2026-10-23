@@ -11,7 +11,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta
+from functools import cache
 
+from buzyist import i18n
 from buzyist.constants import APP, TODOIST_API, AppError
 from buzyist.i18n import app_error, english
 from buzyist.plan import duration_minutes
@@ -19,6 +21,11 @@ from buzyist.plan import duration_minutes
 log = logging.getLogger(APP)
 
 DESCRIPTION_MAX = 2000  # characters of a task's description sent to the list
+COMMENT_MAX = 2000  # characters of a comment sent to the list
+
+# The comment finish() logs after a session (todoist.comment_bar/comment_local, every language and
+# every version so far): a tomato, the multiplication sign, the count and "(". Not something a person wrote.
+SESSION_LOG = re.compile(r"🍅 × \d+ \(")  # noqa: RUF001 - the multiplication sign is what the comment holds
 
 TODOIST_COLORS = {
     "berry_red": "#b8256f",
@@ -184,6 +191,17 @@ class Todoist:
     def comment(self, task_id: str, text: str) -> None:
         self.call("POST", "/comments", body={"task_id": task_id, "content": text})
 
+    def notes_since(self, sync_token: str) -> dict:
+        """The comments on open tasks changed since `sync_token` ("*": all of them), from the Sync
+        API in one request: {notes: [raw comments, deleted ones flagged], token, full}. (The REST
+        tasks' `note_count` is always 0, so it can't tell which tasks have comments.)"""
+        answer = self.call("POST", "/sync", body={"sync_token": sync_token, "resource_types": ["notes"]}) or {}
+        return {
+            "notes": [n for n in answer.get("notes", []) if isinstance(n, dict) and n.get("id")],
+            "token": str(answer.get("sync_token") or sync_token),
+            "full": bool(answer.get("full_sync")),
+        }
+
     def comments(self, task_id: str) -> list[str]:
         """The text of every comment on a task, oldest first (raw, so Markdown is kept)."""
         if not task_id:
@@ -285,6 +303,40 @@ def due_parts(due):
         return moment.date().isoformat(), moment.strftime("%H:%M")
     except ValueError:
         return value[:10], value[11:16]
+
+
+def shape_comment(item: dict) -> dict | None:
+    """A raw comment as the list shows it, {id, text, at, file} (`at`: Todoist's posted_at, UTC;
+    `file`: {name, url} of an attachment, or None), or None when nobody wrote it (`people_text`)."""
+    if item.get("is_deleted"):
+        return None
+    text = people_text(str(item.get("content") or ""))[:COMMENT_MAX]
+    attached = item.get("file_attachment")
+    url = str(attached.get("file_url") or attached.get("url") or "") if isinstance(attached, dict) else ""
+    file = {"name": str(attached.get("file_name") or attached.get("title") or url), "url": url} if url else None
+    if not text and not file:
+        return None
+    return {"id": str(item.get("id", "")), "text": text, "at": str(item.get("posted_at") or ""), "file": file}
+
+
+@cache
+def carried_over_line() -> re.Pattern:
+    """The line complete_task adds when it carries a task over (todoist.carried_over), in any
+    shipped language, since the comment keeps the language it was written in. Whatever marks it
+    ("> " now, an arrow in older notes) is taken too."""
+    forms = {i18n.translate(lang, "todoist.carried_over", {"date": "\0"}) for lang in i18n.languages()}
+    words = sorted({re.sub(r"^\W+", "", form) for form in forms})
+    date_ = r"\d[\d/.-]*\d"  # todoist.carry_when: 2026-01-06, 06/01/2026
+    return re.compile(r"\W*(?:" + "|".join(re.escape(w).replace("\0", date_) for w in words) + ")")
+
+
+def people_text(content: str) -> str:
+    """A comment as the list shows it: "" for buZyist's session log; a carry-over note without its
+    "> Carried over to ..." line ("" when that was all); plain text."""
+    if SESSION_LOG.match(content.strip()):
+        return ""
+    lines = [line for line in content.splitlines() if not carried_over_line().fullmatch(line.strip())]
+    return plain_text("\n".join(lines))
 
 
 def plain_text(content: str) -> str:

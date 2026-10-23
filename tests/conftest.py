@@ -692,6 +692,7 @@ class FakeTodoist:
     - ``labels[task_id]`` holds a task's labels (``set_label`` edits it).
     - ``comments`` and ``closed`` collect what was posted / completed.
     - ``children[task_id]`` is what ``open_children`` answers.
+    - ``syncs`` holds what ``notes_since`` answers, in turn.
     - ``errors["comment"] = AppError("boom")`` makes that method raise.
     """
 
@@ -705,6 +706,8 @@ class FakeTodoist:
         self.closed: list[str] = []
         self.followups: list[str] = []  # task ids copied to tomorrow
         self.children: dict[str, list[dict]] = {}  # task id -> its open subtasks (open_children)
+        # What notes_since answers, one dict {notes, token, full} per call (then nothing new).
+        self.syncs: list[dict] = []
         self.errors: dict[str, BaseException] = {}
 
     def _record(self, name: str, *args) -> None:
@@ -763,6 +766,12 @@ class FakeTodoist:
             labels.append(label)
         elif not present and label in labels:
             labels.remove(label)
+
+    def notes_since(self, sync_token: str) -> dict:
+        self._record("notes_since", sync_token)
+        if self.syncs:
+            return self.syncs.pop(0)
+        return {"notes": [], "token": sync_token, "full": False}
 
     def comment(self, task_id: str, text: str) -> None:
         self._record("comment", task_id, text)

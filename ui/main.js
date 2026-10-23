@@ -466,6 +466,7 @@ function applyTaskResult(result) {
   activeFilter = result.active;
   renderFilters();
   renderTasks();
+  loadComments();
 }
 
 // ------------------------------------------------------------- filters
@@ -690,6 +691,7 @@ function renderTasks() {
     check.append(box);
     check.onclick = (e) => { e.stopPropagation(); completeTask(task, li); };
     li.append(check, body, play);
+    showComments(li, task);
     play.onclick = (e) => { e.stopPropagation(); startTask(task, li, e.shiftKey); };
     li.onclick = (e) => { sel = i; markSelection(false); openTaskMenu(task, li, e.clientX, e.clientY); };
     li.oncontextmenu = (e) => {
@@ -732,6 +734,81 @@ function taskDescription(task) {
     more.hidden = !wrap.classList.contains("open") && text.scrollHeight <= text.clientHeight + 1;
   });
   return wrap;
+}
+
+// The comments people wrote on a task (App.task_comments: buZyist's session logs left out),
+// asked for once the list is on screen (one Sync API request for what changed).
+// The row gets a "2 comments" chip that opens them under it.
+let taskComments = {};      // task id -> [{id, text, at, file}]
+const openComments = new Set();
+async function loadComments() {
+  const ids = tasks.map((task) => task.id);
+  if (!ids.length) return;
+  const seq = loadSeq;
+  const result = await api.task_comments(ids);
+  if (seq !== loadSeq || !result.ok) return;
+  taskComments = result.comments;
+  for (const li of $("list").querySelectorAll(".task")) {
+    const task = shown.find((s) => s.id === li.dataset.id);
+    if (task) showComments(li, task);
+  }
+}
+
+function showComments(li, task) {
+  li.querySelector(".t-meta .notes")?.remove();
+  li.querySelector(".t-comments")?.remove();
+  const comments = taskComments[task.id];
+  if (!comments || !comments.length) return;
+  const chip = el("button", "notes");
+  chip.type = "button";
+  chip.tabIndex = -1;
+  chip.title = t("main.tasks.comments_title");
+  chip.append(icon("comment"), t("main.tasks.comments", { n: comments.length }));
+  const box = el("div", "t-comments");
+  box.setAttribute("role", "list");
+  box.setAttribute("aria-label", t("main.tasks.comments_aria", { task: task.content }));
+  box.onclick = (e) => e.stopPropagation();  // select text, open a file; not the task menu
+  for (const c of comments) {
+    const item = el("div", "t-comment");
+    item.setAttribute("role", "listitem");
+    const when = commentWhen(c.at);
+    if (when) item.append(el("div", "t-comment-when", when));
+    if (c.text) item.append(el("div", "t-comment-text", c.text));
+    if (c.file) {
+      const file = el("button", "t-comment-file");
+      file.type = "button";
+      file.tabIndex = -1;
+      file.title = t("main.tasks.attachment");
+      file.append(icon("clip"), c.file.name);
+      file.onclick = () => api.open_url(c.file.url);
+      item.append(file);
+    }
+    box.append(item);
+  }
+  const set = (open) => {
+    box.hidden = !open;
+    chip.classList.toggle("open", open);
+    chip.setAttribute("aria-expanded", open);
+  };
+  chip.onclick = (e) => {
+    e.stopPropagation();
+    const open = box.hidden;
+    if (open) openComments.add(task.id); else openComments.delete(task.id);
+    set(open);
+  };
+  set(openComments.has(task.id));
+  const meta = li.querySelector(".t-meta");
+  meta.insertBefore(chip, meta.querySelector(".lbl, .subs"));  // before the labels, which may get cut
+  meta.after(box);
+}
+
+// "12 Mar, 14:05" (the year too when it isn't this one); "" for a date Todoist didn't give.
+function commentWhen(at) {
+  const date = new Date(String(at || "").replace(/(\.\d{3})\d+/, "$1"));
+  if (isNaN(date)) return "";
+  const year = date.getFullYear() === new Date().getFullYear() ? undefined : "numeric";
+  return formatDate(date, { day: "numeric", month: "short", year }) + ", "
+    + formatTime(date, { hour: "2-digit", minute: "2-digit" });
 }
 
 function markSelection(scroll) {
