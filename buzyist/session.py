@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from busylib.features import timer_state
 
@@ -376,13 +376,28 @@ class SessionMixin:
             pass
         self.notify_focus()
 
-    def complete_task(self, task_id: str, offer_parent: bool = False, content: str = "") -> dict:
+    def complete_task(
+        self,
+        task_id: str,
+        offer_parent: bool = False,
+        content: str = "",
+        followup: bool = False,
+        comment: str = "",
+    ) -> dict:
         """
         Close the task in Todoist and count it in today's history (`content` names
         a task the list doesn't hold). With `offer_parent`, a subtask that was its
         parent's last open one returns that parent ({"parent": {id, content}}) so
-        the UI can offer to complete it too.
+        the UI can offer to complete it too. With `followup`, a copy of the task due
+        tomorrow is created before it is closed (returned as {"followup": {content}});
+        `comment` is an optional note added to the task first, so it is carried over too.
         """
+        made = None
+        if followup:
+            when = (date.today() + timedelta(days=1)).strftime(t("todoist.carry_when"))
+            note = t("todoist.carried_over", date=when)
+            user = comment.strip()
+            made = self.todoist.copy_to_tomorrow(task_id, f"{user}\n\n{note}" if user else note)
         self.todoist.close(task_id)
         with self.lock:
             task = self.tasks.pop(task_id, None) or (self.ended and self.ended["task"]) or {"content": content}
@@ -399,16 +414,20 @@ class SessionMixin:
             )
             self.history = self.history[-HISTORY_KEEP:]
             write_json(paths.HISTORY_PATH, self.history)
+        result: dict = {}
+        if made:
+            result["followup"] = {"content": task.get("content", "")}
         parent_id = task.get("parent_id")
         if not (offer_parent and parent_id):
-            return {}
+            return result
         try:
             if self.todoist.open_children(parent_id):
-                return {}
+                return result
         except AppError as err:
             log.warning("couldn't check the parent's other subtasks: %s", english(err))
-            return {}
-        return {"parent": {"id": parent_id, "content": task.get("parent", "")}}
+            return result
+        result["parent"] = {"id": parent_id, "content": task.get("parent", "")}
+        return result
 
     def _label_task(self, session: dict) -> None:
         label = session["label"]

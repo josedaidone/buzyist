@@ -33,13 +33,15 @@
     },
     "none": "No full pomodoro this time. That's fine.",
     "complete": "Complete task",
+    "followup": "Complete & carry over",
     "again": "Another session",
     "close": "Close",
     "completed": "Done in Todoist.",
     "parent_confirm": "That was the last subtask of “{parent}”. Complete it too?",
     "parent_unnamed": "its parent",
     "both_completed": "Both done in Todoist.",
-    "task_gone": "That task is no longer in the list."
+    "task_gone": "That task is no longer in the list.",
+    "carried_over": "Carried over to tomorrow."
   },
   "main": {
     "today": {
@@ -267,6 +269,7 @@
       },
       "complete_in_focus": "“{task}” is in focus. Stop the session and mark it as done?",
       "completed": "Done in Todoist.",
+      "carried_over": "Carried over to tomorrow.",
       "keys_choose": "↑ ↓ choose",
       "keys_start": "Enter start",
       "keys_filter": "Ctrl+1–9 filter",
@@ -276,6 +279,7 @@
       "start": "Start session",
       "start_usual": "Start with your usual {work}-min pomodoros",
       "done": "Mark as done",
+      "done_carry": "Mark as done & carry over",
       "todoist": "See on Todoist"
     },
     "picker": {
@@ -286,6 +290,14 @@
         "one": "{work} min",
         "other": "{n} × {work}"
       }
+    },
+    "carry": {
+      "title": "Carry over to tomorrow",
+      "note": "Add a note (optional)",
+      "placeholder": "e.g. what's left to do",
+      "help": "Added as a comment and carried over to the new task. Leave it empty to skip.",
+      "cancel": "Cancel",
+      "confirm": "Carry over"
     },
     "filters": {
       "aria": "Saved filters",
@@ -1216,9 +1228,11 @@
     "bar_done": "DONE"
   },
   "todoist": {
-    "_": "The comment logged on a Todoist task after a session, in the language of that moment. `when` is a strftime format.",
+    "_": "The comment logged on a Todoist task after a session, in the language of that moment. `when`/`carry_when` are strftime formats.",
     "comment_bar": "🍅 × {n} ({minutes} min focus) on BUSY Bar, ended {when}",
     "comment_local": "🍅 × {n} ({minutes} min focus), ended {when}",
-    "when": "%Y-%m-%d %H:%M"
+    "when": "%Y-%m-%d %H:%M",
+    "carried_over": "> Carried over to {date}",
+    "carry_when": "%Y-%m-%d"
   }
 }

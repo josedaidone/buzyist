@@ -698,7 +698,10 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.beep()
 
     def beep(self, times: int = 3) -> None:
-        """Beep a few times, on a thread of its own."""
+        """Beep a few times, on a thread of its own. Silent while on a call."""
+        with self.lock:
+            if self.session and self.session.get("call"):
+                return
 
         def run():
             for _ in range(times):

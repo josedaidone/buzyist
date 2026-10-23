@@ -351,6 +351,8 @@ function renderEnded() {
   $("endedTitle").textContent = t(finished ? "summary.title_done" : "summary.title_stopped");
   $("endedTask").textContent = e.task.content;
   $("endedComplete").classList.toggle("hidden", !e.task.id || !state.todoist);
+  // Carry over to tomorrow only makes sense for a stopped (unfinished) Todoist task.
+  $("endedFollowup").classList.toggle("hidden", finished || !e.task.id || !state.todoist);
   $("endedSummary").textContent = e.done
     ? t("summary.result", { n: e.done, duration: duration(e.minutes) })
     : t("summary.none");
@@ -797,24 +799,51 @@ async function startTask(task, li, fixed, direct, at) {
   poll();
 }
 
-async function completeTask(task, li) {
+async function completeTask(task, li, followup = false) {
   const inFocus = state && state.session && state.session.task.id === task.id;
   if (inFocus && !confirm(t("main.tasks.complete_in_focus", { task: task.content }))) return;
+  let note = "";
+  if (followup) {
+    note = await askCarryComment(task.content);  // optional; null when cancelled
+    if (note === null) return;
+  }
   if (li) li.classList.add("busy", "done");
   if (inFocus) {
     const stopped = await api.control("stop");
     if (!stopped.ok) { if (li) li.classList.remove("busy", "done"); return toast(stopped.error, true); }
   }
-  const result = await api.complete(task.id);
+  const result = await api.complete(task.id, false, "", followup, note);
   if (!result.ok) {
     if (li) li.classList.remove("busy", "done");
     return toast(result.error, true);
   }
-  toast(t("main.tasks.completed"));
+  toast(t(followup ? "main.tasks.carried_over" : "main.tasks.completed"));
   tasks = tasks.filter((x) => x.id !== task.id);
   renderTasks();
   poll();
 }
+
+// A little modal asking for an optional note when carrying a task over to tomorrow.
+// Resolves to the note ("" when skipped) or null when the user cancels the carry-over.
+let carryResolve = null;
+function askCarryComment(taskContent) {
+  $("carryTask").textContent = taskContent || "";
+  $("carryComment").value = "";
+  $("carryWrap").classList.add("on");
+  $("scrim").classList.add("on");
+  setTimeout(() => $("carryComment").focus(), 50);
+  return new Promise((resolve) => { carryResolve = resolve; });
+}
+function closeCarry(result) {
+  $("carryWrap").classList.remove("on");
+  if (!(state && state.ended) && !drawerOpen()) $("scrim").classList.remove("on");
+  const resolve = carryResolve;
+  carryResolve = null;
+  if (resolve) resolve(result);
+}
+const carryOpen = () => $("carryWrap").classList.contains("on");
+$("carryCancel").onclick = () => closeCarry(null);
+$("carryForm").onsubmit = (e) => { e.preventDefault(); closeCarry($("carryComment").value.trim()); };
 
 // ------------------------------------------------------------ task menu
 
@@ -840,6 +869,7 @@ function openTaskMenu(task, li, x, y) {
     item("play", t("main.menu.start_usual", { work: pomo.work_minutes }), () => startTask(task, li, true, false, { x, y }));
   }
   item("check", t("main.menu.done"), () => completeTask(task, li));
+  if (state.todoist) item("check", t("main.menu.done_carry"), () => completeTask(task, li, true));
   if (task.url) item("eye", t("main.menu.todoist"), () => api.open_url(task.url));
   document.body.append(menu);
   const r = menu.getBoundingClientRect();
@@ -1294,6 +1324,21 @@ $("endedComplete").onclick = async () => {
     if (!closed.ok) toast(closed.error, true);
     else { toast(t("summary.both_completed")); gone.add(parent.id); dropGone(); }
   }
+  loadTasks(true);
+};
+$("endedFollowup").onclick = async () => {
+  const e = state.ended;
+  const note = await askCarryComment(e.task.content);  // optional; null when cancelled
+  if (note === null) return;
+  const result = await api.complete(e.task.id, false, "", true, note);
+  if (!result.ok) return toast(result.error, true);
+  toast(t("summary.carried_over"));
+  await api.dismiss_ended();
+  const gone = new Set([e.task.id]);
+  tasks = tasks.filter((x) => !gone.has(x.id))
+    .map((x) => x.subtasks ? { ...x, subtasks: x.subtasks.filter((s) => !gone.has(s.id)) } : x);
+  renderTasks();
+  await poll();
   loadTasks(true);
 };
 $("endedAgain").onclick = async () => {
@@ -3388,7 +3433,8 @@ $("installUpdate").onclick = async () => {
 $("releaseNotes").onclick = () => state && state.update && api.open_url(state.update.url);
 $("cancelSettings").onclick = closeSettings;
 $("scrim").onclick = () => {
-  if (editing !== undefined) closeFilterEditor();
+  if (carryOpen()) closeCarry(null);
+  else if (editing !== undefined) closeFilterEditor();
   else if ($("drawer").classList.contains("on")) closeSettings();
   else if ($("statsDrawer").classList.contains("on")) closeStats();
 };
@@ -3448,6 +3494,7 @@ document.addEventListener("keydown", (e) => {
     return;
   }
   if (e.key === "Escape") {
+    if (carryOpen()) return closeCarry(null);
     if (inEditor) return closeFilterEditor();
     if (inDrawer) return closeSettings();
     if (inStats) return closeStats();
@@ -3456,7 +3503,7 @@ document.addEventListener("keydown", (e) => {
     api.hide_main();
     return;
   }
-  if (inEditor || inDrawer || inStats || (state && state.ended)) return;
+  if (carryOpen() || inEditor || inDrawer || inStats || (state && state.ended)) return;
   if (e.ctrlKey && !e.altKey && /^[1-9]$/.test(e.key)) {
     e.preventDefault();
     const f = filters[+e.key - 1];
