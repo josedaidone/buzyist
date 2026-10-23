@@ -10,6 +10,9 @@ THEMES_PATH): the next picture is written to the slot not on show, then
 the session's snapshot is switched to it (Bar.set_theme), so a picture is
 never replaced while the bar shows it. The minutes in its corner change
 once a minute, which is one upload and one snapshot write a minute.
+
+Once a session is over and its done screen has gone, BarScreens also opens
+the app picked in `bar_end_app` (bar_apps.py) on a bar left on the Apps list.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ from __future__ import annotations
 import io
 import logging
 import threading
+import time
 import unicodedata
 from functools import cache
 from typing import TYPE_CHECKING
@@ -25,6 +29,16 @@ from busylib.features import timer_state
 from PIL import Image, ImageDraw, ImageFont
 
 from buzyist import paths
+from buzyist.bar import BarUnreachable
+from buzyist.bar_apps import (
+    APPS_MENU,
+    END_APP_POLL_S,
+    END_APP_WAIT_S,
+    LAUNCH_SETTLE_S,
+    TIMER_APP,
+    app_label,
+    parse_end_app,
+)
 from buzyist.bar_screens import OLD_PLACEHOLDERS, OWN_THEME_PREFIX, SCREEN_COLORS, fill_text
 from buzyist.constants import APP, AppError, now_ms
 from buzyist.i18n import english
@@ -163,12 +177,20 @@ class BarScreens:
         self._retry_at = 0
         self._card: tuple[int, str] | None = None  # (when read, the card's theme)
         self._themes: tuple[int, list[str]] | None = None  # (when read, the bar's themes)
+        self._end_app = False  # a session is over: open bar_end_app once its done screen has gone
+        self._end_app_from = 0  # when it could first be opened (ms); END_APP_WAIT_S from then
 
     def start(self) -> None:
         threading.Thread(target=self._loop, daemon=True, name="bar screens").start()
 
     def poke(self) -> None:
         self.wake.set()
+
+    def after_session(self) -> None:
+        """A session of ours ended (finished or stopped): open bar_end_app once nothing of ours is on the bar."""
+        if parse_end_app(self.app.cfg.get("bar_end_app", "")):
+            self._end_app, self._end_app_from = True, 0
+            self.poke()
 
     def _loop(self) -> None:
         while not self.app.quitting:
@@ -283,9 +305,11 @@ class BarScreens:
         if not (want and "draw" in want) and self._drawn:
             self.app.bar.clear_drawing(self._drawn_file)
             self._drawn, self._drawn_file = None, ""
+        if self._end_app and not (want and "draw" in want):
+            self._open_end_app()
         if want is None:
             self._clean_up()
-            return IDLE_WAIT_S
+            return END_APP_POLL_S if self._end_app else IDLE_WAIT_S
         if "draw" in want:
             key = (want["draw"], want["color"])
             if key != self._drawn or now_ms() - self._drawn_at >= DRAW_EVERY_S * 1000:
@@ -312,6 +336,60 @@ class BarScreens:
         if "theme" in want:
             self._clean_up(showing=theme)
         return want.get("next_s", IDLE_WAIT_S)
+
+    def _open_end_app(self) -> None:
+        """
+        Open and start bar_end_app if the bar is on the Apps list; wait (up to
+        END_APP_WAIT_S) while it still shows the timer's end screen. A new
+        session, the mode switch elsewhere or an app already running: nothing.
+        """
+        app = self.app
+        cfg = app.cfg.view()
+        target = parse_end_app(cfg.get("bar_end_app", ""))
+        with app.lock:
+            session, snap = app.session, app.snap
+        now = now_ms()
+        self._end_app_from = self._end_app_from or now
+        if (
+            not target
+            or session is not None
+            or not cfg.get("use_busybar")
+            or app.bar.standalone
+            or now - self._end_app_from > END_APP_WAIT_S * 1000
+        ):
+            self._end_app = False
+            return
+        if self._timer_running(snap):
+            return  # a timer started on the bar meanwhile: wait for it
+        runtime, app_id = target
+        try:
+            showing = app.bar.running_app().get("name", "")
+            if showing in ("", TIMER_APP):
+                # Still on the timer's end screen (or the switch is on Busy), or
+                # between two apps (a moment with none after the timer leaves): look again.
+                return
+            self._end_app = False
+            if showing != APPS_MENU:
+                log.info("after the session: not opening %s, the bar shows %s", app_label(cfg["bar_end_app"]), showing)
+                return
+            app.bar.open_app(runtime, app_id)
+            time.sleep(LAUNCH_SETTLE_S)
+            opened = app.bar.running_app()
+            # OK only on the app just opened (on its Start screen): pressed on a
+            # running one it does something else.
+            if opened.get("name") in ("", APPS_MENU, TIMER_APP) or (
+                runtime != "system" and opened.get("app_id") != app_id
+            ):
+                log.info("after the session: %s didn't open (%s)", app_label(cfg["bar_end_app"]), opened.get("name"))
+                return
+            app.bar.press_ok()
+            log.info("after the session: opened %s on the bar", app_label(cfg["bar_end_app"]))
+        except BarUnreachable:
+            self._end_app = True  # look again while END_APP_WAIT_S lasts
+            raise
+        except AppError as err:
+            self._end_app = False  # e.g. stock firmware (404): no retry
+            log.info("after the session: couldn't open %s: %s", app_label(cfg["bar_end_app"]), english(err))
 
     def _clean_up(self, showing: str = "") -> None:
         """Take our themes off the bar once no screen uses a text of its own and none is on show."""

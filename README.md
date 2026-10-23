@@ -103,6 +103,10 @@ menu, and starts it.
 - **Bar sound** (Settings → BUSY Bar, on by default): the reminders ring the bar instead of
   beeping on the PC: every 5 minutes of a pause, and app limits set to **Beep**. **Play the chime**
   lets you hear it. Nothing rings during a call, and the PC beeps when the bar can't be reached.
+- **After a session** (Settings → BUSY Bar, off by default; needs the
+  [VeryBUSY](https://code.mccullough.dev/christian/VeryBUSY) firmware): when a timer ends, a bar
+  on Apps goes back to the Apps list. Pick an app (the Clock, Nixie Clock, Weather, ...) and the
+  bar opens and starts it once the end of session screen has gone, if it's on the Apps list.
 - **Website limits** (Settings → Limits): time budgets for websites, enforced all day,
   with or without a pomodoro running.
   - Give a site (or a group of sites that share the time) one or more limits, such as *30 min

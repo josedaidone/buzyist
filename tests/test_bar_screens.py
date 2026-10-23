@@ -166,6 +166,12 @@ class Device:
         self.shown: dict[str, bytes] = {}  # what the bar has read, by path: never re-read
         self.writes = 0  # snapshot writes
         self.down = False
+        # VeryBUSY's apps (bar_apps.py): what runs, what was opened, the keys pressed.
+        self.verybusy = True  # stock firmware answers 404 to the apps calls
+        self.showing = {"name": "AppsMenu", "runtime": "", "app_id": ""}
+        self.opened: list[tuple[str, str]] = []
+        self.keys: list[str] = []
+        self.files |= {"/ext/apps": None, "/ext/apps/misc": None, "/ext/apps/misc/Nixie.fap": b"fap"}
 
     def __call__(self, addr, token=None, **kwargs):
         return Client(self)
@@ -235,9 +241,35 @@ class Client:
         self.device.files[path] = data
 
     def _request(self, method, path, params=None, data=None):
+        self._check()
+        if path.startswith("/api/apps/") or path == "/api/input":
+            return self._apps(method, path, params or {})
         assert (method, path) == ("POST", "/api/storage/write")
         Image.open(io.BytesIO(data)).verify()  # a real PNG, sent as it is
         self.storage_write(params["path"], data)
+
+    def _apps(self, method, path, params):
+        device = self.device
+        if not device.verybusy:
+            raise exceptions.BusyBarAPIError("Not found", status_code=404, method=method, path=path)
+        if (method, path) == ("GET", "/api/apps/running"):
+            return dict(device.showing)
+        if (method, path) == ("GET", "/api/apps/system"):
+            names = [("busy", "Busy", "apps"), ("clock", "Clock", "apps"), ("about", "About", "settings")]
+            return {"list": [{"appid": a, "name": n, "group": g, "blocked": False} for a, n, g in names]}
+        if (method, path) == ("POST", "/api/apps/launch"):
+            device.opened.append((params["runtime"], params["id"]))
+            app_id = "" if params["runtime"] == "system" else params["id"]
+            device.showing = {"name": params["id"].title(), "runtime": params["runtime"], "app_id": app_id}
+            return {"result": "OK"}
+        if (method, path) == ("POST", "/api/input"):
+            device.keys.append(params["key"])
+            return {"result": "OK"}
+        raise AssertionError(f"{method} {path}")
+
+    def storage_read(self, path):
+        self._check()
+        return self.device.files[path]
 
     def storage_remove(self, path):
         self._check()
@@ -443,3 +475,123 @@ def test_after_a_restart_an_old_picture_is_not_shown(run, device, deferred_threa
     )
     app.step(minutes=1)
     assert device.picture(device.theme).tobytes() == render("Other", "tomate", 24).tobytes()
+
+
+# ------------------------------------------------------- after a session ---
+
+NIXIE = "fap:/ext/apps/misc/Nixie.fap"
+
+
+def stopped(app, deferred_threads):
+    """Stop the running session and let it finish; returns the app."""
+    app.control("stop")
+    deferred_threads.run_pending()
+    return app.step()
+
+
+def test_the_app_opens_and_starts_once_the_done_screen_has_gone(run, device, deferred_threads):
+    app = stopped(start(run({"bar_end_app": NIXIE}), deferred_threads), deferred_threads)
+    assert device.drawing is not None and device.opened == []  # the done screen first
+    Api(app).dismiss_ended()
+    app.step()
+    assert device.drawing is None
+    assert device.opened == [("fap", "/ext/apps/misc/Nixie.fap")]
+    assert device.keys == ["ok"]  # from its Start screen to the clock
+    app.step(minutes=1)
+    assert device.keys == ["ok"]  # once
+
+
+def test_with_no_done_screen_it_opens_at_once(run, device, deferred_threads):
+    screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
+    stopped(start(run({"bar_end_app": "system:clock", "bar_screens": screens}), deferred_threads), deferred_threads)
+    assert device.opened == [("system", "clock")] and device.keys == ["ok"]
+
+
+def test_it_waits_while_the_bar_shows_the_timer_then_gives_up_elsewhere(run, device, deferred_threads):
+    screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
+    app = run({"bar_end_app": NIXIE, "bar_screens": screens})
+    device.showing = {"name": "Busy", "runtime": "", "app_id": ""}  # the timer's "Well done!"
+    stopped(start(app, deferred_threads), deferred_threads)
+    assert device.opened == []
+    device.showing = {"name": "", "runtime": "", "app_id": ""}  # a moment with no app, as on a real bar
+    app.step(seconds=5)
+    assert device.opened == []
+    device.showing = {"name": "AppsMenu", "runtime": "", "app_id": ""}
+    app.step(seconds=5)
+    assert device.opened == [("fap", "/ext/apps/misc/Nixie.fap")]
+
+
+@pytest.mark.parametrize("showing", ["Clock", "Software Power Off"])
+def test_a_bar_not_on_the_apps_list_is_left_alone(run, device, deferred_threads, showing):
+    screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
+    device.showing = {"name": showing, "runtime": "", "app_id": ""}
+    app = stopped(start(run({"bar_end_app": NIXIE, "bar_screens": screens}), deferred_threads), deferred_threads)
+    device.showing = {"name": "AppsMenu", "runtime": "", "app_id": ""}
+    app.step(seconds=5)
+    assert device.opened == [] and device.keys == []
+
+
+def test_a_new_session_or_no_setting_opens_nothing(run, device, deferred_threads):
+    app = stopped(start(run(), deferred_threads), deferred_threads)  # bar_end_app off
+    Api(app).dismiss_ended()
+    app.step()
+    assert device.opened == []
+    app.save_settings({"bar_end_app": NIXIE})
+    app = stopped(start(app, deferred_threads), deferred_threads)
+    start(app, deferred_threads, name="Next one")  # straight into another session
+    app.step(minutes=1)
+    assert device.opened == []
+
+
+def test_stock_firmware_is_asked_once(run, device, deferred_threads):
+    screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
+    device.verybusy = False
+    app = stopped(start(run({"bar_end_app": NIXIE, "bar_screens": screens}), deferred_threads), deferred_threads)
+    app.step(seconds=5)
+    assert device.opened == [] and not app.bar_screens._end_app
+
+
+def test_the_picker_lists_the_bars_apps(run, device):
+    weather = "/ext/user_assets/app.busy.weather"
+    device.files |= {
+        "/ext/user_assets": None,
+        "/ext/user_assets/buzyist": None,  # ours: app data, not an app
+        weather: None,
+        f"{weather}/appmeta": None,
+        f"{weather}/appmeta/manifest.json": json.dumps({"id": "app.busy.weather", "name": "Weather"}).encode(),
+        f"{weather}/scripts": None,
+        f"{weather}/scripts/main.js": b"",
+    }
+    app = run()
+    apps = Api(app).bar_apps()
+    assert apps["ok"]
+    assert apps["apps"] == [
+        {"value": "system:clock", "name": "Clock"},
+        {"value": NIXIE, "name": "Nixie"},
+        {"value": "js:app.busy.weather", "name": "Weather"},
+    ]
+    device.verybusy = False
+    assert "VeryBUSY" in Api(app).bar_apps()["error"]
+
+
+@pytest.mark.parametrize(
+    ("value", "ok"),
+    [
+        ("", True),
+        (NIXIE, True),
+        ("system:clock", True),
+        ("js:app.busy.weather", True),
+        ("clock", False),
+        ("fap:Nixie.fap", False),
+        ("fap:/ext/apps/../x.fap", False),
+        ("shell:rm", False),
+        (3, False),
+    ],
+)
+def test_the_setting_is_checked(app, value, ok):
+    if ok:
+        app.save_settings({"bar_end_app": value})
+        assert app.cfg["bar_end_app"] == value
+    else:
+        with pytest.raises(AppError, match="Pick one of the bar's apps"):
+            app.save_settings({"bar_end_app": value})

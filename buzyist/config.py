@@ -24,6 +24,7 @@ from pydantic_core import PydanticCustomError
 
 from buzyist.activities import DEFAULT_ACTIVITIES, clean_activities, default_activities
 from buzyist.app_limits import _sanitize_app_limits, clean_app_limits
+from buzyist.bar_apps import clean_end_app
 from buzyist.bar_screens import DEFAULT_BAR_SCREENS, clean_bar_screens, default_bar_screens
 from buzyist.blocker import clean_blocked_apps, normalize_blocked_apps
 from buzyist.calls import clean_call_ignore
@@ -68,6 +69,10 @@ DEFAULTS = {
     # The reminders (a long pause, an app limit that beeps) ring the bar's
     # speaker instead of beeping here, while the bar is in reach (App.beep).
     "bar_sound": True,
+    # The app the bar opens and starts once a session is over and its done
+    # screen has gone, if the bar is on the Apps list (VeryBUSY firmware only;
+    # buzyist/bar_apps.py): "<runtime>:<id>", "" for none.
+    "bar_end_app": "",
     "work_minutes": 25,
     "rest_minutes": 5,
     "cycles": 4,
@@ -368,6 +373,7 @@ class Config(BaseModel):
     bar_screens_on: bool = _default("bar_screens_on")
     bar_screens: dict = _default("bar_screens")  # kept as a dict: clean_bar_screens is the schema
     bar_sound: bool = _default("bar_sound")
+    bar_end_app: str = _default("bar_end_app")
     work_minutes: Minutes = _default("work_minutes")
     rest_minutes: Minutes = _default("rest_minutes")
     cycles: Annotated[int, Field(ge=CYCLES_MIN, le=CYCLES_MAX)] = _default("cycles")
@@ -429,6 +435,11 @@ class Config(BaseModel):
     @classmethod
     def _bar_address(cls, value: str) -> str:
         return _app_error(clean_bar_address, value)
+
+    @field_validator("bar_end_app", mode="before")
+    @classmethod
+    def _bar_end_app(cls, value, info: ValidationInfo):
+        return _app_error(clean_end_app, value, _loading(info))
 
     @field_validator("hotkey")
     @classmethod

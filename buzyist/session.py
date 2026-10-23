@@ -181,6 +181,7 @@ class SessionMixin:
             if reason == "replaced" or silent:
                 return
         if call:  # no summary to read: it started and ended on its own
+            self.bar_screens.after_session()  # bar_end_app
             self.update_tray()
             self.hide_mini()
             self.notify(t("notify.call_over.title"), t("notify.call_over.text", n=minutes, task=task["content"]))
@@ -194,6 +195,7 @@ class SessionMixin:
                 "problems": problems,
                 "activity": session.get("activity"),  # so "Again" starts the same one
             }
+        self.bar_screens.after_session()  # bar_end_app, once the done screen has gone
         self.update_tray()
         if reason == "finished":
             self.notify(t("notify.finished.title"), t("notify.finished.text", n=done, task=task["content"]))
