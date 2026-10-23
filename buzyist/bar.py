@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import threading
+import time
 from types import SimpleNamespace
 
 import httpx2
@@ -28,6 +29,11 @@ log = logging.getLogger(APP)
 
 DRAW_APP = "buzyist"  # the application name our drawings go under (bar_display)
 DRAW_DIR = "/ext/user_assets/" + DRAW_APP  # where its pictures are
+
+# How long two readings of a running timer under the same stamp must be
+# apart to tell whether the bar counts its time left down in the snapshot
+# (it changes in whole seconds). See Bar._read.
+LIVE_CHECK_MS = 1500
 
 
 class BarUnreachable(AppError):
@@ -104,6 +110,10 @@ class Bar:
         self.last: types.BusySnapshot | None = None  # the bar's latest snapshot read this run
         self._seed_stamp = 0  # the local clock's stamp when it took over
         self._probe_at = 0  # when poll looks for an offline bar again (ms)
+        # Whether the bar's snapshot gives the time left now rather than at
+        # its stamp (None: not known yet); see _read.
+        self.live_left: bool | None = None
+        self._seen: tuple | None = None  # (stamp, interval, left, read at) of the last running timer read
 
     @property
     def is_local(self) -> bool:
@@ -133,6 +143,7 @@ class Bar:
             self._clients.clear()
             self.via = t("notify.via_this_pc") if self.offline else None
             self._probe_at = 0  # new settings: look for the bar at once
+            self.live_left, self._seen = None, None  # maybe another bar, or new firmware
             if self.is_local:
                 self.offline = False
 
@@ -226,7 +237,7 @@ class Bar:
 
     def _take_back(self, bar: BusyBar) -> None:
         """Write what the local clock ran while the bar was gone to the bar."""
-        live = bar.busy_snapshot()
+        live = self._read(bar)
         mine = self.local.busy_snapshot()
         variant = mine.snapshot
         running = isinstance(variant, types.BusySnapshotInfinite) or (
@@ -273,11 +284,63 @@ class Bar:
         # Newer than both, so the bar takes it and the session sees it.
         self._write(bar, max(live, mine, key=lambda s: s.snapshot_timestamp_ms), variant)
 
+    # Reading the timer. The stock firmware (27.5) gives a running timer's
+    # time left as it was at the snapshot's stamp, which is what busylib's
+    # timer_state expects: left now = stored - (now - stamp). Newer firmware
+    # (VeryBUSY r12, API 27.7) keeps the stamp but counts the stored time
+    # left down as the timer runs, so timer_state took the time since the
+    # stamp off twice and the PC ran ahead of the bar. Every snapshot read
+    # from a bar goes through _read, which learns which kind of bar it is
+    # (the same stamp with a different time left can only be a live count)
+    # and turns a live one back into the stamp's form, so the rest of the
+    # app, the writes back to the bar included, needn't know.
+
+    def _read(self, bar: BusyBar) -> types.BusySnapshot:
+        """The bar's snapshot, its time left as of its stamp whatever the firmware."""
+        snap = bar.busy_snapshot()
+        if isinstance(bar, LocalClock):
+            return snap
+        at = now_ms()
+        if self.live_left is None and _running(snap) and at - snap.snapshot_timestamp_ms > LIVE_CHECK_MS:
+            # An old stamp means a lot either way: look again to know which.
+            self._learn(snap, at)
+            time.sleep(LIVE_CHECK_MS / 1000)
+            snap, at = bar.busy_snapshot(), now_ms()
+        self._learn(snap, at)
+        return self._settle(snap, at)
+
+    def _learn(self, snap: types.BusySnapshot, at: int) -> None:
+        """Compare a running timer with the last reading under the same stamp."""
+        if not _running(snap):
+            self._seen = None
+            return
+        variant = snap.snapshot
+        key = (snap.snapshot_timestamp_ms, variant.current_interval, variant.current_interval_time_left_ms)
+        seen = self._seen
+        if seen and seen[0] == key[0]:
+            if seen[1:3] != key[1:3]:
+                if not self.live_left:
+                    log.info("the BUSY Bar counts the time left down in its snapshot: reading it as of now")
+                self.live_left = True
+            elif at - seen[3] < LIVE_CHECK_MS:
+                return  # too soon to tell: keep the older reading
+            elif self.live_left is None:
+                self.live_left = False
+        self._seen = (*key, at)
+
+    def _settle(self, snap: types.BusySnapshot, at: int) -> types.BusySnapshot:
+        """A live count read at `at` as the time left at the stamp, which timer_state expects."""
+        if not self.live_left or not _running(snap):
+            return snap
+        variant = snap.snapshot
+        left = variant.current_interval_time_left_ms + max(0, at - snap.snapshot_timestamp_ms)
+        return snap.model_copy(update={"snapshot": variant.model_copy(update={"current_interval_time_left_ms": left})})
+
     # Thin wrappers, each one bar call (or one read-modify-write) under the lock.
 
     def snapshot(self) -> types.BusySnapshot:
         with self.lock:
-            snap = self.run(lambda bar: bar.busy_snapshot())
+            snap = self.run(self._read)
             if not self.standalone:
                 self.last = snap
             return snap
@@ -288,7 +351,7 @@ class Bar:
         def go(bar: BusyBar) -> int:
             count = cycles if isinstance(bar, LocalClock) else max(cycles, BAR_CYCLES_MIN)
             profile = bar.busy_profile("busy")
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             variant = types.BusySnapshotInterval(
                 type="INTERVAL",
                 card_id=profile.id,
@@ -314,7 +377,7 @@ class Bar:
 
         def go(bar: BusyBar) -> int:
             profile = bar.busy_profile("busy")
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             variant = types.BusySnapshotInfinite(
                 type="INFINITE", card_id=profile.id, is_paused=False, busy_bar_settings=profile.busy_bar_settings
             )
@@ -335,7 +398,7 @@ class Bar:
 
     def stop(self) -> None:
         def go(bar: BusyBar) -> None:
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             self._write(
                 bar,
                 live,
@@ -349,7 +412,7 @@ class Bar:
 
     def set_paused(self, paused: bool) -> None:
         def go(bar: BusyBar) -> None:
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             variant = live.snapshot
             if isinstance(variant, types.BusySnapshotNotStarted):
                 raise app_error("errors.bar.no_session")
@@ -370,7 +433,7 @@ class Bar:
 
     def next_phase(self) -> None:
         def go(bar: BusyBar) -> None:
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             variant = live.snapshot
             if not isinstance(variant, types.BusySnapshotInterval):
                 raise app_error("errors.bar.no_session")
@@ -438,7 +501,7 @@ class Bar:
         def go(bar: BusyBar) -> bool:
             if isinstance(bar, LocalClock):
                 return False
-            live = bar.busy_snapshot()
+            live = self._read(bar)
             variant = live.snapshot
             if live.snapshot_timestamp_ms < since or not isinstance(
                 variant, (types.BusySnapshotInterval, types.BusySnapshotInfinite)
@@ -658,6 +721,12 @@ def _write_png(bar: BusyBar, path: str, picture: bytes) -> None:
 def _write_raw(bar: BusyBar, path: str, data: bytes) -> None:
     """Write `data` to `path` on the bar as it is (storage_write may convert it)."""
     bar._request("POST", "/api/storage/write", params={"path": path}, data=data)
+
+
+def _running(snap: types.BusySnapshot) -> bool:
+    """An interval timer that is counting down (not paused)."""
+    variant = snap.snapshot
+    return isinstance(variant, types.BusySnapshotInterval) and not variant.is_paused
 
 
 def phase_ms(interval: int, settings: types.BusySnapshotIntervalSettings) -> int:

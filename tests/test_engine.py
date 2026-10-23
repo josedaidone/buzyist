@@ -18,9 +18,11 @@ from types import SimpleNamespace
 
 import pytest
 from busylib import exceptions, types
+from busylib.features import timer_state
 
 from buzyist import bar as bar_mod
 from buzyist import constants, paths, storage
+from conftest import stock_firmware
 
 WIFI = "10.0.0.9"
 PIN = "1234"
@@ -47,6 +49,7 @@ class FakeDevice:
         self.pin: str | None = PIN
         self.calls: list[tuple[str, str]] = []
         self.clients: list[FakeBusyBar] = []
+        self.live = None  # a FakeClock: answer like newer firmware, the time left counted down under the stamp
 
     def __call__(self, addr, token=None, **kwargs) -> FakeBusyBar:
         """What buzyist.bar calls as ``BusyBar(addr, token=..., ...)``."""
@@ -71,7 +74,16 @@ class FakeBusyBar:
 
     def busy_snapshot(self) -> types.BusySnapshot:
         self._check("busy_snapshot")
-        return self.device.snap
+        snap, clock = self.device.snap, self.device.live
+        variant = snap.snapshot
+        if clock is None or not isinstance(variant, types.BusySnapshotInterval) or variant.is_paused:
+            return snap
+        state = timer_state(snap, now_ms=clock.ms)
+        if state.is_finished:
+            return snap
+        left = -(-state.time_left_ms // 1000) * 1000
+        update = {"current_interval": state.interval, "current_interval_time_left_ms": left}
+        return snap.model_copy(update={"snapshot": variant.model_copy(update=update)})
 
     def busy_snapshot_set(self, snap: types.BusySnapshot) -> None:
         self._check("busy_snapshot_set")
@@ -89,6 +101,7 @@ def device(monkeypatch) -> FakeDevice:
     """A fake BUSY Bar behind ``buzyist.bar.BusyBar`` (every route reaches it)."""
     bar = FakeDevice()
     monkeypatch.setattr(bar_mod, "BusyBar", bar)
+    stock_firmware(monkeypatch)
     return bar
 
 
@@ -854,3 +867,21 @@ def test_no_route_configured(engine, device):
     app = engine({**BAR_CONFIG, "busybar_ip": "", "usb_fallback": False})
     with pytest.raises(constants.AppError, match="Wi-Fi address"):
         app.bar.snapshot()
+
+
+# ------------------------------------- firmware that counts the time down ---
+
+
+def test_the_pc_keeps_the_bars_pace_when_it_counts_down_live(engine, deferred_threads, device, clock):
+    """VeryBUSY r12 keeps the stamp and counts the time left down: the PC mustn't take it off twice."""
+    device.live = clock
+    app = engine({**BAR_CONFIG, "cycles": 2, "use_todoist": False, "poll_seconds": 5})
+    app.bar.live_left = None  # find out, as with a real bar
+    start(app, deferred_threads)
+    for _ in range(120):  # ten minutes of polls
+        app.step(seconds=5)
+    assert app.bar.live_left is True
+    assert abs(app.timer_view()["left_ms"] - 15 * MIN) <= 1000
+    app.step(minutes=16)
+    view = app.timer_view()
+    assert view["phase"] == "rest" and app.session["done"] == 1
