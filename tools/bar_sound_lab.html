@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BUSY Bar sound lab</title>
+<style>
+  :root { --ink:#2b1d18; --muted:#7a6a63; --line:#ead9d1; --bg:#fff7f3; --surface:#fff; --red:#d9361b; --green:#1e6b43; --amber:#b7791f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  header { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px 20px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0 8px 0 0; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; padding: 16px 20px; align-items: start; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+  h2 { font-size: 14px; margin: 0 0 8px; }
+  p.help { color: var(--muted); margin: 0 0 10px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; border-top: 0; }
+  code { font: 12px Consolas, monospace; }
+  button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
+  button:hover { border-color: var(--ink); }
+  button.main { background: var(--red); border-color: var(--red); color: #fff; }
+  button.warn { border-color: var(--amber); color: var(--amber); }
+  button:disabled { opacity: .5; cursor: default; }
+  input, select { font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  input[type=number] { width: 80px; }
+  label { display: inline-flex; gap: 6px; align-items: center; margin: 0 14px 6px 0; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin-bottom: 6px; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 99px; font-weight: 600; font-size: 12px; background: #eee; }
+  .s-idle { background: #e8e8e8; } .s-work { background: #fde0da; color: var(--red); } .s-rest { background: #fff0c2; color: #8a5a00; }
+  .s-paused { background: #dde3ea; color: #34495e; } .s-finished { background: #d9efe2; color: var(--green); }
+  .banner { background: #fff0c2; border: 1px solid #f0d88a; border-radius: 8px; padding: 8px 12px; margin: 0 20px; display: none; }
+  .steps li { margin-bottom: 10px; }
+  .steps .row { margin: 4px 0 0; }
+  #log { font: 12px Consolas, monospace; max-height: calc(100vh - 170px); overflow: auto; }
+  .entry { border-top: 1px solid var(--line); padding: 6px 0; }
+  .entry .meta { color: var(--muted); }
+  .ok { color: var(--green); } .bad { color: var(--red); } .warnc { color: var(--amber); }
+  .heard button { font-size: 11px; padding: 1px 7px; }
+  .heard .yes.on { background: var(--green); color: #fff; border-color: var(--green); }
+  .heard .no.on { background: var(--red); color: #fff; border-color: var(--red); }
+  aside { position: sticky; top: 70px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BUSY Bar sound lab</h1>
+  <span>Timer: <span id="tState" class="pill">…</span> <span id="tDetail"></span></span>
+  <span>Volume: <b id="vol">…</b></span>
+  <span>Route: <b id="via">…</b></span>
+  <label><input type="checkbox" id="autoRefresh" checked> refresh every 2 s</label>
+  <label>App name <input id="app" value="buzyist" size="10" title="application_name sent with every request; files go under /ext/user_assets/<app>"></label>
+  <label>Repeat <input type="number" id="times" value="3" min="1" max="10"></label>
+  <label>Gap (ms, start to start) <input type="number" id="gap" value="2500" min="0" step="100"></label>
+</header>
+<div class="banner" id="sessionBanner"></div>
+
+<main>
+<div>
+  <section>
+    <h2>Troubleshooting checklist</h2>
+    <p class="help">Work down the list. After each sound, mark <b>heard</b> or <b>not heard</b> on its line in the log; the log keeps the timer state of every attempt, so a pattern shows up (e.g. "silent only while paused", "silent after 3 in a row").</p>
+    <ol class="steps">
+      <li><b>Player stuck?</b> Stop audio, then play the reminder once.
+        <div class="row"><button data-step="stuck">Run</button></div></li>
+      <li><b>Cooldown per app name?</b> Play the reminder under another app name (<code>lab2</code>), then under <code>buzyist</code> again.
+        <div class="row"><button data-step="otherApp">Run</button></div></li>
+      <li><b>Too many too fast?</b> Play once, wait the time below, play again. Raise the wait until both are heard.
+        <div class="row"><label>Wait <input type="number" id="coolWait" value="20" min="1"> s</label><button data-step="cooldown">Run</button></div></li>
+      <li><b>Repeats overlapping?</b> Play ×N with the gap from the header; try 1600 ms, 2500 ms, 4000 ms.
+        <div class="row"><button data-step="repeat">Run</button></div></li>
+      <li><b>Timer state matters?</b> Play the reminder once in each state. The timer buttons below change the bar's real timer.
+        <div class="row"><button data-step="inIdle" class="warn">Idle (stops the timer) + play</button>
+          <button data-step="inWork" class="warn">Running (starts a test timer) + play</button>
+          <button data-step="inPaused">Paused (pauses what runs) + play</button></div></li>
+      <li><b>Own copy vs stock?</b> Copy the bar's reminder into the app's folder and play the copy.
+        <div class="row"><button data-step="copy">Run</button></div></li>
+      <li><b>Is the file itself fine?</b> "Preview on PC" on any sound plays the bar's file on this computer (pick the sample rate that sounds right; probably 44100).</li>
+      <li><b>Volume?</b> The header shows the bar's volume; set it below and play again.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>The bar's sounds</h2>
+    <p class="help">Stock play works only for <code>shared/</code> on firmware 27.5; for the others use "Copy &amp; play" (copies the file into <code>/ext/user_assets/&lt;app&gt;/</code>). Length assumes 44.1 kHz mono 16-bit.</p>
+    <div class="row"><button id="reload">Reload list</button><label>Preview rate <select id="rate">
+      <option>16000</option><option>22050</option><option>32000</option><option selected>44100</option><option>48000</option></select> Hz</label></div>
+    <table><thead><tr><th>Sound</th><th>Length</th><th></th></tr></thead><tbody id="stock"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Files in the app's folder on the bar</h2>
+    <table><thead><tr><th>File</th><th>Length</th><th></th></tr></thead><tbody id="own"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Make a sound</h2>
+    <p class="help">Generated here as raw 16-bit PCM, uploaded to the app's folder, then played. Square waves around 2–3 kHz carry best on a small speaker.</p>
+    <div class="row">
+      <label>Pattern <select id="pattern"><option value="beeps">beeps</option><option value="two-tone">two-tone</option><option value="sweep">sweep</option></select></label>
+      <label>Wave <select id="shape"><option>square</option><option>sine</option><option>triangle</option></select></label>
+      <label>Freq <input type="number" id="freq" value="2400" step="100"> Hz</label>
+      <label>Freq 2 <input type="number" id="freq2" value="1800" step="100"> Hz</label>
+    </div>
+    <div class="row">
+      <label>Beep <input type="number" id="beepMs" value="120" step="10"> ms</label>
+      <label>Silence <input type="number" id="gapMs" value="80" step="10"> ms</label>
+      <label>Beeps <input type="number" id="beeps" value="6" min="1" max="40"></label>
+      <label>Gain <input type="number" id="gain" value="1" min="0.05" max="1" step="0.05"></label>
+      <label>Rate <select id="toneRate"><option>16000</option><option>22050</option><option>32000</option><option selected>44100</option><option>48000</option></select></label>
+      <label>Name <input id="toneName" value="lab_alarm" size="12"></label>
+    </div>
+    <div class="row">
+      <button id="tonePreview">Preview on PC</button>
+      <button id="toneUpload" class="main">Upload &amp; play on bar</button>
+      <button data-preset="app">Preset: buZyist's chime</button>
+      <button data-preset="alarm">Preset: alarm</button>
+      <button data-preset="siren">Preset: siren</button>
+      <button data-preset="chime">Preset: chime</button>
+      <button data-preset="rate">Preset: 1 s at 1 kHz (to find the rate)</button>
+    </div>
+    <p class="help">To find the bar's sample rate: upload "1 s at 1 kHz" with Rate 44100. If the bar plays about 1 s, it is 44.1 kHz; about 2 s means 22.05 kHz, and so on.</p>
+  </section>
+
+  <section>
+    <h2>Volume and player</h2>
+    <div class="row"><label>Volume <input type="range" id="volRange" min="0" max="100" value="100"> <b id="volVal">100</b></label>
+      <button id="volSet">Set</button><button id="stopAudio">Stop audio</button></div>
+  </section>
+
+  <section>
+    <h2>Timer</h2>
+    <p class="help">Start and Stop replace the bar's timer; if buZyist has a session, it ends there as "stopped" (comment and history included). Pause and Resume are the edits buZyist itself makes.</p>
+    <div class="row">
+      <label>Work <input type="number" id="workS" value="120"> s</label>
+      <label>Rest <input type="number" id="restS" value="30"> s</label>
+      <button data-timer="start" class="warn">Start test timer</button>
+      <button data-timer="pause">Pause</button>
+      <button data-timer="resume">Resume</button>
+      <button data-timer="stop" class="warn">Stop</button>
+    </div>
+  </section>
+</div>
+
+<aside>
+  <section>
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Log</h2>
+      <span><button id="copyLog">Copy as text</button> <button id="clearLog">Clear</button></span></div>
+    <div id="log"></div>
+  </section>
+</aside>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const REMINDER = "shared/sounds/calendar_reminder_ends.snd";
+const REMINDER_FULL = "/ext/apps_assets/" + REMINDER;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let session = null;
+const entries = [];
+
+async function call(action, body = {}) {
+  const res = await fetch("/api/" + action, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Lab": "1" },
+    body: JSON.stringify({ app: $("app").value, ...body }),
+  });
+  return res.json();
+}
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const kid of kids) e.append(kid instanceof Node ? kid : String(kid));
+  return e;
+}
+
+function describe(t) {
+  if (!t) return "?";
+  if (t.state === "idle") return "idle";
+  const left = t.left_ms == null ? "" : ` ${(t.left_ms / 1000).toFixed(1)}s left`;
+  return `${t.state}${left}`;
+}
+
+// ---------------------------------------------------------------- log ---
+
+function log(title, answer, extra = "") {
+  const at = new Date().toLocaleTimeString();
+  const item = { at, title, answer, extra, heard: null };
+  entries.push(item);
+  const ok = answer && answer.ok;
+  const parts = [];
+  if (answer) {
+    parts.push(ok ? (answer.result || "OK") : `${answer.status || ""} ${answer.error || "failed"}`);
+    if (answer.ms != null) parts.push(`${answer.ms} ms`);
+    if (answer.via) parts.push(`via ${answer.via}`);
+  }
+  const row = el("div", { class: "entry" },
+    el("div", {}, el("span", { class: "meta" }, at + " "), el("b", {}, title), " ", el("span", { class: ok ? "ok" : "bad" }, parts.join(" · "))));
+  if (answer && answer.before) {
+    const same = answer.before.stamp === answer.after.stamp;
+    item.timer = `${describe(answer.before)} → ${describe(answer.after)}`;
+    item.untouched = same;
+    row.append(el("div", { class: "meta" }, "timer: " + item.timer + " ",
+      el("span", { class: same ? "ok" : "warnc" }, same ? "(snapshot untouched)" : "(snapshot changed!)")));
+  }
+  if (extra) row.append(el("div", { class: "meta" }, extra));
+  if (answer && answer.before && ok) {
+    const yes = el("button", { class: "yes" }, "heard");
+    const no = el("button", { class: "no" }, "not heard");
+    const mark = (v) => { item.heard = v; yes.classList.toggle("on", v === true); no.classList.toggle("on", v === false); };
+    yes.addEventListener("click", () => mark(true));
+    no.addEventListener("click", () => mark(false));
+    row.append(el("div", { class: "heard" }, yes, " ", no));
+  }
+  $("log").prepend(row);
+  return answer;
+}
+
+$("clearLog").addEventListener("click", () => { entries.length = 0; $("log").textContent = ""; });
+$("copyLog").addEventListener("click", async () => {
+  const lines = entries.map((e) => {
+    const a = e.answer || {};
+    const res = a.ok ? (a.result || "OK") : `${a.status || ""} ${a.error || ""}`.trim();
+    const heard = e.heard === null ? "" : e.heard ? " | HEARD" : " | NOT HEARD";
+    return `${e.at} | ${e.title} | ${res}${a.ms != null ? ` | ${a.ms} ms` : ""}${e.timer ? ` | ${e.timer}${e.untouched ? "" : " (snapshot changed)"}` : ""}${e.extra ? ` | ${e.extra}` : ""}${heard}`;
+  });
+  await navigator.clipboard.writeText(lines.join("\n"));
+});
+
+// ------------------------------------------------------------- status ---
+
+async function refresh() {
+  const s = await call("state");
+  if (!s.ok) { $("tState").textContent = "unreachable"; $("tDetail").textContent = s.error; return; }
+  const t = s.timer;
+  $("tState").textContent = t.state;
+  $("tState").className = "pill s-" + t.state;
+  $("tDetail").textContent = [t.left_ms != null ? `${(t.left_ms / 1000).toFixed(0)} s left` : "", t.theme ? `theme ${t.theme}` : ""].filter(Boolean).join(" · ");
+  $("vol").textContent = s.volume == null ? "?" : s.volume + "%";
+  $("via").textContent = s.via || "?";
+  session = s.session;
+  const banner = $("sessionBanner");
+  banner.style.display = session ? "block" : "none";
+  if (session) banner.textContent = `buZyist has a session running (${session.task || "no name"}). "Start test timer" and "Stop" end it in buZyist; playing sounds and Pause/Resume don't.`;
+}
+setInterval(() => { if ($("autoRefresh").checked) refresh().catch(() => {}); }, 2000);
+
+// ------------------------------------------------------------- sounds ---
+
+async function play(source, file, label) {
+  return log(`play ${label || file} [${$("app").value}]`, await call("play", { source, file }));
+}
+
+async function playTimes(source, file, label) {
+  const n = Math.max(1, +$("times").value || 1), gap = Math.max(0, +$("gap").value || 0);
+  for (let i = 1; i <= n; i++) {
+    const started = performance.now();
+    await play(source, file, `${label || file} (${i}/${n})`);
+    if (i < n) await sleep(Math.max(0, gap - (performance.now() - started)));
+  }
+}
+
+let ctx = null;
+async function preview(bytesB64, rate) {
+  ctx = ctx || new AudioContext();
+  const raw = Uint8Array.from(atob(bytesB64), (c) => c.charCodeAt(0));
+  const view = new DataView(raw.buffer);
+  const n = Math.floor(raw.length / 2);
+  const buf = ctx.createBuffer(1, n, rate);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) ch[i] = view.getInt16(i * 2, true) / 32768;
+  const src = ctx.createBufferSource();
+  src.buffer = buf; src.connect(ctx.destination); src.start();
+}
+
+async function previewFile(full) {
+  const r = await call("read", { full });
+  if (!r.ok) return log("preview " + full, r);
+  await preview(r.data, +$("rate").value);
+  log(`preview on PC ${full.split("/").pop()} @ ${$("rate").value} Hz`, { ok: true, result: `${r.size} bytes` });
+}
+
+const seconds = (size) => (size / 2 / 44100).toFixed(2) + " s";
+
+async function loadSounds() {
+  const r = await call("sounds");
+  if (!r.ok) return log("list sounds", r);
+  const stock = $("stock"); stock.textContent = "";
+  for (const s of r.stock) {
+    const shared = s.folder === "shared";
+    stock.append(el("tr", {},
+      el("td", {}, el("code", {}, s.stock), shared ? "" : el("span", { class: "meta" }, "  (not stock-playable)")),
+      el("td", {}, seconds(s.size)),
+      el("td", {},
+        el("button", { onclick: () => play("stock", s.stock) }, "Play"), " ",
+        el("button", { onclick: () => playTimes("stock", s.stock) }, "Play ×N"), " ",
+        el("button", { onclick: () => copyAndPlay(s.full) }, "Copy & play"), " ",
+        el("button", { onclick: () => previewFile(s.full) }, "Preview on PC"))));
+  }
+  const own = $("own"); own.textContent = "";
+  if (!r.own.length) own.append(el("tr", {}, el("td", { colspan: 3, class: "meta" }, "(empty)")));
+  for (const f of r.own) {
+    own.append(el("tr", {},
+      el("td", {}, el("code", {}, f.name)),
+      el("td", {}, f.name.endsWith(".snd") ? seconds(f.size) : `${f.size} B`),
+      el("td", {},
+        el("button", { onclick: () => play("path", f.name) }, "Play"), " ",
+        el("button", { onclick: () => playTimes("path", f.name) }, "Play ×N"), " ",
+        el("button", { onclick: () => previewFile(f.full) }, "Preview on PC"), " ",
+        el("button", { class: "warn", onclick: async () => { log("delete " + f.name, await call("delete", { full: f.full })); loadSounds(); } }, "Delete"))));
+  }
+}
+$("reload").addEventListener("click", loadSounds);
+
+async function copyAndPlay(full) {
+  const c = log("copy " + full, await call("copy", { full }));
+  if (!c.ok) return;
+  await loadSounds();
+  return play("path", c.path, "copy " + c.path);
+}
+
+// --------------------------------------------------------------- tone ---
+
+function toneSpec() {
+  return {
+    pattern: $("pattern").value, shape: $("shape").value, freq: +$("freq").value, freq2: +$("freq2").value,
+    beep_ms: +$("beepMs").value, gap_ms: +$("gapMs").value, beeps: +$("beeps").value, gain: +$("gain").value,
+    rate: +$("toneRate").value, name: $("toneName").value,
+  };
+}
+
+function toneSamples(s) {  // the same arithmetic as tone() in buzyist/bar_sound.py, for the preview
+  const rate = s.rate, beep = Math.max(0.01, s.beep_ms / 1000), gap = Math.max(0, s.gap_ms / 1000);
+  const fade = Math.min(Math.floor(rate * 0.004), Math.floor(rate * beep / 4));
+  const out = []; let phase = 0; const f2 = s.freq2 || s.freq;
+  for (let n = 0; n < s.beeps; n++) {
+    const count = Math.floor(rate * beep);
+    for (let i = 0; i < count; i++) {
+      const f = s.pattern === "sweep" ? s.freq + (f2 - s.freq) * i / count : s.pattern === "two-tone" ? (n % 2 ? f2 : s.freq) : s.freq;
+      phase += 2 * Math.PI * f / rate;
+      let v = Math.sin(phase);
+      if (s.shape === "square") v = v >= 0 ? 0.8 : -0.8;
+      else if (s.shape === "triangle") v = 2 / Math.PI * Math.asin(v);
+      const env = Math.min(1, fade ? i / fade : 1, fade ? (count - i) / fade : 1);
+      out.push(Math.max(-1, Math.min(1, v * s.gain * env)));
+    }
+    for (let i = 0; i < Math.floor(rate * gap); i++) out.push(0);
+  }
+  return out;
+}
+
+$("tonePreview").addEventListener("click", () => {
+  const s = toneSpec(); const samples = toneSamples(s);
+  ctx = ctx || new AudioContext();
+  const buf = ctx.createBuffer(1, samples.length, s.rate);
+  buf.getChannelData(0).set(samples);
+  const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.start();
+  log("preview tone on PC", { ok: true, result: `${(samples.length / s.rate).toFixed(2)} s` }, JSON.stringify(s));
+});
+
+$("toneUpload").addEventListener("click", async () => {
+  const s = toneSpec();
+  const u = log("upload tone " + s.name, await call("tone", s), JSON.stringify(s));
+  if (!u.ok) return;
+  await loadSounds();
+  await play("path", u.path, u.path);
+});
+
+const PRESETS = {
+  // CHIME in buzyist/bar_sound.py: what the reminders play on the bar.
+  app: { pattern: "beeps", shape: "square", freq: 1568, freq2: 1175, beepMs: 260, gapMs: 60, beeps: 3, gain: 0.3, toneName: "lab_app_chime" },
+  alarm: { pattern: "beeps", shape: "square", freq: 2400, freq2: 2400, beepMs: 120, gapMs: 80, beeps: 8, gain: 1, toneName: "lab_alarm" },
+  siren: { pattern: "sweep", shape: "square", freq: 1200, freq2: 2800, beepMs: 400, gapMs: 30, beeps: 4, gain: 1, toneName: "lab_siren" },
+  chime: { pattern: "two-tone", shape: "sine", freq: 1568, freq2: 1175, beepMs: 260, gapMs: 60, beeps: 4, gain: 1, toneName: "lab_chime" },
+  rate: { pattern: "beeps", shape: "sine", freq: 1000, freq2: 1000, beepMs: 1000, gapMs: 0, beeps: 1, gain: 0.8, toneName: "lab_1s_1khz" },
+};
+for (const b of document.querySelectorAll("[data-preset]")) {
+  b.addEventListener("click", () => {
+    for (const [k, v] of Object.entries(PRESETS[b.dataset.preset])) $(k).value = v;
+    $("toneRate").value = "44100";
+  });
+}
+
+// ------------------------------------------------------- volume/timer ---
+
+$("volRange").addEventListener("input", () => { $("volVal").textContent = $("volRange").value; });
+$("volSet").addEventListener("click", async () => { log("set volume " + $("volRange").value, await call("volume", { volume: +$("volRange").value })); refresh(); });
+$("stopAudio").addEventListener("click", async () => log("stop audio", await call("stop_audio")));
+
+async function timer(action) {
+  if ((action === "start" || action === "stop") && session &&
+      !confirm(`buZyist has a session running (${session.task || "no name"}). ${action === "start" ? "Starting a test timer" : "Stopping"} ends it in buZyist as "stopped". Go on?`)) return null;
+  const r = log(`timer ${action}`, await call("timer", { action, work_s: +$("workS").value, rest_s: +$("restS").value }),
+    "");
+  await refresh();
+  return r;
+}
+for (const b of document.querySelectorAll("[data-timer]")) b.addEventListener("click", () => timer(b.dataset.timer));
+
+// --------------------------------------------------------------- steps ---
+
+const STEPS = {
+  async stuck() { log("stop audio", await call("stop_audio")); await sleep(800); await play("stock", REMINDER, "reminder"); },
+  async otherApp() {
+    const app = $("app").value;
+    $("app").value = "lab2"; await play("stock", REMINDER, "reminder");
+    await sleep(3000);
+    $("app").value = app; await play("stock", REMINDER, "reminder");
+  },
+  async cooldown() {
+    const wait = Math.max(1, +$("coolWait").value || 1);
+    await play("stock", REMINDER, "reminder (1 of 2)");
+    log(`waiting ${wait} s`, null);
+    await sleep(wait * 1000);
+    await play("stock", REMINDER, `reminder (2 of 2, after ${wait} s)`);
+  },
+  async repeat() { await playTimes("stock", REMINDER, "reminder"); },
+  async inIdle() { if ((await timer("stop"))?.ok) { await sleep(1500); await play("stock", REMINDER, "reminder while idle"); } },
+  async inWork() { if ((await timer("start"))?.ok) { await sleep(1500); await play("stock", REMINDER, "reminder while running"); } },
+  async inPaused() { if ((await timer("pause"))?.ok) { await sleep(1500); await play("stock", REMINDER, "reminder while paused"); } },
+  async copy() { await copyAndPlay(REMINDER_FULL); },
+};
+for (const b of document.querySelectorAll("[data-step]")) {
+  b.addEventListener("click", async () => {
+    const all = document.querySelectorAll("[data-step]");
+    all.forEach((x) => { x.disabled = true; });
+    try { await STEPS[b.dataset.step](); } finally { all.forEach((x) => { x.disabled = false; }); }
+  });
+}
+
+refresh().then(loadSounds).catch((e) => log("start", { ok: false, error: String(e) }));
+</script>
+</body>
+</html>
