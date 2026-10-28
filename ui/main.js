@@ -631,8 +631,12 @@ function renderTasks() {
     const body = el("div", "t-body");
     const title = el("div", "t-title");
     // A subtask carries its parent's name in front: "parent › subtask".
-    if (task.parent) title.append(el("span", "t-parent", task.parent + " › "));
-    title.append(task.content);
+    // Cut at the start ("…parent › subtask"), so the end of the name stays in view:
+    // .t-title is right-to-left, the text inside an isolated left-to-right span.
+    const text = el("span", "t-text");
+    if (task.parent) text.append(el("span", "t-parent", task.parent + " › "));
+    text.append(task.content);
+    title.append(text);
     title.title = task.parent ? `${task.parent} › ${task.content}` : task.content;
     body.append(title);
     if (task.description) body.append(taskDescription(task));
