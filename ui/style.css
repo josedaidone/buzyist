@@ -419,7 +419,8 @@ kbd {
 .task.done .prio svg { opacity: 1; }
 .task.done .t-title { text-decoration: line-through; color: var(--muted); }
 .t-body { flex: 1; min-width: 0; display: grid; gap: 4px; }
-.t-title { font-size: 15.5px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-title { font-size: 15.5px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.t-title .t-text { direction: ltr; unicode-bidi: isolate; }
 .t-title .t-parent { color: var(--muted); font-weight: 500; }
 /* The task's Todoist description: two lines, "more" for the rest. */
 .t-desc { display: flex; align-items: flex-end; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--muted); }

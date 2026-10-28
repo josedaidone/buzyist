@@ -89,7 +89,9 @@ DEVICE_NAME = (os.environ.get("COMPUTERNAME") or socket.gethostname() or "PC")[:
 SITE_MODES = ("block", "allow")
 
 
-MINI_W, MINI_H = 340, 108
+MINI_W, MINI_H = 92, 34  # the mini timer: a pill with the time
+MINI_FULL_W, MINI_FULL_H = 256, 102  # while the mouse is over it: the phase, the task and the controls
+ADD_MINUTES = 5  # the mini timer's "+5": minutes added to the phase running now
 PAUSE_REMIND_S = 5 * 60  # a pause this long (and each multiple) flashes the mini timer and beeps
 
 # Calls (calls.py): a microphone or camera in use this long starts a call

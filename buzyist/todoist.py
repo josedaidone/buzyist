@@ -287,8 +287,40 @@ def due_parts(due):
         return value[:10], value[11:16]
 
 
+def _closing(text: str, start: int, open_ch: str, close_ch: str) -> int:
+    """Index of the bracket closing the one at `start`, nested ones counted; -1 if none."""
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == open_ch:
+            depth += 1
+        elif text[i] == close_ch:
+            depth -= 1
+            if not depth:
+                return i
+    return -1
+
+
+def _drop_link_urls(content: str) -> str:
+    """`[text](url)` -> `text`. The text may hold brackets of its own (an e-mail's
+    "[EXT] Subject") and the url parentheses, so they are matched, not regexed."""
+    out, i = [], 0
+    while (start := content.find("[", i)) >= 0:
+        end = _closing(content, start, "[", "]")
+        if end < 0:
+            break
+        if content.startswith("(", end + 1) and (close := _closing(content, end + 1, "(", ")")) >= 0:
+            out.append(content[i:start])
+            out.append(_drop_link_urls(content[start + 1 : end]))
+            i = close + 1
+        else:
+            out.append(content[i : start + 1])
+            i = start + 1
+    out.append(content[i:])
+    return "".join(out)
+
+
 def plain_text(content: str) -> str:
     """Todoist text can hold Markdown; keep the words."""
-    content = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", content)
+    content = _drop_link_urls(content)
     content = re.sub(r"(\*\*|__|`|~~)", "", content)
     return content.strip()

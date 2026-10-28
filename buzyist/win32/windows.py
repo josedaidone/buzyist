@@ -10,10 +10,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from buzyist.win32 import (
+    DWMWA_BORDER_COLOR,
+    DWMWA_COLOR_NONE,
+    DWMWA_WINDOW_CORNER_PREFERENCE,
+    DWMWCP_ROUND,
     GW_OWNER,
     HWND_NOTOPMOST,
     HWND_TOPMOST,
     KEYEVENTF_KEYUP,
+    MONITOR_DEFAULTTONEAREST,
+    MONITORINFO,
     PROCESS_QUERY_LIMITED_INFORMATION,
     RDW_ALLCHILDREN,
     RDW_ERASE,
@@ -34,6 +40,7 @@ from buzyist.win32 import (
     WM_CLOSE,
     WM_MOUSEMOVE,
     WNDENUMPROC,
+    dwmapi,
     kernel32,
     user32,
 )
@@ -197,6 +204,60 @@ def mini_position(width: int, height: int) -> tuple[int, int]:
         return int(rect.right / scale) - width - 16, int(rect.bottom / scale) - height - 16
     except Exception:
         return 40, 40
+
+
+def resize_anchored(window: webview.Window, width: int, height: int, anchor: tuple[bool, bool] | None = None):
+    """
+    Resize a window to width x height logical pixels without moving the
+    corner nearest its screen's edges: a window in the right half grows to
+    the left, one in the bottom half grows upwards. ``anchor`` (right,
+    bottom) reuses the corner of an earlier call, so shrinking back lands
+    where it started; the corner used is returned. The result is kept inside
+    the work area. Unlike pywebview's resize it never shows a hidden window.
+    """
+    hwnd = _hwnd(window)
+    if not hwnd:
+        return anchor
+    rect = ctypes.wintypes.RECT()
+    if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+        return anchor
+    info = MONITORINFO()
+    info.cbSize = ctypes.sizeof(MONITORINFO)
+    user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ctypes.byref(info))
+    work = info.rcWork
+    if anchor is None:
+        anchor = (
+            rect.left + rect.right > work.left + work.right,
+            rect.top + rect.bottom > work.top + work.bottom,
+        )
+    scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
+    w, h = round(width * scale), round(height * scale)
+    x = rect.right - w if anchor[0] else rect.left
+    y = rect.bottom - h if anchor[1] else rect.top
+    if work.right > work.left:
+        x = max(work.left, min(x, work.right - w))
+        y = max(work.top, min(y, work.bottom - h))
+    user32.SetWindowPos(hwnd, None, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE)
+    return anchor
+
+
+def round_corners(window: webview.Window) -> None:
+    """Windows 11's rounded corners on a frameless window, without its border (the page draws one)."""
+    hwnd = _hwnd(window)
+    if not hwnd:
+        return
+    for attr, value in ((DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND), (DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE)):
+        v = ctypes.wintypes.DWORD(value)
+        dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), ctypes.sizeof(v))  # an error code on Windows 10
+
+
+def cursor_over(window: webview.Window) -> bool:
+    """Whether the mouse pointer is over the window."""
+    hwnd = _hwnd(window)
+    rect, point = ctypes.wintypes.RECT(), ctypes.wintypes.POINT()
+    if not hwnd or not user32.GetWindowRect(hwnd, ctypes.byref(rect)) or not user32.GetCursorPos(ctypes.byref(point)):
+        return False
+    return rect.left <= point.x < rect.right and rect.top <= point.y < rect.bottom
 
 
 def pids_with_windows(pids: set[int]) -> set[int]:

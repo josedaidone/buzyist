@@ -185,8 +185,8 @@ def test_starting_a_pomodoro_replaces_the_call(calls, mic, deferred_threads):
 
 def test_a_call_has_no_pause_or_skip(calls, mic):
     app = ring(calls(), mic)
-    for action in ("pause", "skip", "resume"):
-        with pytest.raises(constants.AppError, match="be paused or skipped"):
+    for action in ("pause", "skip", "resume", "add"):
+        with pytest.raises(constants.AppError, match="be paused, skipped or made longer"):
             app.control(action)
 
 

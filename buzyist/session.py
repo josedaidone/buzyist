@@ -15,7 +15,7 @@ from busylib.features import timer_state
 from buzyist import paths
 from buzyist.activities import call_name, session_name
 from buzyist.bar import BarUnreachable
-from buzyist.constants import APP, HISTORY_KEEP, AppError, now_ms
+from buzyist.constants import ADD_MINUTES, APP, HISTORY_KEEP, AppError, now_ms
 from buzyist.focus_stats import session_minutes
 from buzyist.i18n import app_error, english, t
 from buzyist.plan import plan_session
@@ -32,14 +32,21 @@ def track_focus(session: dict, state) -> bool:
     Bring the session's focus time up to `state` (busylib's timer_state of an
     interval timer): `focus_ms` holds the work phases behind us (`counted` of
     them), `partial_ms` the time spent so far in the one running (paused or
-    not). A work phase that ran out counts in full; one skipped counts what
-    it ran (control). Work phases the bar runs past the session's `rounds`
-    never count. True while a work phase of the session runs.
+    not). A work phase that ran out counts in full, with the minutes added to
+    it (`extra`, by interval index: add_time); one skipped counts what it ran
+    (control). Work phases the bar runs past the session's `rounds` never count.
+    True while a work phase of the session runs.
     """
     work = int(session.get("work_ms") or 0)
+    extra = session.get("extra") or {}
     rounds = int(session.get("rounds") or 0) or None
     session.setdefault("focus_ms", 0)
     session.setdefault("counted", 0)
+
+    def length(interval: int) -> int:
+        return work + int(extra.get(str(interval), 0))
+
+    interval = 0
     if state.is_finished:
         behind, running = rounds or int(session.get("done") or 0), False
     else:
@@ -50,10 +57,11 @@ def track_focus(session: dict, state) -> bool:
     if rounds:
         behind = min(behind, rounds)
     if behind > session["counted"]:
-        session["focus_ms"] += (behind - session["counted"]) * work
+        session["focus_ms"] += sum(length(2 * n) for n in range(session["counted"], behind))
         session["counted"] = behind
     left = int(state.time_left_ms or 0)
-    session["partial_ms"] = max(0, min(work, work - left)) if running else 0
+    phase = length(interval)
+    session["partial_ms"] = max(0, min(phase, phase - left)) if running else 0
     return running
 
 
@@ -180,6 +188,13 @@ class SessionMixin:
             write_json(paths.HISTORY_PATH, self.history)
             if reason == "replaced" or silent:
                 return
+        if session.get("task_done"):  # ended by "Mark as done" on the mini timer: no summary to read
+            self.bar_screens.after_session()
+            self.update_tray()
+            self.hide_mini()
+            if problems:
+                self.notify(task["content"], " ".join(problems))
+            return
         if call:  # no summary to read: it started and ended on its own
             self.bar_screens.after_session()  # bar_end_app
             self.update_tray()
@@ -431,6 +446,37 @@ class SessionMixin:
         result["parent"] = {"id": parent_id, "content": task.get("parent", "")}
         return result
 
+    def complete_running(self, followup: bool = False) -> dict:
+        """
+        Mark the running session's task as done in Todoist (with `followup`,
+        carried over to tomorrow first), then end the session, with no summary
+        to read (finish). Nothing ends when Todoist refuses.
+        """
+        with self.lock:
+            session = self.session
+            task = session["task"] if session and not session.get("call") else {}
+        if not task.get("id") or not self.todoist_on:
+            raise app_error("errors.session.no_task")
+        result = self.complete_task(task["id"], content=task.get("content", ""), followup=followup)
+        with self.lock:
+            if self.session is session:
+                session["task_done"] = True
+        self.control("stop")
+        return result
+
+    def _add_time(self) -> None:
+        """ADD_MINUTES more in the phase running now; a work phase counts them as focus."""
+        ms = ADD_MINUTES * 60000
+        with self.bar.lock:  # no reading of the bar between the change and our bookkeeping
+            self._note_focus()
+            interval = self._on_bar(lambda: self.bar.add_time(ms))
+            with self.lock:
+                session = self.session
+                if session and interval % 2 == 0:
+                    extra = session.setdefault("extra", {})
+                    extra[str(interval)] = int(extra.get(str(interval), 0)) + ms
+                    write_json(paths.SESSION_PATH, session)
+
     def _label_task(self, session: dict) -> None:
         label = session["label"]
         if not label:
@@ -490,6 +536,8 @@ class SessionMixin:
             elif action == "resume":
                 self._on_bar(lambda: self.bar.set_paused(False))
                 self.show_mini()
+            elif action == "add":
+                self._add_time()
             elif action == "skip":
                 # Held so no fresh reading of the bar comes between the skip
                 # and its bookkeeping (it would count the phase in full).

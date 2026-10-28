@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from buzyist import api
+from buzyist import api, constants
 from conftest import patch_everywhere
 
 
@@ -128,3 +128,25 @@ def test_nothing_is_sent_while_quitting(app, windows, deferred_threads):
     app.quitting = True
     deferred_threads.run_pending()
     assert visibility(main) == []
+
+
+def test_mini_grows_and_shrinks_back_to_the_same_corner(app, windows, monkeypatch):
+    """The mini timer expands on hover and returns to its compact size from the corner it grew from."""
+    calls = []
+
+    def resize(window, width, height, anchor=None):
+        calls.append((width, height, anchor))
+        return anchor or (True, True)
+
+    patch_everywhere(monkeypatch, "resize_anchored", resize)
+    full = (constants.MINI_FULL_W, constants.MINI_FULL_H)
+    compact = (constants.MINI_W, constants.MINI_H)
+    assert api.Api(app).mini_expand(True)["ok"]
+    app.size_mini(True)  # already expanded: nothing
+    app.size_mini(False)
+    app.size_mini(False)  # already compact: nothing
+    assert calls == [(*full, None), (*compact, (True, True))]
+    app.show_mini()
+    app.size_mini(True)
+    app.hide_mini()  # hiding it leaves it compact
+    assert calls[-1] == (*compact, (True, True)) and app.mini_anchor is None

@@ -267,7 +267,7 @@ class Bar:
                         "card_id": profile.id,
                         "busy_bar_settings": profile.busy_bar_settings,
                         "current_interval": interval,
-                        "current_interval_time_total_ms": phase_ms(interval, settings),
+                        "current_interval_time_total_ms": phase_total(variant, interval),
                         "current_interval_time_left_ms": state.time_left_ms or 0,
                         "interval_settings": settings.model_copy(
                             update={
@@ -423,7 +423,7 @@ class Bar:
                 state = timer_state(live)
                 if isinstance(variant, types.BusySnapshotInterval) and state.interval is not None:
                     update["current_interval"] = state.interval
-                    update["current_interval_time_total_ms"] = phase_ms(state.interval, variant.interval_settings)
+                    update["current_interval_time_total_ms"] = phase_total(variant, state.interval)
                     update["current_interval_time_left_ms"] = state.time_left_ms or 0
                 elif isinstance(variant, types.BusySnapshotSimple):
                     update["time_left_ms"] = state.time_left_ms or 0
@@ -465,6 +465,33 @@ class Bar:
             )
 
         self.run(go)
+
+    def add_time(self, ms: int) -> int:
+        """
+        Make the phase running now (paused or not) `ms` longer; returns its
+        index. Only that phase grows: the next ones keep the session's lengths.
+        """
+
+        def go(bar: BusyBar) -> int:
+            live = self._read(bar)
+            variant = live.snapshot
+            state = timer_state(live)
+            if not isinstance(variant, types.BusySnapshotInterval) or state.is_finished or state.interval is None:
+                raise app_error("errors.bar.no_session")
+            now = now_ms()
+            stamp = max(now, live.snapshot_timestamp_ms + 1)
+            lag = 0 if state.is_paused else stamp - now  # what is left at the new stamp, as in set_theme
+            update = {
+                "current_interval": state.interval,
+                "current_interval_time_total_ms": phase_total(variant, state.interval) + ms,
+                "current_interval_time_left_ms": max(0, (state.time_left_ms or 0) - lag) + ms,
+            }
+            bar.busy_snapshot_set(
+                types.BusySnapshot(snapshot=variant.model_copy(update=update), snapshot_timestamp_ms=stamp)
+            )
+            return state.interval
+
+        return self.run(go)
 
     # The front screen (bar_display.BarScreens). Only on a bar: on the local
     # clock these do nothing, and none of them is ever carried back.
@@ -519,7 +546,7 @@ class Bar:
                 # What is left at the new stamp, which may be a little ahead of now.
                 lag = 0 if state.is_paused else stamp - now
                 update["current_interval"] = state.interval
-                update["current_interval_time_total_ms"] = phase_ms(state.interval, variant.interval_settings)
+                update["current_interval_time_total_ms"] = phase_total(variant, state.interval)
                 update["current_interval_time_left_ms"] = max(0, (state.time_left_ms or 0) - lag)
             bar.busy_snapshot_set(
                 types.BusySnapshot(snapshot=variant.model_copy(update=update), snapshot_timestamp_ms=stamp)
@@ -732,3 +759,14 @@ def _running(snap: types.BusySnapshot) -> bool:
 def phase_ms(interval: int, settings: types.BusySnapshotIntervalSettings) -> int:
     """Length of the interval at this index: even ones are work, odd ones rest."""
     return settings.interval_work_ms if interval % 2 == 0 else settings.interval_rest_ms
+
+
+def phase_total(variant: types.BusySnapshotInterval, interval: int) -> int:
+    """
+    The whole length of the phase at this index: the snapshot's own while it
+    is the one the snapshot is on (it may have been made longer, add_time),
+    else its usual length.
+    """
+    if interval == variant.current_interval and variant.current_interval_time_total_ms:
+        return variant.current_interval_time_total_ms
+    return phase_ms(interval, variant.interval_settings)

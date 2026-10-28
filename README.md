@@ -69,9 +69,12 @@ menu, and starts it.
   edits, reorders or deletes it. **Ctrl+1–9** switches between them.
 - **Pomodoro**: presets (25/5, 15/5, 50/10, 90/15) or your own focus, break and round counts.
 - **While it runs**:
-  - the window and a small always-on-top **mini timer** show the task, phase and countdown;
+  - the window and a small always-on-top **mini timer** show the countdown. The mini timer is a
+    small pill with only the time; hover over it to see the phase, the task and its buttons;
   - the tray icon shows the minutes left (red is focus, green is break, amber is paused);
-  - pause, skip and stop work from the window, the mini timer or the tray menu.
+  - pause, skip and stop work from the window, the mini timer or the tray menu. The mini timer
+    also adds 5 minutes to the phase running now, and can mark the task as done or carry it
+    over to tomorrow (click twice to confirm).
 - **In Todoist**:
   - starting a task adds a label (default `@pomodoro`, which can be removed again when the
     session ends);
