@@ -33,7 +33,7 @@ from buzyist.app_sync import SyncMixin
 from buzyist.app_time import AppTime, site_key
 from buzyist.app_updates import UpdatesMixin
 from buzyist.app_windows import WindowsMixin
-from buzyist.bar import Bar, BarUnreachable
+from buzyist.bar import Bar, BarUnreachable, phase_total
 from buzyist.bar_display import BarScreens
 from buzyist.bar_sound import chime
 from buzyist.blocker import AppBlocker
@@ -141,6 +141,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.main: webview.Window | None = None
         self.mini: webview.Window | None = None
         self.mini_shown = False
+        self.mini_anchor: tuple[bool, bool] | None = None  # the corner kept while the mini timer is expanded
         self._paused_since: float | None = None  # monotonic time the pause was first seen
         self._pause_reminded = 0  # reminders given during this pause
         self.tray: pystray.Icon | None = None
@@ -296,7 +297,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         if state.mode != "interval" or state.is_finished:
             return None
         settings = snap.snapshot.interval_settings
-        total = settings.interval_work_ms if state.phase == "work" else settings.interval_rest_ms
+        total = phase_total(snap.snapshot, state.interval or 0)  # longer after an add_time
         left = state.time_left_ms or 0
         return {
             "phase": state.phase,
@@ -860,6 +861,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             height=MINI_H,
             x=x,
             y=y,
+            min_size=(MINI_W, MINI_H),  # pywebview's default (200x100) would keep the pill from getting this small
             frameless=True,
             easy_drag=False,
             on_top=True,

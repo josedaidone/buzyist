@@ -6,8 +6,17 @@ import json
 import logging
 import threading
 
-from buzyist.constants import APP
-from buzyist.win32.windows import hide_window, show_window, wake_window, window_focused, window_shown
+from buzyist.constants import APP, MINI_FULL_H, MINI_FULL_W, MINI_H, MINI_W
+from buzyist.win32.windows import (
+    cursor_over,
+    hide_window,
+    resize_anchored,
+    round_corners,
+    show_window,
+    wake_window,
+    window_focused,
+    window_shown,
+)
 
 log = logging.getLogger(APP)
 
@@ -54,14 +63,34 @@ class WindowsMixin:
         if self.mini:
             self.mini_shown = True
             self.mini.show()
+            round_corners(self.mini)
             self._js(self.mini, "Mini.setVisible ? Mini.setVisible(true) : Mini.refresh()")
             if self.tray:
                 self.tray.update_menu()
+
+    def size_mini(self, expanded: bool) -> None:
+        """
+        The mini timer at its compact size (the time only) or expanded (the
+        task and the buttons, while the mouse is over it). It grows away from
+        the screen's nearest edges and shrinks back to the same corner.
+        """
+        if not self.mini:
+            return
+        if expanded:
+            if self.mini_anchor is None:
+                self.mini_anchor = resize_anchored(self.mini, MINI_FULL_W, MINI_FULL_H)
+        elif self.mini_anchor is not None:
+            resize_anchored(self.mini, MINI_W, MINI_H, self.mini_anchor)
+            self.mini_anchor = None
+
+    def mini_hovered(self) -> bool:
+        return bool(self.mini and cursor_over(self.mini))
 
     def hide_mini(self) -> None:
         if self.mini:
             self.mini_shown = False
             self.mini.hide()
+            self.size_mini(False)
             self.tell_visible("mini")
             if self.tray:
                 self.tray.update_menu()

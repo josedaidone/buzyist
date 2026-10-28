@@ -343,7 +343,16 @@
     "resume": "Retomar",
     "stop": "Interromper",
     "open": "Abrir o buZyist",
-    "hide": "Ocultar o mini timer"
+    "hide": "Ocultar o mini timer",
+    "complete": "Marcar como concluída",
+    "carry": "Concluir e passar para amanhã",
+    "add": {
+      "one": "Mais {n} minuto",
+      "other": "Mais {n} minutos"
+    },
+    "skip": "Pular para a próxima fase",
+    "confirm_done": "Clique de novo para concluir",
+    "confirm_carry": "Clique de novo para passar para amanhã"
   },
   "settings": {
     "saved": "Configurações salvas",
@@ -1156,9 +1165,10 @@
     },
     "session": {
       "task_gone": "Essa tarefa não está mais na lista. Atualize e tente de novo.",
-      "call_control": "Uma chamada não pode ser pausada nem pulada: ela termina com a chamada, ou interrompa-a.",
+      "call_control": "Uma chamada não pode ser pausada, pulada nem estendida: ela termina com a chamada, ou interrompa-a.",
       "comment_failed": "Não foi possível registrar os pomodoros: {error}",
-      "unlabel_failed": "Não foi possível tirar a etiqueta: {error}"
+      "unlabel_failed": "Não foi possível tirar a etiqueta: {error}",
+      "no_task": "Esta sessão não tem uma tarefa do Todoist."
     },
     "settings": {
       "not_number": "{name}: precisa ser um número.",

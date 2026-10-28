@@ -344,7 +344,16 @@
     "resume": "Resume",
     "stop": "Stop",
     "open": "Open buZyist",
-    "hide": "Hide mini timer"
+    "hide": "Hide mini timer",
+    "complete": "Mark as done",
+    "carry": "Mark as done & carry over to tomorrow",
+    "add": {
+      "one": "Add {n} minute",
+      "other": "Add {n} minutes"
+    },
+    "skip": "Skip to next phase",
+    "confirm_done": "Click again to mark it as done",
+    "confirm_carry": "Click again to carry it over"
   },
   "settings": {
     "saved": "Settings saved",
@@ -1166,9 +1175,10 @@
     },
     "session": {
       "task_gone": "That task is no longer in the list. Refresh and try again.",
-      "call_control": "A call can't be paused or skipped: it ends with the call, or stop it.",
+      "call_control": "A call can't be paused, skipped or made longer: it ends with the call, or stop it.",
       "comment_failed": "Couldn't log the pomodoros: {error}",
-      "unlabel_failed": "Couldn't remove the label: {error}"
+      "unlabel_failed": "Couldn't remove the label: {error}",
+      "no_task": "There's no Todoist task in this session."
     },
     "settings": {
       "not_number": "{name} must be a number.",

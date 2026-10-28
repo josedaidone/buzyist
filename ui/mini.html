@@ -6,48 +6,82 @@
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 <style>
+  /* Two sizes of one window (MINI_* in buzyist/constants.py): a pill with the
+     time, and, while the mouse is over it (body.expanded), a small card with
+     the phase, the task and the controls. A line along the bottom fills up
+     with the phase's progress in both. */
   body { background: var(--bg); }
   .mini {
-    position: absolute; inset: 0; display: flex; align-items: center; gap: 14px;
-    padding: 0 16px 0 14px; border: 2px solid var(--line); cursor: grab; background: var(--bg);
+    position: absolute; inset: 0; overflow: hidden; cursor: grab;
+    border: 1.5px solid var(--line); border-bottom: 0; border-radius: 8px; background: var(--bg);
   }
   .mini:active { cursor: grabbing; }
   .mini.alert { animation: pause-alert .6s steps(1, end) 6; }
   @keyframes pause-alert { 0% { background: var(--bz-tomate); border-color: var(--bz-tomate); color: #fff; } 50% { background: var(--bg); } }
-  .m-ring { position: relative; width: 76px; height: 76px; flex: none; }
-  .m-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .m-ring circle { fill: none; stroke-width: 7; }
-  .m-ring .track { stroke: var(--track); }
-  body[data-phase="idle"] .m-ring .progress { opacity: 0; }
-  .m-ring .progress { stroke: var(--phase); stroke-linecap: round; transition: stroke-dashoffset .9s linear, stroke .3s; }
-  .m-time {
-    position: absolute; inset: 0; display: grid; place-items: center;
-    font: 600 19px/1 var(--bz-font-display); font-variant-numeric: tabular-nums;
+
+  .m-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--line); }  /* also the bottom border */
+  .m-bar i { display: block; height: 100%; width: 0; background: var(--phase); transition: width .9s linear, background .3s; }
+  body[data-phase="idle"] .m-bar i { width: 0 !important; }
+
+  .m-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--phase); flex: none; }
+  body[data-phase="idle"] .m-dot { background: var(--faint); }
+  body[data-phase="paused"] .m-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--phase); }
+  .m-time { font: 600 18px/1 var(--bz-font-display); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: .2px; }
+  body[data-phase="idle"] .m-pill .m-time { font: 700 13px/1 var(--bz-font-body); color: var(--muted); letter-spacing: 0; }
+  body[data-phase="idle"] .m-main { display: none; }
+  body[data-phase="idle"] .m-foot { margin-top: 2px; }
+  body[data-phase="idle"] .m-task { font-size: 14px; }
+  body[data-phase="idle"] #mOpen { display: none; }
+  .m-card .m-go {
+    display: none; align-self: flex-start; margin-top: 8px; height: 26px; padding: 0 12px; border-radius: 999px;
+    background: var(--primary); color: var(--on-primary); font-size: 12.5px; font-weight: 700;
   }
+  .m-card .m-go:hover { background: var(--primary-pressed); }
+  body[data-phase="idle"] .m-go { display: block; }
   body[data-phase="paused"] .m-time { animation: blink 1.6s ease-in-out infinite; }
-  .m-body { flex: 1; min-width: 0; }
-  .m-phase { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--muted); }
-  .m-phase .chip-s {
-    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
-    background: var(--phase); color: var(--on-phase);
+
+  /* Compact: the dot and the time. */
+  .m-pill { position: absolute; inset: 0 0 3px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .m-card { display: none; }
+  body.expanded .m-pill { display: none; }
+  body.expanded .m-card { display: flex; animation: m-in .14s ease-out; }
+  @keyframes m-in { from { opacity: 0; } }
+
+  /* Expanded. */
+  .m-card { position: absolute; inset: 0 0 3px; flex-direction: column; padding: 7px 8px 7px 12px; }
+  .m-head { display: flex; align-items: center; gap: 6px; height: 20px; font-size: 12px; font-weight: 700; }
+  .m-phase { color: var(--ink); }
+  .m-round { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .m-head .m-icons { margin-left: auto; display: flex; }
+  .m-main { display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+  .m-main .m-time { font-size: 28px; flex: 1; }
+  .m-foot { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-height: 24px; }
+  .m-task { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-task b { color: var(--ink); font-weight: 700; }
+  .m-task.ask { color: var(--done); font-weight: 700; }
+  .m-task.error { color: var(--primary-text); white-space: normal; line-height: 1.2; font-size: 11.5px; }
+  .m-done { display: flex; gap: 2px; }
+  .m-card button {
+    border: 0; padding: 0; display: grid; place-items: center; flex: none; cursor: pointer;
+    border-radius: 50%; background: transparent; color: var(--muted);
   }
-  body[data-phase="idle"] .m-phase .chip-s { background: var(--surface); color: var(--muted); }
-  .m-task {
-    font-size: 14.5px; font-weight: 700; line-height: 1.25; margin-top: 4px;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .m-project { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .m-actions {
-    position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; opacity: 0;
-    transition: opacity .15s; background: var(--surface); border-radius: 999px; padding: 3px;
-  }
-  .mini:hover .m-actions { opacity: 1; }
-  .m-actions button {
-    width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent;
-    color: var(--muted); display: grid; place-items: center; cursor: pointer;
-  }
-  .m-actions button:hover { background: var(--line); color: var(--ink); }
-  .m-actions svg { width: 15px; height: 15px; }
+  .m-icons button { width: 22px; height: 22px; }
+  .m-icons button:hover { background: var(--surface); color: var(--ink); }
+  .m-icons svg { width: 13px; height: 13px; }
+  .m-ctl { width: 30px; height: 30px; }
+  .m-ctl svg { width: 14px; height: 14px; }
+  #mPause { width: 34px; height: 34px; background: var(--phase); color: var(--on-phase); }
+  #mPause svg { width: 15px; height: 15px; }
+  #mPause:hover { filter: brightness(1.06); }
+  .m-card .m-sub { background: var(--surface); color: var(--ink); }
+  .m-card .m-sub:hover { background: var(--surface-3); }
+  .m-plus { font: 600 12.5px/1 var(--bz-font-display); letter-spacing: -.2px; }
+  .m-tiny { width: 24px; height: 24px; }
+  .m-tiny svg { width: 14px; height: 14px; }
+  .m-card .m-tiny:hover { background: var(--surface); color: var(--done); }
+  /* Done and carry over close the task: the first click asks, the second does it. */
+  .m-card .m-tiny.confirm { background: var(--done); color: var(--on-done); }
+  .m-card button:disabled { opacity: .5; cursor: default; }
 </style>
 </head>
 <body data-phase="idle">
@@ -56,27 +90,40 @@
   <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8.5 5.5v13M15.5 5.5v13"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M6 6.5v11l8-5.5-8-5.5z"/><path d="M18 6v12" fill="none" stroke-width="2.6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-carry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V13a5 5 0 0 1 5-5h10M15 4l4 4-4 4"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 </svg>
-<div class="mini pywebview-drag-region" id="mini" title="Drag to move · double-click to open buZyist" data-i18n-title="mini.drag">
-  <div class="m-ring">
-    <svg viewBox="0 0 80 80">
-      <circle class="track" cx="40" cy="40" r="33"/>
-      <circle class="progress" id="mProgress" cx="40" cy="40" r="33"/>
-    </svg>
-    <div class="m-time" id="mTime">--:--</div>
+<div class="mini pywebview-drag-region" id="mini">
+  <div class="m-pill">
+    <span class="m-dot"></span><span class="m-time" id="mTimeS">--:--</span>
   </div>
-  <div class="m-body">
-    <div class="m-phase"><span class="chip-s" id="mPhase" data-i18n="common.phase.focus">Focus</span><span class="sep" id="mRound"></span></div>
-    <div class="m-task" id="mTask" data-i18n="mini.no_task">No task</div>
-    <div class="m-project" id="mProject"></div>
+  <div class="m-card">
+    <div class="m-head">
+      <span class="m-dot"></span><span class="m-phase" id="mPhase" data-i18n="common.phase.focus">Focus</span><span class="m-round" id="mRound"></span>
+      <div class="m-icons">
+        <button id="mOpen" title="Open buZyist" data-i18n-title="mini.open"><svg><use href="#i-open"/></svg></button>
+        <button id="mHide" title="Hide mini timer" data-i18n-title="mini.hide"><svg><use href="#i-x"/></svg></button>
+      </div>
+    </div>
+    <div class="m-main">
+      <span class="m-time" id="mTime">--:--</span>
+      <button class="m-ctl m-sub" id="mAdd" title="Add 5 minutes"><span class="m-plus">+5</span></button>
+      <button class="m-ctl m-sub" id="mSkip" title="Skip to next phase" data-i18n-title="mini.skip"><svg><use href="#i-next"/></svg></button>
+      <button class="m-ctl" id="mPause" title="Pause" data-i18n-title="mini.pause"><svg><use id="mPauseIcon" href="#i-pause"/></svg></button>
+      <button class="m-ctl m-sub" id="mStop" title="Stop" data-i18n-title="mini.stop"><svg><use href="#i-stop"/></svg></button>
+    </div>
+    <div class="m-foot">
+      <div class="m-task" id="mTask"></div>
+      <div class="m-done">
+        <button class="m-tiny" id="mComplete" title="Mark as done" data-i18n-title="mini.complete"><svg><use href="#i-check"/></svg></button>
+        <button class="m-tiny" id="mCarry" title="Mark as done &amp; carry over to tomorrow" data-i18n-title="mini.carry"><svg><use href="#i-carry"/></svg></button>
+      </div>
+    </div>
+    <button class="m-go" id="mGo" data-i18n="mini.open">Open buZyist</button>
   </div>
-  <div class="m-actions">
-    <button id="mPause" title="Pause" data-i18n-title="mini.pause"><svg><use id="mPauseIcon" href="#i-pause"/></svg></button>
-    <button id="mStop" title="Stop" data-i18n-title="mini.stop"><svg><use href="#i-stop"/></svg></button>
-    <button id="mOpen" title="Open buZyist" data-i18n-title="mini.open"><svg><use href="#i-open"/></svg></button>
-    <button id="mHide" title="Hide mini timer" data-i18n-title="mini.hide"><svg><use href="#i-x"/></svg></button>
-  </div>
+  <div class="m-bar"><i id="mProgress"></i></div>
 </div>
 <script src="i18n.js"></script>
 <script src="mini.js"></script>

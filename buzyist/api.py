@@ -92,6 +92,10 @@ class Api:
             str(comment or ""),
         )
 
+    def complete_running(self, followup=False):
+        """The mini timer: mark the running session's task as done (`followup`: carried over) and end the session."""
+        return self._do(self._app.complete_running, bool(followup))
+
     def dismiss_ended(self):
         with self._app.lock:
             self._app.ended = None
@@ -306,3 +310,10 @@ class Api:
 
     def hide_mini(self):
         self._app.hide_mini()
+
+    def mini_expand(self, expanded):
+        """The mini timer expanded (the mouse is over it) or back to the time only."""
+        return self._do(self._app.size_mini, bool(expanded))
+
+    def mini_hovered(self):
+        return self._do(lambda: {"hovered": self._app.mini_hovered()})

@@ -1,7 +1,7 @@
 """
 The Win32 calls buZyist makes, declared once (#024, A4).
 
-``user32``, ``kernel32`` and ``crypt32`` are private DLL handles
+``user32``, ``kernel32``, ``crypt32`` and ``dwmapi`` are private DLL handles
 (``ctypes.WinDLL``, with ``use_last_error``), not the shared
 ``ctypes.windll`` ones: their argtypes/restype are set here, a single time,
 so nothing else in the process (pywebview, pystray) sees prototypes changed
@@ -28,6 +28,10 @@ HWND_TOPMOST, HWND_NOTOPMOST = -1, -2
 SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE, SWP_SHOWWINDOW = 0x0001, 0x0002, 0x0004, 0x0010, 0x0040
 RDW_INVALIDATE, RDW_ERASE, RDW_ALLCHILDREN, RDW_UPDATENOW, RDW_FRAME = 0x0001, 0x0004, 0x0080, 0x0100, 0x0400
 SPI_GETWORKAREA = 0x0030
+MONITOR_DEFAULTTONEAREST = 2
+# DwmSetWindowAttribute (Windows 11; older Windows refuses them): rounded corners, and no border of its own.
+DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND = 33, 2
+DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE = 34, 0xFFFFFFFE
 VK_MENU = 0x12  # Alt
 VK_MASK = 0xE8  # an unassigned key: pressed inside a synthetic Alt tap, it keeps the tap from opening menu mode
 KEYEVENTF_KEYUP, KEYEVENTF_UNICODE = 0x0002, 0x0004
@@ -64,6 +68,10 @@ class PROCESSENTRY32W(ctypes.Structure):
         ("dwFlags", w.DWORD),
         ("szExeFile", ctypes.c_wchar * 260),
     ]
+
+
+class MONITORINFO(ctypes.Structure):
+    _fields_ = [("cbSize", w.DWORD), ("rcMonitor", w.RECT), ("rcWork", w.RECT), ("dwFlags", w.DWORD)]
 
 
 class DATA_BLOB(ctypes.Structure):
@@ -116,6 +124,7 @@ if sys.platform == "win32":
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     crypt32 = ctypes.WinDLL("crypt32", use_last_error=True)
+    dwmapi = ctypes.WinDLL("dwmapi", use_last_error=True)
     # EnumWindows / EnumChildWindows callbacks.
     WNDENUMPROC = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
 
@@ -139,6 +148,10 @@ if sys.platform == "win32":
     _declare(user32, "PostMessageW", [w.HWND, w.UINT, w.WPARAM, w.LPARAM])
     _declare(user32, "SystemParametersInfoW", [w.UINT, w.UINT, ctypes.c_void_p, w.UINT])
     _declare(user32, "GetDpiForSystem", [], w.UINT)
+    _declare(user32, "GetDpiForWindow", [w.HWND], w.UINT)
+    _declare(user32, "MonitorFromWindow", [w.HWND, w.DWORD], w.HANDLE)
+    _declare(user32, "GetMonitorInfoW", [w.HANDLE, ctypes.POINTER(MONITORINFO)])
+    _declare(user32, "GetCursorPos", [ctypes.POINTER(w.POINT)])
     _declare(user32, "MessageBoxW", [w.HWND, w.LPCWSTR, w.LPCWSTR, w.UINT], ctypes.c_int)
     # user32: input, the hotkey and its message loop
     _declare(user32, "keybd_event", [w.BYTE, w.BYTE, w.DWORD, ctypes.c_size_t], None)
@@ -180,6 +193,9 @@ if sys.platform == "win32":
     _declare(kernel32, "GlobalUnlock", [ctypes.c_void_p])
     _declare(kernel32, "GlobalFree", [ctypes.c_void_p], ctypes.c_void_p)
 
+    # dwmapi
+    _declare(dwmapi, "DwmSetWindowAttribute", [w.HWND, w.DWORD, ctypes.c_void_p, w.DWORD], ctypes.c_long)
+
     # crypt32 (DPAPI)
     _blob = ctypes.POINTER(DATA_BLOB)
     _declare(crypt32, "CryptProtectData", [_blob, w.LPCWSTR, _blob, ctypes.c_void_p, ctypes.c_void_p, w.DWORD, _blob])
@@ -189,4 +205,4 @@ if sys.platform == "win32":
         [_blob, ctypes.POINTER(w.LPWSTR), _blob, ctypes.c_void_p, ctypes.c_void_p, w.DWORD, _blob],
     )
 else:  # pragma: no cover - not Windows: importable, not callable
-    user32 = kernel32 = crypt32 = WNDENUMPROC = None
+    user32 = kernel32 = crypt32 = dwmapi = WNDENUMPROC = None
