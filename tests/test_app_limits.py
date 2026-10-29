@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, time, timedelta
@@ -9,11 +10,11 @@ from datetime import datetime, time, timedelta
 import pytest
 
 from buzyist import app_limits as limits_mod
-from buzyist import constants, paths
+from buzyist import app_windows, constants, paths
 from buzyist.api import Api
-from buzyist.app_limits import AppLimiter, clean_app_limit, clean_app_limits
+from buzyist.app_limits import AppLimiter, clean_app_limit, clean_app_limits, mute_label
 from buzyist.app_time import AppTime, app_name
-from buzyist.constants import APP_IDLE_S, DEFAULT_APP_LIMITS, AppError
+from buzyist.constants import APP_IDLE_S, DEFAULT_APP_LIMITS, MINI_FULL_H, AppError
 from buzyist.storage import read_json
 
 ALL_DAYS = list(range(7))
@@ -255,6 +256,66 @@ def test_how_often_it_beeps_again_is_per_rule(limited, desktop, clock):
     assert len(app.alerts) == 2 and "used it 3 min today" in app.alerts[1][1]
 
 
+def test_muted_beeps_stay_quiet_and_come_back_when_the_mute_ends(limited, desktop, clock):
+    app = limited(
+        rule(action="beep", minutes=1),
+        rule(
+            apps=["Slack.exe"], rid="1234567a", minutes=0, windows=[{"days": ALL_DAYS, "from": "08:00", "to": "17:00"}]
+        ),
+    )
+    desktop.front = (100, "WhatsApp.exe")
+    desktop.processes = {100: "WhatsApp.exe", 200: "Slack.exe"}
+    app.app_limiter.mute("15m")
+    assert app.cfg["app_beeps_muted_until"] == constants.now_ms() + 15 * 60 * 1000
+    run(app, clock, 14 * 60)
+    assert app.alerts == []
+    assert desktop.terminated() == [200]  # "close" rules aren't muted
+    run(app, clock, 61)
+    assert len(app.alerts) == 1  # the mute ran out with WhatsApp still in front
+    assert app.app_limiter.muted_until() == 0
+
+
+def test_unmuting_beeps_at_once(limited, desktop, clock):
+    app = limited(rule(action="beep", minutes=1))
+    desktop.front = (100, "WhatsApp.exe")
+    app.app_limiter.mute("1h")
+    run(app, clock, 120)
+    assert app.alerts == []
+    app.app_limiter.mute("off")
+    run(app, clock, 1)
+    assert len(app.alerts) == 1
+
+
+def test_muting_until_tomorrow_ends_at_midnight(limited, clock):
+    app = limited(rule(action="beep"))
+    assert app.app_limiter.mute("tomorrow") == _midnight(clock)
+    assert mute_label(_midnight(clock)) == "Limit beeps muted until tomorrow"
+    assert mute_label(constants.now_ms() + 3600 * 1000) == "Limit beeps muted until 10:00"  # the clock starts at 09:00
+    assert mute_label(0) == "Mute limit beeps"
+
+
+def test_the_mute_is_kept_across_starts_and_offered_only_with_a_beep_rule(make_app, clock):
+    app = make_app({"app_limits_on": True, "app_limits": [rule(action="beep")]})
+    assert app.app_limiter.beeping()
+    until = app.app_limiter.mute("1h")
+    assert make_app(fresh=True).app_limiter.muted_until() == until  # config.json as saved
+    app.save_settings({"app_limits": [rule()]})
+    assert not app.app_limiter.beeping()
+
+
+def test_the_api_mutes_and_refuses_other_choices(make_app, clock):
+    app = make_app({"app_limits_on": True, "app_limits": [rule(action="beep")]})
+    api = Api(app)
+    out = api.mute_beeps("15m")
+    assert out["ok"] and out["muted_until"] == constants.now_ms() + 15 * 60 * 1000
+    assert api.app_usage()["muted_until"] == out["muted_until"]
+    assert api.mute_beeps("forever") == {
+        "ok": False,
+        "error": "Mute the beeps for 15 minutes, an hour, or until tomorrow.",
+    }
+    assert api.mute_beeps("off")["muted_until"] == 0
+
+
 def test_close_mode_asks_then_ends_the_app_and_tells_once(limited, desktop, clock):
     app = limited(rule(minutes=1))
     desktop.front = (100, "WhatsApp.exe")
@@ -330,6 +391,59 @@ def test_alert_beeps_and_toasts(make_app, deferred_threads, side_effects, monkey
     deferred_threads.run_pending()
     assert [b[0] for b in side_effects.beeps] == ["Beep"] * 3
     assert toasts == [("Time for a break from WhatsApp?", "You've used it 30 min today.", True)]  # no chime on top
+
+
+class FakeNudge:
+    """The popup's window: the scripts it was sent."""
+
+    def __init__(self):
+        self.scripts = []
+
+    def evaluate_js(self, script):
+        self.scripts.append(script)
+
+
+@pytest.fixture
+def nudging(make_app, deferred_threads, side_effects, monkeypatch):
+    """An app with the popup's window, its toasts and where the popup was shown recorded."""
+    app = make_app()
+    app.nudge, app.nudge_ready = FakeNudge(), True
+    app.toasts, app.shown_at = [], []
+    monkeypatch.setattr(app, "notify", lambda title, text, quiet=False: app.toasts.append((title, text)))
+    monkeypatch.setattr(app_windows, "mini_position", lambda w, h: (1000, 600))
+    monkeypatch.setattr(app_windows, "round_corners", lambda window: None)
+    monkeypatch.setattr(app_windows, "show_at", lambda window, x, y: app.shown_at.append((x, y)) or True)
+    return app
+
+
+def test_alert_shows_the_popup_with_its_text_instead_of_a_toast(nudging, deferred_threads, side_effects):
+    nudging.alert("Time for a break from WhatsApp?", "You've used it 30 min today.")
+    deferred_threads.run_pending()
+    assert [b[0] for b in side_effects.beeps] == ["Beep"] * 3
+    assert nudging.toasts == []
+    assert nudging.shown_at == [(1000, 600)]
+    shown = {"title": "Time for a break from WhatsApp?", "text": "You've used it 30 min today."}
+    assert nudging.nudge.scripts == [f"Nudge.show({json.dumps(shown)})"]
+
+
+def test_the_popup_goes_above_the_mini_timer(nudging):
+    nudging.mini_shown = True
+    nudging.alert("Time for a break from WhatsApp?", "...")
+    assert nudging.shown_at == [(1000, 600 - MINI_FULL_H - 8)]
+
+
+def test_alert_toasts_until_the_popup_is_ready(nudging):
+    nudging.nudge_ready = False
+    nudging.alert("Time for a break from WhatsApp?", "...")
+    assert nudging.toasts == [("Time for a break from WhatsApp?", "...")] and nudging.shown_at == []
+
+
+def test_alert_only_beeps_with_notifications_off(nudging, deferred_threads, side_effects):
+    with nudging.cfg.edit() as c:
+        c["notifications"] = False
+    nudging.alert("Time for a break from WhatsApp?", "...")
+    deferred_threads.run_pending()
+    assert len(side_effects.beeps) == 3 and nudging.toasts == [] and nudging.shown_at == []
 
 
 class FakeTray:

@@ -241,6 +241,34 @@ def resize_anchored(window: webview.Window, width: int, height: int, anchor: tup
     return anchor
 
 
+def prime_hidden(window: webview.Window) -> None:
+    """
+    Show a window created hidden once, off screen, and hide it again, giving
+    the focus back to the window that had it. Its WebView2 only draws once
+    WinForms has shown the form: a form shown first by show_at stays blank.
+    """
+    before = user32.GetForegroundWindow()
+    window.show()
+    hide_window(window)
+    if before and user32.GetForegroundWindow() != before:
+        user32.SetForegroundWindow(before)
+
+
+def show_at(window: webview.Window, x: int, y: int) -> bool:
+    """
+    Show a window at x, y (logical pixels), above the others, without taking
+    the focus from the app in front (pywebview's show() activates it). False
+    without a handle.
+    """
+    hwnd = _hwnd(window)
+    if not hwnd:
+        return False
+    scale = (user32.GetDpiForWindow(hwnd) or 96) / 96
+    flags = SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+    user32.SetWindowPos(hwnd, HWND_TOPMOST, int(x * scale), int(y * scale), 0, 0, flags)
+    return True
+
+
 def round_corners(window: webview.Window) -> None:
     """Windows 11's rounded corners on a frameless window, without its border (the page draws one)."""
     hwnd = _hwnd(window)

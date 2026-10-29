@@ -48,6 +48,8 @@ from buzyist.constants import (
     MAX_FILTERS,
     MINI_H,
     MINI_W,
+    NUDGE_H,
+    NUDGE_W,
     PAUSE_REMIND_S,
     SOLO_H,
     SOLO_W,
@@ -76,7 +78,7 @@ from buzyist.tray import TrayMixin
 from buzyist.updater import UPDATABLE, app_dir_writable
 from buzyist.usage import SiteUsage
 from buzyist.win32.registry import set_launch_at_login
-from buzyist.win32.windows import mini_position, show_window
+from buzyist.win32.windows import mini_position, prime_hidden, show_window
 
 if TYPE_CHECKING:
     import pystray
@@ -142,6 +144,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.mini: webview.Window | None = None
         self.mini_shown = False
         self.mini_anchor: tuple[bool, bool] | None = None  # the corner kept while the mini timer is expanded
+        self.nudge: webview.Window | None = None  # a "beep" app limit's popup, with its mute buttons
+        self.nudge_ready = False  # shown once by prime_hidden: show_at can bring it up drawn
         self._paused_since: float | None = None  # monotonic time the pause was first seen
         self._pause_reminded = 0  # reminders given during this pause
         self.tray: pystray.Icon | None = None
@@ -732,9 +736,16 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         return True
 
     def alert(self, title: str, message: str) -> None:
-        """Beep and show a silent toast (the toast only with notifications on): a "beep" app limit."""
+        """
+        A "beep" app limit: beep, and with notifications on, show its popup
+        (show_nudge: the text and the mute buttons), or a silent toast until
+        the popup's page has loaded.
+        """
         self.beep()
-        self.notify(title, message, quiet=True)
+        if not self.cfg["notifications"]:
+            return
+        if not self.show_nudge(title, message):
+            self.notify(title, message, quiet=True)
 
     def _until_early_end(self, poll: float) -> float:
         """Seconds to the end of a session that is shorter than what the bar runs, if that's sooner than a poll."""
@@ -870,6 +881,23 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             focus=False,
             background_color=bg,
         )
+        self.nudge = webview.create_window(
+            "buZyist",
+            str(paths.UI / "nudge.html"),
+            js_api=api,
+            width=NUDGE_W,
+            height=NUDGE_H,
+            x=-32000,  # off screen while prime_hidden shows it once
+            y=-32000,
+            min_size=(NUDGE_W, NUDGE_H),
+            frameless=True,
+            easy_drag=False,
+            on_top=True,
+            resizable=False,
+            hidden=True,
+            focus=False,
+            background_color=bg,
+        )
 
         try:
             # Also refreshes the entry's path if the app moved.
@@ -909,6 +937,9 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             for which, window in (("main", self.main), ("mini", self.mini)):
                 if window.events.loaded.wait(30):
                     self.tell_visible(which)
+            if self.nudge.events.loaded.wait(30):
+                prime_hidden(self.nudge)
+                self.nudge_ready = True
 
         webview.start(
             ready,

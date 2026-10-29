@@ -148,9 +148,22 @@ class Api:
 
     def app_usage(self):
         """Every app-limit rule with its usage, for the Limits tab."""
+        limiter = self._app.app_limiter
         return self._do(
-            lambda: {"on": bool(self._app.cfg.get("app_limits_on")), "rules": self._app.app_limiter.status()}
+            lambda: {
+                "on": bool(self._app.cfg.get("app_limits_on")),
+                "rules": limiter.status(),
+                "muted_until": limiter.muted_until(),
+            }
         )
+
+    def hide_nudge(self):
+        """The "beep" app limit's popup: closed, or gone after a while."""
+        return self._do(self._app.hide_nudge)
+
+    def mute_beeps(self, choice):
+        """Mute the "beep" app limits for "15m", "1h" or until "tomorrow", or "off" to unmute."""
+        return self._do(lambda: {"muted_until": self._app.app_limiter.mute(str(choice))})
 
     def recent_free(self):
         """The latest names of sessions with no task, for the "What are you working on?" list."""

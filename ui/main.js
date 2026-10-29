@@ -3026,7 +3026,7 @@ function addActivitySite(a, field, raw) {
 const LIMITS = {
   site: { rules: [], usage: {}, list: "limitList", editor: "limitEditor", add: "addLimitBtn",
           fields: "limitsFields", on: "s_site_limits_on", usageCall: "site_usage" },
-  app: { rules: [], usage: {}, list: "appLimitList", editor: "appLimitEditor", add: "addAppLimitBtn",
+  app: { rules: [], usage: {}, mutedUntil: 0, list: "appLimitList", editor: "appLimitEditor", add: "addAppLimitBtn",
          fields: "appLimitsFields", on: "s_app_limits_on", usageCall: "app_usage" },
 };
 let limitDraft = null;    // {kind, index, rule} while an editor is open
@@ -3114,8 +3114,43 @@ function renderLimits(kind) {
     }
     list.append(row);
   });
+  if (kind === "app") renderMute();
   $(k.fields).classList.toggle("muted", !$(k.on).checked);
   renderTabDots();
+}
+
+// Muting every "beep" app limit for a while (AppLimiter.mute; also in the tray
+// menu): its buttons, or until when they're muted.
+function renderMute() {
+  const box = $("appMute");
+  const show = LIMITS.app.rules.some((r) => r.enabled && r.action === "beep");
+  box.classList.toggle("hidden", !show);
+  box.replaceChildren();
+  if (!show) return;
+  const button = (key, choice) => {
+    const b = el("button", "btn sm ghost", t(key));
+    b.type = "button";
+    b.onclick = () => muteBeeps(choice);
+    return b;
+  };
+  const until = LIMITS.app.mutedUntil;
+  if (until > Date.now()) {
+    const end = new Date(until), tomorrow = new Date();
+    tomorrow.setHours(24, 0, 0, 0);
+    const text = end.getTime() === tomorrow.getTime()
+      ? t("settings.limits.muted_tomorrow") : t("settings.limits.muted_until", { time: clockText(until) });
+    box.append(el("span", "", text), button("settings.limits.unmute", "off"));
+  } else {
+    box.append(el("span", "", t("settings.limits.mute")), button("settings.limits.mute_15m", "15m"),
+      button("settings.limits.mute_1h", "1h"), button("settings.limits.mute_tomorrow", "tomorrow"));
+  }
+}
+
+async function muteBeeps(choice) {
+  const r = await api.mute_beeps(choice);
+  if (!r.ok) { toast(r.error, true); return; }
+  LIMITS.app.mutedUntil = r.muted_until;
+  renderMute();
 }
 
 async function refreshLimitUsage(kind) {
@@ -3124,6 +3159,7 @@ async function refreshLimitUsage(kind) {
   const r = await api[k.usageCall]();
   if (!r.ok) return;
   k.usage = Object.fromEntries(r.rules.map((rule) => [rule.id, rule]));
+  if (kind === "app") k.mutedUntil = r.muted_until || 0;
   renderLimits(kind);
 }
 setInterval(async () => {

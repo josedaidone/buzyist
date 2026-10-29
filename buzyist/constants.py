@@ -91,6 +91,7 @@ SITE_MODES = ("block", "allow")
 
 MINI_W, MINI_H = 92, 34  # the mini timer: a pill with the time
 MINI_FULL_W, MINI_FULL_H = 256, 102  # while the mouse is over it: the phase, the task and the controls
+NUDGE_W, NUDGE_H = 340, 150  # the "beep" app limit's popup: its text and the mute buttons
 ADD_MINUTES = 5  # the mini timer's "+5": minutes added to the phase running now
 PAUSE_REMIND_S = 5 * 60  # a pause this long (and each multiple) flashes the mini timer and beeps
 

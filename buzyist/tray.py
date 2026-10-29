@@ -10,6 +10,7 @@ import pystray
 from PIL import Image, ImageDraw, ImageFont
 
 from buzyist import paths
+from buzyist.app_limits import mute_label
 from buzyist.constants import APP, APP_NAME, AppError
 from buzyist.i18n import t
 from buzyist.updater import UPDATABLE
@@ -180,6 +181,21 @@ class TrayMixin:
         def text(key):
             return lambda item: t(key, app=APP_NAME)
 
+        def mute(choice):
+            def handler(icon, item):
+                try:
+                    self.app_limiter.mute(choice)
+                except AppError as err:
+                    self.notify(t("notify.failed"), str(err))
+
+            return handler
+
+        def mute_line(item):
+            return mute_label(self.app_limiter.muted_until())
+
+        def muted(_=None):
+            return bool(self.app_limiter.muted_until())
+
         return pystray.Menu(
             pystray.MenuItem(text("tray.open"), lambda i, it: self.show_main(), default=True),
             pystray.MenuItem(
@@ -192,6 +208,16 @@ class TrayMixin:
             pystray.MenuItem(text("tray.skip"), act("skip"), visible=lambda it: timed()),
             pystray.MenuItem(text("tray.stop"), act("stop"), visible=lambda it: running()),
             pystray.MenuItem(text("tray.mini"), toggle_mini, checked=lambda it: self.mini_shown),
+            pystray.MenuItem(
+                mute_line,
+                pystray.Menu(
+                    pystray.MenuItem(text("tray.mute_15m"), mute("15m")),
+                    pystray.MenuItem(text("tray.mute_1h"), mute("1h")),
+                    pystray.MenuItem(text("tray.mute_tomorrow"), mute("tomorrow")),
+                    pystray.MenuItem(text("tray.unmute"), mute("off"), visible=muted),
+                ),
+                visible=lambda it: self.app_limiter.beeping(),
+            ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(update_line, get_update, visible=lambda it: bool(self.update) and not self.updating),
             pystray.MenuItem(text("tray.quit"), lambda i, it: self.quit()),

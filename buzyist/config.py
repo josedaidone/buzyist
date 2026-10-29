@@ -140,6 +140,9 @@ DEFAULTS = {
     # see clean_app_limit. They stay on this PC (not shared through Chrome).
     "app_limits_on": False,
     "app_limits": copy.deepcopy(DEFAULT_APP_LIMITS),  # WhatsApp and Slack, beeping
+    # Until when (epoch ms) the "beep" rules are muted, from the tray menu or the
+    # Limits tab (AppLimiter.mute); 0 when they aren't. Not part of the form.
+    "app_beeps_muted_until": 0,
     # Count the time every app spends in front, pomodoro or not, for the Stats
     # tab (app_time.json, this PC only). Off by default.
     "app_time_on": False,
@@ -404,6 +407,7 @@ class Config(BaseModel):
     site_limits: list[dict] = _default("site_limits")  # kept as dicts: clean_site_limit is the schema
     app_limits_on: bool = _default("app_limits_on")
     app_limits: list[dict] = _default("app_limits")  # kept as dicts: clean_app_limit is the schema
+    app_beeps_muted_until: Annotated[int, Field(ge=0)] = _default("app_beeps_muted_until")
     app_time_on: bool = _default("app_time_on")
     sync_limits: bool = _default("sync_limits")
     sync_owner: str = _default("sync_owner")
