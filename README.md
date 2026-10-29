@@ -131,8 +131,10 @@ menu, and starts it.
   (`WhatsApp.exe`, `Slack.exe`, ...), measured by buZyist itself: time counts while the app's
   window is in front and you're not idle. Once a limit is reached, buZyist closes the app (asking
   it first, like its X button) until the limit frees up. Or pick **Beep** for a limit: the app
-  stays open and buZyist beeps, with a notification saying how long it has been in front, again
-  every few minutes it stays there (5 by default; set it per limit). New installs start with
+  stays open and buZyist beeps, with a popup saying how long it has been in front, again
+  every few minutes it stays there (5 by default; set it per limit). Need the app for a while?
+  The popup's **Mute** buttons silence every beeping limit for 15 minutes, an hour or until
+  tomorrow (also in the tray menu and the Limits tab). New installs start with
   limits for WhatsApp (30 min a day) and Slack (1 hour a day), set to beep; switch app limits on
   to use them. App limits stay on this PC; they aren't shared through Chrome.
 - **Stats** (the chart button next to Settings): your focus time, tomatoes, sessions, tasks worked
