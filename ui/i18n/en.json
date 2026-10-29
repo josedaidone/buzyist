@@ -742,7 +742,14 @@
         "hours": "Blocked hours need days and times.",
         "too_many_site_limits": "Keep the website limits under {n}.",
         "too_many_app_limits": "Keep the app limits under {n}."
-      }
+      },
+      "mute": "Mute the beeps:",
+      "mute_15m": "15 min",
+      "mute_1h": "1 hour",
+      "mute_tomorrow": "Until tomorrow",
+      "muted_until": "Beeps muted until {time}",
+      "muted_tomorrow": "Beeps muted until tomorrow",
+      "unmute": "Unmute"
     },
     "sync": {
       "limits": "Share limits and time with my other PCs",
@@ -958,7 +965,14 @@
     "title_call": "On a call · {n} min",
     "title_focus": "Focus · {n} min left · pomodoro {round}/{rounds}",
     "title_break": "Break · {n} min left · pomodoro {round}/{rounds}",
-    "title_paused": "Paused · {n} min left · pomodoro {round}/{rounds}"
+    "title_paused": "Paused · {n} min left · pomodoro {round}/{rounds}",
+    "mute_beeps": "Mute limit beeps",
+    "beeps_muted": "Limit beeps muted until {time}",
+    "beeps_muted_tomorrow": "Limit beeps muted until tomorrow",
+    "mute_15m": "For 15 minutes",
+    "mute_1h": "For 1 hour",
+    "mute_tomorrow": "Until tomorrow",
+    "unmute": "Unmute"
   },
   "notify": {
     "_": "Windows notifications, plus the bits they are made of (weekdays, limit periods).",
@@ -1096,7 +1110,8 @@
       "protected": "buZyist won't close {exe}: Windows or your browser needs it. Make that limit beep.",
       "remind": "{name}: beep again every {min} to {max} minutes.",
       "list": "The app limits didn't come through; try again.",
-      "too_many": "Keep the app limits under {max}."
+      "too_many": "Keep the app limits under {max}.",
+      "mute": "Mute the beeps for 15 minutes, an hour, or until tomorrow."
     },
     "bar": {
       "off": "The BUSY Bar is turned off; the timer runs on this PC.",
@@ -1258,5 +1273,16 @@
     "when": "%Y-%m-%d %H:%M",
     "carried_over": "> Carried over to {date}",
     "carry_when": "%Y-%m-%d"
+  },
+  "nudge": {
+    "_": "The popup of an app limit set to beep: the reminder and buttons that mute the beeps for a while.",
+    "title": "buZyist",
+    "close": "Close",
+    "mute": "Mute:",
+    "mute_15m": "15 min",
+    "mute_1h": "1 hour",
+    "mute_tomorrow": "Until tomorrow",
+    "muted_until": "Beeps muted until {time}",
+    "muted_tomorrow": "Beeps muted until tomorrow"
   }
 }

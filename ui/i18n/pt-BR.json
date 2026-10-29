@@ -735,7 +735,14 @@
         "hours": "Horários bloqueados precisam de dias e horas.",
         "too_many_site_limits": "Mantenha os limites de sites abaixo de {n}.",
         "too_many_app_limits": "Mantenha os limites de apps abaixo de {n}."
-      }
+      },
+      "mute": "Silenciar os bipes:",
+      "mute_15m": "15 min",
+      "mute_1h": "1 hora",
+      "mute_tomorrow": "Até amanhã",
+      "muted_until": "Bipes silenciados até {time}",
+      "muted_tomorrow": "Bipes silenciados até amanhã",
+      "unmute": "Reativar"
     },
     "sync": {
       "limits": "Compartilhar limites e tempo com meus outros PCs",
@@ -950,7 +957,14 @@
     "title_call": "Em chamada · {n} min",
     "title_focus": "Foco · faltam {n} min · pomodoro {round}/{rounds}",
     "title_break": "Intervalo · faltam {n} min · pomodoro {round}/{rounds}",
-    "title_paused": "Pausado · faltam {n} min · pomodoro {round}/{rounds}"
+    "title_paused": "Pausado · faltam {n} min · pomodoro {round}/{rounds}",
+    "mute_beeps": "Silenciar bipes dos limites",
+    "beeps_muted": "Bipes dos limites silenciados até {time}",
+    "beeps_muted_tomorrow": "Bipes dos limites silenciados até amanhã",
+    "mute_15m": "Por 15 minutos",
+    "mute_1h": "Por 1 hora",
+    "mute_tomorrow": "Até amanhã",
+    "unmute": "Reativar bipes"
   },
   "notify": {
     "failed": "Não deu certo",
@@ -1086,7 +1100,8 @@
       "protected": "O buZyist não fecha o {exe}: o Windows ou o seu navegador precisam dele. Faça esse limite apitar.",
       "remind": "{name}: apite de novo a cada {min} a {max} minutos.",
       "list": "Os limites de apps não chegaram; tente de novo.",
-      "too_many": "Mantenha os limites de apps abaixo de {max}."
+      "too_many": "Mantenha os limites de apps abaixo de {max}.",
+      "mute": "Silencie os bipes por 15 minutos, uma hora ou até amanhã."
     },
     "bar": {
       "off": "A BUSY Bar está desligada nas configurações; o timer roda neste PC.",
@@ -1246,5 +1261,16 @@
     "when": "%d/%m/%Y %H:%M",
     "carried_over": "> Passada para {date}",
     "carry_when": "%d/%m/%Y"
+  },
+  "nudge": {
+    "_": "The popup of an app limit set to beep: the reminder and buttons that mute the beeps for a while.",
+    "title": "buZyist",
+    "close": "Fechar",
+    "mute": "Silenciar:",
+    "mute_15m": "15 min",
+    "mute_1h": "1 hora",
+    "mute_tomorrow": "Até amanhã",
+    "muted_until": "Bipes silenciados até {time}",
+    "muted_tomorrow": "Bipes silenciados até amanhã"
   }
 }

@@ -13,7 +13,7 @@ import re
 import threading
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from buzyist import paths
@@ -48,6 +48,10 @@ log = logging.getLogger(APP)
 # reached, as the app blocker does; "beep" leaves them open and beeps, again
 # every "remind" minutes, while one of them is in front.
 APP_LIMIT_ACTIONS = ("close", "beep")
+
+# How long the beeps can be muted for (the tray menu and the Limits tab): every
+# "beep" rule at once, until app_beeps_muted_until; "close" rules still close.
+MUTE_CHOICES = ("15m", "1h", "tomorrow")
 
 
 def clean_app_name(raw) -> str:
@@ -195,6 +199,25 @@ def closed_text(rule: dict, status: dict) -> tuple[str, str]:
     )
 
 
+def mute_end(choice: str, now: datetime) -> int:
+    """When a mute picked as `choice` ends, in epoch ms: in 15 minutes, in an hour, or at the next midnight."""
+    if choice == "tomorrow":
+        end = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
+    else:
+        end = now + timedelta(minutes=15 if choice == "15m" else 60)
+    return int(end.timestamp() * 1000)
+
+
+def mute_label(until_ms: int) -> str:
+    """The tray menu's mute line: 'Mute limit beeps', or until when they're muted ('15:30', 'tomorrow')."""
+    if not until_ms:
+        return t("tray.mute_beeps")
+    when = datetime.fromtimestamp(until_ms / 1000)
+    if when.time() == datetime.min.time() and when.date() == datetime.now().date() + timedelta(days=1):
+        return t("tray.beeps_muted_tomorrow")
+    return t("tray.beeps_muted", time=_clock(until_ms))
+
+
 class AppLimiter:
     """
     Counts the time the limited apps spend in front and acts on their limits;
@@ -216,7 +239,7 @@ class AppLimiter:
       PROTECTED_EXES and buZyist's own process are never touched.
     - "beep": nothing is closed. While one of its apps is in front, buZyist
       beeps and says how long it has been in front, again every
-      rule's "remind" minutes.
+      rule's "remind" minutes, unless the beeps are muted (mute()).
     """
 
     TICK = 1.0
@@ -233,6 +256,7 @@ class AppLimiter:
         # Never this process; from source, not the python.exe/launcher that started it either.
         self._own_pids = {os.getpid()} | (set() if paths.FROZEN else {os.getppid()})
         self._session = process_session(os.getpid())
+        self._was_muted = False  # what the tray menu last showed
         self._thread: threading.Thread | None = None
 
     def start(self) -> None:
@@ -253,6 +277,32 @@ class AppLimiter:
         """Where every app rule stands right now, for the Limits tab."""
         now = datetime.now()
         return [app_limit_status(r, self.app.app_usage, now) for r in self.app.cfg.get("app_limits") or []]
+
+    def beeping(self) -> bool:
+        """Whether a "beep" rule is in force: what makes muting worth offering."""
+        return any(r["action"] == "beep" for r in self.rules())
+
+    def muted_until(self) -> int:
+        """When the muted beeps come back, in epoch ms; 0 when they aren't muted."""
+        until = self.app.cfg.get("app_beeps_muted_until") or 0
+        return until if until > now_ms() else 0
+
+    def mute(self, choice: str) -> int:
+        """Mute every "beep" rule for one of MUTE_CHOICES, or unmute with "off"; returns muted_until()."""
+        if choice != "off" and choice not in MUTE_CHOICES:
+            raise app_error("errors.app_limits.mute")
+        until = 0 if choice == "off" else mute_end(choice, datetime.now())
+        with self.app.cfg.edit() as c:
+            c["app_beeps_muted_until"] = until
+        log.info("limit beeps %s", "unmuted" if not until else f"muted until {datetime.fromtimestamp(until / 1000)}")
+        self._show_muted()
+        return self.muted_until()
+
+    def _show_muted(self) -> None:
+        """Bring the tray menu's mute line up to date (pystray builds the menu only on update_menu)."""
+        self._was_muted = bool(self.muted_until())
+        if self.app.tray:
+            self.app.tray.update_menu()
 
     def tracking(self) -> bool:
         """Whether every app's time is counted for the Stats tab."""
@@ -308,6 +358,8 @@ class AppLimiter:
         usage.flush()
         self.app.app_time.flush()
         self.app.pc_time.flush()
+        if bool(self.muted_until()) != self._was_muted:
+            self._show_muted()  # a mute ran out
         now = datetime.now()
         to_close: dict[str, tuple[dict, dict]] = {}  # app_key -> (rule, status) of the rule that closes it
         for r in rules:
@@ -326,6 +378,8 @@ class AppLimiter:
         self._close(to_close, mono)
 
     def _beep(self, rule: dict, status: dict, mono: float) -> None:
+        if self.muted_until():
+            return  # not marked as beeped: it beeps as soon as the mute ends, if the app is still in front
         last = self._beeped.get(status["id"])
         if last is not None and mono - last < rule.get("remind", APP_LIMIT_REMIND) * 60:
             return

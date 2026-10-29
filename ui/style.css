@@ -740,6 +740,8 @@ body.instant .modal, body.instant .scrim { transition: none; }
 #syncFields.muted { opacity: .55; }
 #syncStatus { font-size: 13px; font-weight: 600; }
 .limit-list { display: grid; gap: 8px; margin: 0 0 12px; }
+.limit-mute { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; font-size: 13.5px; font-weight: 600; }
+.limit-mute span { margin-right: 4px; }
 .limit-row { border-radius: var(--r-row); padding: 8px 14px 12px; display: grid; gap: 6px; background: var(--surface); }
 .limit-row.off { opacity: .6; }
 .limit-head { display: flex; align-items: center; gap: 8px; }

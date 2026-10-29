@@ -6,12 +6,14 @@ import json
 import logging
 import threading
 
-from buzyist.constants import APP, MINI_FULL_H, MINI_FULL_W, MINI_H, MINI_W
+from buzyist.constants import APP, MINI_FULL_H, MINI_FULL_W, MINI_H, MINI_W, NUDGE_H, NUDGE_W
 from buzyist.win32.windows import (
     cursor_over,
     hide_window,
+    mini_position,
     resize_anchored,
     round_corners,
+    show_at,
     show_window,
     wake_window,
     window_focused,
@@ -95,6 +97,28 @@ class WindowsMixin:
             if self.tray:
                 self.tray.update_menu()
 
+    def show_nudge(self, title: str, message: str) -> bool:
+        """
+        A "beep" app limit's popup, bottom right (above the mini timer when it
+        is there), without taking the focus: the reminder and buttons that
+        mute the beeps (AppLimiter.mute); the page hides it after a while.
+        False until it's ready (loaded and primed), so the caller can toast instead.
+        """
+        if not self.nudge or self.quitting or not self.nudge_ready:
+            return False
+        self._js(self.nudge, f"Nudge.show({json.dumps({'title': title, 'text': message})})")
+        x, y = mini_position(NUDGE_W, NUDGE_H)
+        if self.mini_shown:
+            y -= MINI_FULL_H + 8
+        if not show_at(self.nudge, x, y):
+            return False
+        round_corners(self.nudge)
+        return True
+
+    def hide_nudge(self) -> None:
+        if self.nudge:
+            hide_window(self.nudge)
+
     def hide_main(self) -> None:
         """Send the main window to the tray (every path that hides it comes here)."""
         if self.main:
@@ -125,14 +149,14 @@ class WindowsMixin:
 
     def reload_windows(self) -> None:
         """
-        Reload both pages (a new app language: they read the catalog at load).
+        Reload every page (a new app language: they read the catalog at load).
         From a thread, a moment later, so the save_settings call that asked
         for it answers first; then each page is told again whether it is on
         screen, since a reloaded page starts out polling as if it were.
         """
 
         def reload():
-            for window in (self.main, self.mini):
+            for window in (self.main, self.mini, self.nudge):
                 if window and not self.quitting:
                     self._js(window, "location.reload()")
             for which in ("main", "mini"):
@@ -175,6 +199,6 @@ class WindowsMixin:
             self.hotkey.stop()
         if self.tray:
             self.tray.stop()
-        for window in (self.mini, self.main):
+        for window in (self.nudge, self.mini, self.main):
             if window:
                 window.destroy()
