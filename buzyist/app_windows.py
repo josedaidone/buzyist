@@ -8,7 +8,6 @@ import threading
 
 from buzyist.constants import APP, MINI_FULL_H, MINI_FULL_W, MINI_H, MINI_W, NUDGE_H, NUDGE_W
 from buzyist.win32.windows import (
-    cursor_over,
     hide_window,
     mini_position,
     resize_anchored,
@@ -84,9 +83,6 @@ class WindowsMixin:
         elif self.mini_anchor is not None:
             resize_anchored(self.mini, MINI_W, MINI_H, self.mini_anchor)
             self.mini_anchor = None
-
-    def mini_hovered(self) -> bool:
-        return bool(self.mini and cursor_over(self.mini))
 
     def hide_mini(self) -> None:
         if self.mini:

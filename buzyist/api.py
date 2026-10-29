@@ -325,8 +325,5 @@ class Api:
         self._app.hide_mini()
 
     def mini_expand(self, expanded):
-        """The mini timer expanded (the mouse is over it) or back to the time only."""
+        """The mini timer expanded (its expand button) or back to the pill (its collapse button)."""
         return self._do(self._app.size_mini, bool(expanded))
-
-    def mini_hovered(self):
-        return self._do(lambda: {"hovered": self._app.mini_hovered()})

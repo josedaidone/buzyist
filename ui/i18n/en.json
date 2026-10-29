@@ -345,6 +345,8 @@
     "stop": "Stop",
     "open": "Open buZyist",
     "hide": "Hide mini timer",
+    "expand": "Show more",
+    "collapse": "Show less",
     "complete": "Mark as done",
     "carry": "Mark as done & carry over to tomorrow",
     "add": {

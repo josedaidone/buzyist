@@ -30,11 +30,11 @@ function render() {
   const task = s ? s.task.content : r ? r.task.content
     : tm ? t(state.bar.local || state.bar.offline ? "mini.timer_running" : "mini.on_bar") : t("mini.no_session");
   const project = s ? s.task.project : r ? r.task.project || t("mini.by", { by: r.by }) : "";
-  $("mPauseIcon").setAttribute("href", tm && tm.paused ? "#i-play" : "#i-pause");
-  $("mPause").title = t(tm && tm.paused ? "mini.resume" : "mini.pause");
+  for (const id of ["mPauseIcon", "mPauseIconS"]) $(id).setAttribute("href", tm && tm.paused ? "#i-play" : "#i-pause");
+  $("mPause").title = $("mPauseS").title = t(tm && tm.paused ? "mini.resume" : "mini.pause");
   $("mAdd").title = t("mini.add", { n: ADD_MINUTES });
   $("mStop").style.display = tm ? "" : "none";
-  for (const id of ["mPause", "mAdd", "mSkip"]) $(id).style.display = tm && !call ? "" : "none";
+  for (const id of ["mPause", "mPauseS", "mAdd", "mSkip"]) $(id).style.display = tm && !call ? "" : "none";
   // Done / carry over: the running session's own Todoist task.
   const ownTask = !!(s && !s.call && s.task.id && state.todoist);
   $("mComplete").style.display = $("mCarry").style.display = ownTask ? "" : "none";
@@ -78,7 +78,7 @@ async function poll() {
 }
 
 // Buttons must not start a window drag.
-for (const b of document.querySelectorAll(".m-card button")) {
+for (const b of document.querySelectorAll("#mini button")) {
   b.addEventListener("mousedown", (e) => e.stopPropagation());
   b.addEventListener("dblclick", (e) => e.stopPropagation());  // nor open the main window
 }
@@ -88,17 +88,17 @@ let busy = false;
 async function act(call) {
   if (busy) return;
   busy = true;
-  for (const b of document.querySelectorAll(".m-card button")) b.disabled = true;
+  for (const b of document.querySelectorAll("#mini button")) b.disabled = true;
   try {
     const result = await call();
     if (result && result.ok === false) showError(result.error);
   } catch (err) { /* the window is being torn down */ }
   busy = false;
-  for (const b of document.querySelectorAll(".m-card button")) b.disabled = false;
+  for (const b of document.querySelectorAll("#mini button")) b.disabled = false;
   poll();
 }
 
-$("mPause").onclick = () => act(() => api.control(state.timer && state.timer.paused ? "resume" : "pause"));
+$("mPause").onclick = $("mPauseS").onclick = () => act(() => api.control(state.timer && state.timer.paused ? "resume" : "pause"));
 $("mStop").onclick = () => act(() => api.control("stop"));
 $("mAdd").onclick = () => act(() => api.control("add"));
 $("mSkip").onclick = () => act(() => api.control("skip"));
@@ -135,12 +135,11 @@ function twoStep(button, followup) {
 twoStep($("mComplete"), false);
 twoStep($("mCarry"), true);
 
-// Compact (the time only) until the mouse rests on it, then Python grows the
-// window (Api.mini_expand) and the task and the buttons show; it shrinks back
-// a moment after the mouse leaves. The class follows the size: set after
+// Compact (the time, pause and expand) until its expand button is clicked;
+// then Python grows the window (Api.mini_expand) and the task and the buttons
+// show, until the collapse button. The class follows the size: set after
 // growing, before shrinking, so neither layout is drawn in the other's window.
-const EXPAND_MS = 150, COLLAPSE_MS = 450;
-let expanded = false, wantExpanded = false, hoverTimer = 0;
+let expanded = false, wantExpanded = false;
 
 async function applySize() {
   const want = wantExpanded;
@@ -152,23 +151,13 @@ async function applySize() {
   if (wantExpanded !== expanded) applySize();
 }
 
-function hover(on, delay) {
+function expand(on) {
   wantExpanded = on;
-  clearTimeout(hoverTimer);
-  hoverTimer = setTimeout(applySize, delay);
+  if (!on) unconfirm();
+  applySize();
 }
-
-document.documentElement.addEventListener("mouseenter", () => hover(true, EXPAND_MS));
-document.documentElement.addEventListener("mouseleave", () => { unconfirm(); hover(false, COLLAPSE_MS); });
-
-// A window that isn't focused can miss its mouseleave: ask where the mouse is.
-async function checkHover() {
-  if (!expanded) return;
-  try {
-    const r = await api.mini_hovered();
-    if (r && r.ok && !r.hovered && expanded) hover(false, 0);
-  } catch (err) { /* the window is being torn down */ }
-}
+$("mExpand").onclick = () => expand(true);
+$("mCollapse").onclick = () => expand(false);
 
 // A long pause: flash the whole mini timer for a few seconds (Python beeps).
 let alertTimer = 0;
@@ -189,7 +178,7 @@ const onScreen = () => visible && !document.hidden;
 
 function setVisible(v) {
   visible = !!v;
-  if (!visible) { wantExpanded = expanded = false; clearTimeout(hoverTimer); document.body.classList.remove("expanded"); }
+  if (!visible) { wantExpanded = expanded = false; document.body.classList.remove("expanded"); }
   if (visible) poll();
 }
 
@@ -199,7 +188,7 @@ async function boot() {
   api = window.pywebview.api;
   await loadI18n(api);
   poll();
-  setInterval(() => { if (onScreen()) { poll(); checkHover(); } }, 1000);
+  setInterval(() => { if (onScreen()) poll(); }, 1000);
   setInterval(() => { if (!onScreen()) poll(); }, 15000);  // hidden: a slow safety net
   setInterval(() => { if (onScreen()) render(); }, 250);
 }

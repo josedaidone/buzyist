@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="style.css">
 <style>
   /* Two sizes of one window (MINI_* in buzyist/constants.py): a pill with the
-     time, and, while the mouse is over it (body.expanded), a small card with
-     the phase, the task and the controls. A line along the bottom fills up
+     time, pause and an expand button, and, once that is clicked (body.expanded,
+     until its collapse button), a small card with the phase, the task and the
+     controls. A line along the bottom fills up
      with the phase's progress in both. */
   body { background: var(--bg); }
   .mini {
@@ -40,8 +41,18 @@
   body[data-phase="idle"] .m-go { display: block; }
   body[data-phase="paused"] .m-time { animation: blink 1.6s ease-in-out infinite; }
 
-  /* Compact: the dot and the time. */
-  .m-pill { position: absolute; inset: 0 0 3px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  /* Compact: the dot, the time, pause and expand. */
+  .m-pill { position: absolute; inset: 0 0 3px; display: flex; align-items: center; gap: 4px; padding: 0 4px 0 12px; }
+  .m-pill .m-dot { margin-right: 3px; }
+  .m-pill .m-time { flex: 1; }
+  .m-pill button {
+    border: 0; padding: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .m-pill button:hover { background: var(--surface); }
+  .m-pill button:disabled { opacity: .5; cursor: default; }
+  .m-pill svg { width: 15px; height: 15px; }
+  .m-sep { width: 1px; height: 16px; background: var(--line); flex: none; }
   .m-card { display: none; }
   body.expanded .m-pill { display: none; }
   body.expanded .m-card { display: flex; animation: m-in .14s ease-out; }
@@ -93,16 +104,22 @@
   <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M6 6.5v11l8-5.5-8-5.5z"/><path d="M18 6v12" fill="none" stroke-width="2.6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-carry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V13a5 5 0 0 1 5-5h10M15 4l4 4-4 4"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4l-6 6M14 5v5h5M4 20l6-6M10 19v-5H5"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 </svg>
 <div class="mini pywebview-drag-region" id="mini">
   <div class="m-pill">
     <span class="m-dot"></span><span class="m-time" id="mTimeS">--:--</span>
+    <button id="mPauseS" title="Pause" data-i18n-title="mini.pause"><svg><use id="mPauseIconS" href="#i-pause"/></svg></button>
+    <span class="m-sep"></span>
+    <button id="mExpand" title="Show more" data-i18n-title="mini.expand"><svg><use href="#i-expand"/></svg></button>
   </div>
   <div class="m-card">
     <div class="m-head">
       <span class="m-dot"></span><span class="m-phase" id="mPhase" data-i18n="common.phase.focus">Focus</span><span class="m-round" id="mRound"></span>
       <div class="m-icons">
+        <button id="mCollapse" title="Show less" data-i18n-title="mini.collapse"><svg><use href="#i-collapse"/></svg></button>
         <button id="mOpen" title="Open buZyist" data-i18n-title="mini.open"><svg><use href="#i-open"/></svg></button>
         <button id="mHide" title="Hide mini timer" data-i18n-title="mini.hide"><svg><use href="#i-x"/></svg></button>
       </div>

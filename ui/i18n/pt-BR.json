@@ -344,6 +344,8 @@
     "stop": "Interromper",
     "open": "Abrir o buZyist",
     "hide": "Ocultar o mini timer",
+    "expand": "Mostrar mais",
+    "collapse": "Mostrar menos",
     "complete": "Marcar como concluída",
     "carry": "Concluir e passar para amanhã",
     "add": {
