@@ -279,15 +279,6 @@ def round_corners(window: webview.Window) -> None:
         dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), ctypes.sizeof(v))  # an error code on Windows 10
 
 
-def cursor_over(window: webview.Window) -> bool:
-    """Whether the mouse pointer is over the window."""
-    hwnd = _hwnd(window)
-    rect, point = ctypes.wintypes.RECT(), ctypes.wintypes.POINT()
-    if not hwnd or not user32.GetWindowRect(hwnd, ctypes.byref(rect)) or not user32.GetCursorPos(ctypes.byref(point)):
-        return False
-    return rect.left <= point.x < rect.right and rect.top <= point.y < rect.bottom
-
-
 def pids_with_windows(pids: set[int]) -> set[int]:
     """Those of these processes that have a visible (or minimized) top-level window."""
     return _visit_windows(pids, close=False)

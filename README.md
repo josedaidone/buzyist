@@ -70,7 +70,8 @@ menu, and starts it.
 - **Pomodoro**: presets (25/5, 15/5, 50/10, 90/15) or your own focus, break and round counts.
 - **While it runs**:
   - the window and a small always-on-top **mini timer** show the countdown. The mini timer is a
-    small pill with only the time; hover over it to see the phase, the task and its buttons;
+    small pill with the time and a pause button; its expand button shows the phase, the task
+    and the other buttons, until you collapse it again;
   - the tray icon shows the minutes left (red is focus, green is break, amber is paused);
   - pause, skip and stop work from the window, the mini timer or the tray menu. The mini timer
     also adds 5 minutes to the phase running now, and can mark the task as done or carry it
