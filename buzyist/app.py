@@ -60,6 +60,7 @@ from buzyist.focus_server import FocusServer
 from buzyist.focus_stats import SESSION_REASONS, earliest, focus_stats, session_minutes
 from buzyist.hotkey import GlobalHotkey
 from buzyist.i18n import app_error, english, t
+from buzyist.integrations import DURATIONS, SUBTASKS, TaskSource, TimerSource
 from buzyist.plan import plan_session
 from buzyist.secrets_dpapi import SECRET_KEYS, unprotect_secrets
 from buzyist.session import SessionMixin
@@ -120,8 +121,10 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         # bar's timer was last matched to (remote_session).
         self.remote_sessions: dict[str, dict] = {}
         self._remote_match: tuple[str, int] | None = None
-        self.todoist = Todoist(self.cfg)
-        self.bar = Bar(self.cfg)
+        # The two integrations (integrations.py): where tasks come from, and
+        # what runs the timer (the BUSY Bar, or this PC's clock without one).
+        self.todoist: TaskSource = Todoist(self.cfg)
+        self.bar: TimerSource = Bar(self.cfg)
         self.lock = threading.RLock()  # guards everything below
         # Every task any filter has shown, by id, so a start still finds its
         # task if the list was switched while the request was in flight.
@@ -183,6 +186,10 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         """Todoist is switched on in Settings and has a token."""
         return bool(self.cfg.get("use_todoist")) and bool(self.cfg.get("todoist_token"))
 
+    def can(self, capability: str) -> bool:
+        """The task source is on and has this optional part (integrations.SUBTASKS, ...)."""
+        return self.todoist_on and capability in self.todoist.capabilities
+
     def active_filter(self) -> dict:
         cfg = self.cfg.view()
         filters = cfg["filters"]
@@ -199,21 +206,20 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             raise app_error("errors.todoist.off")
         active = self.active_filter()
         cfg = self.cfg.view()
+        # Not App.can: use_todoist is on here, and a missing token is for Todoist to report.
+        caps = self.todoist.capabilities
         if tasks is None:
-            tasks = self.todoist.tasks(active["query"], subtasks=cfg["offer_subtasks"])
+            tasks = self.todoist.tasks(active["query"], subtasks=cfg["offer_subtasks"] and SUBTASKS in caps)
         with self.lock:
             self.tasks.update((t["id"], t) for t in tasks)
             # the subtasks the start picker offers, so start_task finds them too
             self.tasks.update((s["id"], s) for t in tasks for s in t.get("subtasks", ()))
+
         # The tomatoes a task's duration gives it, shown on its row as "3 x 15 min".
-        tasks = [
-            dict(
-                t,
-                plan=plan_session(t.get("minutes"), cfg),
-                subtasks=[dict(s, plan=plan_session(s.get("minutes"), cfg)) for s in t.get("subtasks", ())],
-            )
-            for t in tasks
-        ]
+        def plan(task):
+            return plan_session(task.get("minutes") if DURATIONS in caps else None, cfg)
+
+        tasks = [dict(t, plan=plan(t), subtasks=[dict(s, plan=plan(s)) for s in t.get("subtasks", ())]) for t in tasks]
         return {"tasks": tasks, "filters": self.cfg["filters"], "active": active["name"]}
 
     def check_query(self, query: str) -> list[dict]:

@@ -317,6 +317,7 @@ function renderChrome() {
   if ($("drawer").classList.contains("on")) {
     renderUpdate();
     renderExtension(!!state.extension_connected, !!state.extension_outdated);
+    renderIntegrations();
   }
 }
 
@@ -1358,11 +1359,13 @@ $("endedAgain").onclick = async () => {
 
 // ---------------------------------------------------------- settings tabs
 
-const TABS = [...document.querySelectorAll("#settingsTabs .stab")].map((b) => b.dataset.tab);
-let settingsTab = localStorage.getItem("settingsTab") || "todoist";
+let settingsTab = localStorage.getItem("settingsTab") || "integrations";
+
+// The tabs on show, in order: an integration that is off hides its own.
+const shownTabs = () => [...document.querySelectorAll("#settingsTabs .stab:not(.hidden)")].map((b) => b.dataset.tab);
 
 function showTab(name, focus) {
-  if (!TABS.includes(name)) name = "todoist";
+  if (!shownTabs().includes(name)) name = "integrations";
   settingsTab = name;
   localStorage.setItem("settingsTab", name);
   for (const b of document.querySelectorAll("#settingsTabs .stab")) {
@@ -1887,12 +1890,81 @@ function renderStats(s) {
 
 for (const b of document.querySelectorAll("#settingsTabs .stab")) b.onclick = () => showTab(b.dataset.tab);
 $("settingsTabs").addEventListener("keydown", (e) => {
-  const i = TABS.indexOf(settingsTab);
-  const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
+  const tabs = shownTabs();  // hidden tabs are skipped
+  const i = tabs.indexOf(settingsTab);
+  const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
   if (next === undefined) return;
   e.preventDefault();
-  showTab(TABS[(next + TABS.length) % TABS.length], true);
+  showTab(tabs[(next + tabs.length) % tabs.length], true);
 });
+
+// ---------------------------------------------------------- integrations
+// The Integrations tab: a card per core integration, in the order of
+// get_settings()["integrations"] (this list until Python sends one), each with
+// its switch, a status line and a button to its own tab, which is hidden
+// while the integration is off.
+const CORE_INTEGRATIONS = [
+  { id: "todoist", kind: "tasks", setting: "use_todoist", tab: "todoist" },
+  { id: "busybar", kind: "timer", setting: "use_busybar", tab: "timer" },
+];
+let integrations = CORE_INTEGRATIONS;
+let loadedSettings = {};  // the last get_settings() answer (has_todoist_token, ...)
+
+// An integration's status line as {key, values, tone} ("ok", "warn" or "off"),
+// from plain data so tests/js/integrations.test.mjs can run it:
+// on = its switch in the form; for Todoist saved (on in the saved settings)
+// and token (a token saved and kept, or one typed); for the bar `bar`
+// (get_state()'s bar, or null; bar.local = off in the saved settings).
+function integrationStatus(id, x) {
+  if (id === "todoist") {
+    if (!x.on) return { key: "settings.todoist.no_todoist_help", values: {}, tone: "off" };
+    if (!x.token) return { key: "settings.integrations.todoist.needs_token", values: {}, tone: "warn" };
+    if (!x.saved) return { key: "settings.integrations.unsaved", values: {}, tone: "ok" };
+    return { key: "settings.integrations.todoist.connected", values: {}, tone: "ok" };
+  }
+  if (id === "busybar") {
+    const bar = x.bar;
+    if (!x.on) return { key: "settings.bar.no_bar_help", values: {}, tone: "off" };
+    if (!bar || bar.local) return { key: "settings.integrations.unsaved", values: {}, tone: "ok" };
+    if (bar.offline) return { key: "settings.integrations.busybar.offline", values: {}, tone: "warn" };
+    if (bar.ok === true && bar.via) return { key: "settings.integrations.busybar.via", values: { via: bar.via }, tone: "ok" };
+    if (bar.ok === false) return { key: "settings.integrations.busybar.unreachable", values: {}, tone: "warn" };
+    return { key: "settings.integrations.busybar.on", values: {}, tone: "ok" };
+  }
+  return null;
+}
+
+function renderIntegrations() {
+  const list = $("integrationList");
+  const cards = new Map([...list.querySelectorAll("[data-integration]")].map((c) => [c.dataset.integration, c]));
+  for (const c of cards.values()) c.classList.add("hidden");
+  for (const it of integrations) {
+    const card = cards.get(it.id);
+    if (!card) continue;
+    list.append(card);  // in the list's order
+    card.classList.remove("hidden");
+    const input = document.querySelector(`#settingsForm input[name="${it.setting}"]`);
+    const on = !!(input && input.checked);
+    const tab = document.querySelector(`#settingsTabs .stab[data-tab="${it.tab}"]`);
+    if (tab) tab.classList.toggle("hidden", !on);
+    const typed = !!$("s_todoist_token").value.trim();
+    const status = integrationStatus(it.id, {
+      on,
+      saved: !!(state ? state.use_todoist : loadedSettings.use_todoist),  // Todoist's; the bar's is bar.local
+      token: typed || (!!loadedSettings.has_todoist_token && !secretsToClear.todoist_token),
+      bar: state ? state.bar : null,
+    });
+    const line = card.querySelector(".integration-status");
+    if (status) line.textContent = t(status.key, status.values);
+    line.className = "integration-status" + (status ? " " + status.tone : "");
+    card.classList.toggle("off", !on);
+  }
+  // The tab on show went away with its integration.
+  const shown = document.querySelector("#settingsTabs .stab.on");
+  if (shown && shown.classList.contains("hidden")) showTab("integrations", document.activeElement === shown);
+}
+for (const b of document.querySelectorAll("#integrationList [data-open-tab]")) b.onclick = () => showTab(b.dataset.openTab, true);
+$("s_todoist_token").addEventListener("input", () => renderIntegrations());
 
 // Small dots on the tabs that need a look: an update, or site blocking
 // switched on without the extension connected.
@@ -1906,6 +1978,8 @@ function renderTabDots() {
 
 async function openSettings(tab) {
   const s = await api.get_settings();
+  loadedSettings = s;
+  integrations = Array.isArray(s.integrations) && s.integrations.length ? s.integrations : CORE_INTEGRATIONS;
   const form = $("settingsForm");
   for (const input of form.querySelectorAll("input[name]")) {
     if (input.type === "checkbox") input.checked = !!s[input.name];
@@ -1956,6 +2030,7 @@ async function openSettings(tab) {
   loadBarThemes();
   showBarFields();
   showTodoistFields();
+  renderIntegrations();
   showPlanFields();
   $("aboutVersion").textContent = "buZyist " + s.version;
   $("aboutData").textContent = s.data_dir;
@@ -2018,6 +2093,7 @@ for (const [key, x] of Object.entries(SECRETS)) {
     $(x.input).value = "";
     $(x.input).placeholder = x.empty();
     $(x.saved).classList.add("hidden");
+    renderIntegrations();
     $(x.input).focus();
   };
 }
@@ -2026,7 +2102,7 @@ for (const [key, x] of Object.entries(SECRETS)) {
 function showTodoistFields() {
   const on = $("s_use_todoist").checked;
   $("todoistFields").classList.toggle("muted", !on);
-  $("noTodoistHelp").classList.toggle("hidden", on);
+  renderIntegrations();
 }
 $("s_use_todoist").onchange = showTodoistFields;
 
@@ -2070,7 +2146,7 @@ for (const name of ["plan_from_duration", "plan_single_max", "plan_target", "pla
 function showBarFields() {
   const on = $("s_use_busybar").checked;
   $("barFields").classList.toggle("hidden", !on);
-  $("noBarHelp").classList.toggle("hidden", on);
+  renderIntegrations();
 }
 $("s_use_busybar").onchange = () => { showBarFields(); loadBarThemes(); };
 $("s_bar_end_app").onchange = () => { barEndApp = $("s_bar_end_app").value; };

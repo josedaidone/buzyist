@@ -638,6 +638,21 @@ body[data-phase="paused"] .badge { background: var(--bz-barro); }
 .extension-status.ok::before { background: var(--done); }
 .extension-status.bad { color: var(--primary-text); }
 .extension-status.bad::before { background: var(--bz-tomate); }
+/* Settings, Integrations: a card per core integration. */
+.integrations { display: grid; gap: 10px; margin: 12px 0 8px; }
+.integration { padding: 12px 16px 14px; border-radius: var(--r-card); background: var(--surface); }
+.integration-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.integration-name { font: 600 19px/1.2 var(--bz-font-display); }
+.integration > .help { margin: 2px 0 10px; line-height: 1.4; }
+.integration-foot { display: flex; align-items: center; gap: 12px; }
+.integration-status { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--muted); display: flex; align-items: baseline; gap: 8px; }
+.integration-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--faint); flex: none; transform: translateY(-1px); }
+.integration-status.ok { color: var(--done); }
+.integration-status.ok::before { background: var(--done); }
+.integration-status.warn { color: var(--ink); }
+.integration-status.warn::before { background: var(--bz-manteiga); }
+.integration-status.off { font-weight: 600; }
+.integration.off .integration-foot .btn { display: none; }
 .steps { margin: 6px 0; padding-left: 22px; display: grid; gap: 10px; font-size: 13.5px; }
 .steps li::marker { color: var(--muted); font-weight: 700; }
 .steps .btn { margin-bottom: 4px; }

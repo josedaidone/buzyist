@@ -69,7 +69,7 @@ import pytest
 import busyist
 from buzyist import app as app_mod
 from buzyist import bar as bar_mod
-from buzyist import constants, i18n, paths, storage
+from buzyist import constants, i18n, integrations, paths, storage
 from buzyist import focus_server as focus_server_mod
 
 # ---------------------------------------------------------------- modules ---
@@ -710,6 +710,17 @@ class FakeTodoist:
     - ``children[task_id]`` is what ``open_children`` answers.
     - ``errors["comment"] = AppError("boom")`` makes that method raise.
     """
+
+    # Every part, like the real one; a test may set fewer on an instance.
+    capabilities = frozenset(
+        {
+            integrations.SUBTASKS,
+            integrations.LABELS,
+            integrations.COMMENTS,
+            integrations.CARRY_OVER,
+            integrations.DURATIONS,
+        }
+    )
 
     def __init__(self, cfg: dict):
         self.cfg = cfg  # shared with App.cfg, like the real one

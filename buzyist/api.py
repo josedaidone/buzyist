@@ -19,6 +19,7 @@ from buzyist.config import DEFAULTS
 from buzyist.constants import APP, EXTENSION_ID, REPO_URL, SOLO_H, SOLO_W, AppError, app_version
 from buzyist.extension import EXTENSION_VERSION, find_browser, open_browser_page, show_in_explorer, sync_extension
 from buzyist.i18n import ENGLISH, app_error, english, language, languages, raw_catalog, t
+from buzyist.integrations import integrations_view
 from buzyist.secrets_dpapi import SECRET_KEYS
 from buzyist.win32.clipboard import set_clipboard
 
@@ -135,6 +136,8 @@ class Api:
             extension_browser=(find_browser() or (None,))[0],
             sync_info=self._app.sync_info(),
             languages=[{"code": code, "name": name} for code, name in languages().items()],
+            # The Settings' Integrations tab: one card per integration, in this order.
+            integrations=integrations_view(),
         )
 
     def sync_info(self):

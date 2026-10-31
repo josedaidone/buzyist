@@ -371,11 +371,29 @@
     "min": "min",
     "secret_saved": "•••••••• saved (type to replace)",
     "tabs": {
+      "integrations": "Integrations",
       "apps": "Apps",
       "sites": "Websites",
       "limits": "Limits",
       "general": "General",
       "about": "About"
+    },
+    "integrations": {
+      "help": "What buZyist works with. Switch one on and its own tab appears here.",
+      "open": "Settings",
+      "unsaved": "On once you save",
+      "todoist": {
+        "about": "Pick tasks from your Todoist filters. Finished pomodoros go on the task as comments, and a label marks what you're working on.",
+        "connected": "Connected",
+        "needs_token": "Needs an API token"
+      },
+      "busybar": {
+        "about": "Run the timer on the BUSY Bar on your desk, its screen showing what you're on and a chime for reminders.",
+        "on": "On",
+        "via": "Connected via {via}",
+        "offline": "Out of reach: the timer runs on this PC",
+        "unreachable": "Can't reach the bar right now"
+      }
     },
     "general": {
       "language": "Language",
@@ -1223,7 +1241,8 @@
       "bad_token": "Todoist rejected the API token (check Settings).",
       "answered": "Todoist answered {status}: {detail}",
       "unreachable": "Can't reach Todoist ({error}).",
-      "off": "Todoist is turned off in Settings."
+      "off": "Todoist is turned off in Settings.",
+      "no_carry_over": "This task list can't carry a task over to tomorrow."
     },
     "update": {
       "none": "There's no update to install.",
