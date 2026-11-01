@@ -184,6 +184,7 @@
     <button class="icon-btn" id="closeSettings" title="Close" data-i18n-title="settings.close"><svg><use href="#i-x"/></svg></button>
   </div>
   <div class="stabs" id="settingsTabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="settings.sections">
+    <button type="button" class="stab" role="tab" data-tab="integrations" aria-controls="p_integrations" data-i18n="settings.tabs.integrations">Integrations</button>
     <button type="button" class="stab" role="tab" data-tab="todoist" aria-controls="p_todoist">Todoist</button>
     <button type="button" class="stab" role="tab" data-tab="timer" aria-controls="p_timer">BUSY Bar</button>
     <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps" data-i18n="settings.tabs.apps">Apps</button>
@@ -193,11 +194,38 @@
     <button type="button" class="stab" role="tab" data-tab="about" aria-controls="p_about"><span data-i18n="settings.tabs.about">About</span><i class="dot good hidden" id="aboutDot"></i></button>
   </div>
   <form class="drawer-body" id="settingsForm" autocomplete="off">
-    <div class="section" role="tabpanel" id="p_todoist" data-panel="todoist">
-      <div class="toggles">
-        <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist"><span class="knob"></span><span data-i18n="settings.todoist.use">Use Todoist</span></label>
+    <!-- The core integrations, one card each, put in the order of
+         get_settings()["integrations"] by renderIntegrations (ui/main.js).
+         While one is off its tab button is hidden. -->
+    <div class="section" role="tabpanel" id="p_integrations" data-panel="integrations">
+      <div class="help" data-i18n="settings.integrations.help">What buZyist works with. Switch one on and its own tab appears here.</div>
+      <div class="integrations" id="integrationList">
+        <div class="integration" data-integration="todoist">
+          <div class="integration-head">
+            <div class="integration-name">Todoist</div>
+            <label class="switch"><input type="checkbox" name="use_todoist" id="s_use_todoist" aria-label="Use Todoist" data-i18n-aria-label="settings.todoist.use"><span class="knob"></span></label>
+          </div>
+          <div class="help" data-i18n="settings.integrations.todoist.about">Pick tasks from your Todoist filters. Finished pomodoros go on the task as comments, and a label marks what you're working on.</div>
+          <div class="integration-foot">
+            <div class="integration-status" id="todoistStatus"></div>
+            <button type="button" class="btn sm" data-open-tab="todoist" data-i18n="settings.integrations.open">Settings</button>
+          </div>
+        </div>
+        <div class="integration" data-integration="busybar">
+          <div class="integration-head">
+            <div class="integration-name">BUSY Bar</div>
+            <label class="switch"><input type="checkbox" name="use_busybar" id="s_use_busybar" aria-label="Run the timer on a BUSY Bar" data-i18n-aria-label="settings.bar.use"><span class="knob"></span></label>
+          </div>
+          <div class="help" data-i18n="settings.integrations.busybar.about">Run the timer on the BUSY Bar on your desk, its screen showing what you're on and a chime for reminders.</div>
+          <div class="integration-foot">
+            <div class="integration-status" id="busybarStatus"></div>
+            <button type="button" class="btn sm" data-open-tab="timer" data-i18n="settings.integrations.open">Settings</button>
+          </div>
+        </div>
       </div>
-      <div class="help" id="noTodoistHelp" data-i18n="settings.todoist.no_todoist_help">Without Todoist, sessions run with no task and you don't need an API token.</div>
+    </div>
+
+    <div class="section" role="tabpanel" id="p_todoist" data-panel="todoist">
       <div id="todoistFields">
       <div class="field">
         <label for="s_todoist_token" data-i18n="settings.todoist.token">API token</label>
@@ -248,10 +276,6 @@
     </div>
 
     <div class="section" role="tabpanel" id="p_timer" data-panel="timer">
-      <div class="toggles">
-        <label class="switch" data-i18n="settings.bar.use"><input type="checkbox" name="use_busybar" id="s_use_busybar"><span class="knob"></span>Run the timer on a BUSY Bar</label>
-      </div>
-      <div class="help hidden" id="noBarHelp" data-i18n="settings.bar.no_bar_help">Off: the timer runs in buZyist on this PC, with the mini timer and tray icon as the countdown.</div>
       <div id="barFields">
         <div class="two pin-wide">
           <div class="field">

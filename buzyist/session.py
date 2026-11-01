@@ -18,6 +18,7 @@ from buzyist.bar import BarUnreachable
 from buzyist.constants import ADD_MINUTES, APP, HISTORY_KEEP, AppError, now_ms
 from buzyist.focus_stats import session_minutes
 from buzyist.i18n import app_error, english, t
+from buzyist.integrations import CARRY_OVER, COMMENTS, DURATIONS, LABELS, SUBTASKS
 from buzyist.plan import plan_session
 from buzyist.storage import write_json
 
@@ -157,7 +158,7 @@ class SessionMixin:
         call = session.get("call")
         problems = []
         linked = bool(task["id"]) and self.todoist_on  # a free session has no task
-        if linked and (done or minutes) and self.cfg["log_comments"]:
+        if linked and (done or minutes) and self.cfg["log_comments"] and self.can(COMMENTS):
             try:
                 # Written once, in the language of the moment; never rewritten.
                 when = datetime.now().strftime(t("todoist.when"))
@@ -165,7 +166,7 @@ class SessionMixin:
                 self.todoist.comment(task["id"], t(key, n=done, minutes=minutes, when=when))
             except AppError as err:
                 problems.append(t("errors.session.comment_failed", error=err))
-        if linked and session.get("label_added") and self.cfg["remove_label_on_end"]:
+        if linked and session.get("label_added") and self.cfg["remove_label_on_end"] and self.can(LABELS):
             try:
                 self.todoist.set_label(task["id"], session["label"], False)
             except AppError as err:
@@ -248,7 +249,8 @@ class SessionMixin:
             if task is None:
                 raise app_error("errors.session.task_gone")
         cfg = self.cfg.view()
-        planned = None if fixed else plan_session(task.get("minutes"), cfg)
+        minutes = task.get("minutes") if DURATIONS in self.todoist.capabilities else None
+        planned = None if fixed else plan_session(minutes, cfg)
         work_min, cycles = planned or (int(cfg["work_minutes"]), int(cfg["cycles"]))
         work = work_min * 60000
         rest = int(cfg["rest_minutes"]) * 60000
@@ -277,7 +279,7 @@ class SessionMixin:
                 self.recovering = False
         if old:
             threading.Thread(target=self.finish, args=(old, "replaced"), daemon=True).start()
-        if task["id"] and self.todoist_on:
+        if task["id"] and self.can(LABELS):
             threading.Thread(target=self._label_task, args=(self.session,), daemon=True).start()
         self.wake.set()
         # Read the fresh interval straight back so focus (and its blockers)
@@ -410,6 +412,10 @@ class SessionMixin:
         `comment` is an optional note added to the task first, so it is carried over too.
         """
         made = None
+        # Not App.can: with Todoist off, its own calls below say why.
+        caps = self.todoist.capabilities
+        if followup and CARRY_OVER not in caps:
+            raise app_error("errors.todoist.no_carry_over")
         if followup:
             when = (date.today() + timedelta(days=1)).strftime(t("todoist.carry_when"))
             note = t("todoist.carried_over", date=when)
@@ -435,7 +441,7 @@ class SessionMixin:
         if made:
             result["followup"] = {"content": task.get("content", "")}
         parent_id = task.get("parent_id")
-        if not (offer_parent and parent_id):
+        if not (offer_parent and parent_id and SUBTASKS in caps):
             return result
         try:
             if self.todoist.open_children(parent_id):

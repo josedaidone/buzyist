@@ -370,11 +370,29 @@
     "min": "min",
     "secret_saved": "•••••••• salvo (digite para trocar)",
     "tabs": {
+      "integrations": "Integrações",
       "apps": "Apps",
       "sites": "Sites",
       "limits": "Limites",
       "general": "Geral",
       "about": "Sobre"
+    },
+    "integrations": {
+      "help": "Com o que o buZyist trabalha. Ligue uma integração e a aba dela aparece aqui.",
+      "open": "Configurações",
+      "unsaved": "Liga quando você salvar",
+      "todoist": {
+        "about": "Escolha tarefas dos seus filtros do Todoist. Os pomodoros terminados vão para a tarefa como comentários, e uma etiqueta marca no que você está trabalhando.",
+        "connected": "Conectado",
+        "needs_token": "Falta o token de API"
+      },
+      "busybar": {
+        "about": "Rode o timer na BUSY Bar da sua mesa, com a tela dela mostrando no que você está e um aviso sonoro para os lembretes.",
+        "on": "Ligado",
+        "via": "Conectado via {via}",
+        "offline": "Fora de alcance: o timer roda neste PC",
+        "unreachable": "A BUSY Bar não responde agora"
+      }
     },
     "general": {
       "language": "Idioma",
@@ -1213,7 +1231,8 @@
       "bad_token": "O Todoist recusou o token da API (confira as Configurações).",
       "answered": "O Todoist respondeu {status}: {detail}",
       "unreachable": "Não foi possível falar com o Todoist ({error}).",
-      "off": "O Todoist está desligado nas Configurações."
+      "off": "O Todoist está desligado nas Configurações.",
+      "no_carry_over": "Esta lista de tarefas não consegue levar uma tarefa para amanhã."
     },
     "update": {
       "none": "Não há atualização para instalar.",

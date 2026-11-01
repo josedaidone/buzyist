@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 
 from buzyist.constants import APP, TODOIST_API, AppError
 from buzyist.i18n import app_error, english
+from buzyist.integrations import CARRY_OVER, COMMENTS, DURATIONS, LABELS, SUBTASKS
 from buzyist.plan import duration_minutes
 
 log = logging.getLogger(APP)
@@ -55,6 +56,8 @@ class TodoistError(AppError):
 
 
 class Todoist:
+    capabilities = frozenset({SUBTASKS, LABELS, COMMENTS, CARRY_OVER, DURATIONS})  # a TaskSource with every part
+
     def __init__(self, cfg: dict):
         self.cfg = cfg
 
