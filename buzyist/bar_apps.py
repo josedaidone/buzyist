@@ -7,6 +7,8 @@ and stock firmware answers 404 to both.
 Why: when a timer ends, a bar whose mode switch is on Apps goes back to the
 Apps list (`AppsMenu`), even when an app ran before the timer. So once our
 session's done screen has gone (BarScreens), the app is opened and started.
+VeryBUSY r13 (API 27.14) turns the screen off instead (`Software Power Off`,
+a blank screen); a launch wakes it, so that counts as the Apps list too.
 
 Found on a real bar (VeryBUSY r12, API 27.7): every app opens on its Start
 screen (installed apps and the built-in Clock alike; the launch can't pass
@@ -25,6 +27,7 @@ from buzyist.i18n import app_error
 
 RUNTIMES = ("system", "fap", "js", "python")
 APPS_MENU = "AppsMenu"  # what /api/apps/running names while the bar shows the Apps list
+SOFT_OFF = "Software Power Off"  # r13: the screen off once a timer ends; a launch wakes it
 TIMER_APP = "Busy"  # the timer's own app: on show while a timer ends ("Well done!")
 END_APP_WAIT_S = 120  # how long after the session the bar may take to get back to the Apps list
 END_APP_POLL_S = 3  # how often it is looked at meanwhile
