@@ -523,10 +523,17 @@ def test_it_waits_while_the_bar_shows_the_timer_then_gives_up_elsewhere(run, dev
     assert device.opened == [("fap", "/ext/apps/misc/Nixie.fap")]
 
 
-@pytest.mark.parametrize("showing", ["Clock", "Software Power Off"])
-def test_a_bar_not_on_the_apps_list_is_left_alone(run, device, deferred_threads, showing):
+def test_a_bar_whose_screen_went_off_is_woken_with_the_app(run, device, deferred_threads):
+    # VeryBUSY r13 turns the screen off when a timer ends; the launch turns it back on.
     screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
-    device.showing = {"name": showing, "runtime": "", "app_id": ""}
+    device.showing = {"name": "Software Power Off", "runtime": "", "app_id": ""}
+    stopped(start(run({"bar_end_app": NIXIE, "bar_screens": screens}), deferred_threads), deferred_threads)
+    assert device.opened == [("fap", "/ext/apps/misc/Nixie.fap")] and device.keys == ["ok"]
+
+
+def test_a_bar_not_on_the_apps_list_is_left_alone(run, device, deferred_threads):
+    screens = {**DEFAULT_BAR_SCREENS, "done": {"mode": "off"}}
+    device.showing = {"name": "Clock", "runtime": "", "app_id": ""}
     app = stopped(start(run({"bar_end_app": NIXIE, "bar_screens": screens}), deferred_threads), deferred_threads)
     device.showing = {"name": "AppsMenu", "runtime": "", "app_id": ""}
     app.step(seconds=5)

@@ -35,6 +35,7 @@ from buzyist.bar_apps import (
     END_APP_POLL_S,
     END_APP_WAIT_S,
     LAUNCH_SETTLE_S,
+    SOFT_OFF,
     TIMER_APP,
     app_label,
     parse_end_app,
@@ -369,7 +370,7 @@ class BarScreens:
                 # between two apps (a moment with none after the timer leaves): look again.
                 return
             self._end_app = False
-            if showing != APPS_MENU:
+            if showing not in (APPS_MENU, SOFT_OFF):  # r13 turns the screen off after a timer
                 log.info("after the session: not opening %s, the bar shows %s", app_label(cfg["bar_end_app"]), showing)
                 return
             app.bar.open_app(runtime, app_id)
@@ -377,7 +378,7 @@ class BarScreens:
             opened = app.bar.running_app()
             # OK only on the app just opened (on its Start screen): pressed on a
             # running one it does something else.
-            if opened.get("name") in ("", APPS_MENU, TIMER_APP) or (
+            if opened.get("name") in ("", APPS_MENU, SOFT_OFF, TIMER_APP) or (
                 runtime != "system" and opened.get("app_id") != app_id
             ):
                 log.info("after the session: %s didn't open (%s)", app_label(cfg["bar_end_app"]), opened.get("name"))
