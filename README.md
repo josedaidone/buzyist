@@ -111,6 +111,11 @@ menu, and starts it.
   [VeryBUSY](https://code.mccullough.dev/christian/VeryBUSY) firmware): when a timer ends, a bar
   on Apps goes back to the Apps list. Pick an app (the Clock, Nixie Clock, Weather, ...) and the
   bar opens and starts it once the end of session screen has gone, if it's on the Apps list.
+- **Home Assistant** (Settings → Integrations, off by default): tells Home Assistant what you're
+  doing (focus, a break, a pause or a call, the task and the activity) for your automations. In
+  Home Assistant, add **BUSY Bar Apps** ([busybar-ha](https://github.com/josedaidone/busybar-ha))
+  → **buZyist on a PC**, and paste the webhook URL it shows into buZyist. It only reports; Home
+  Assistant can't control buZyist.
 - **Website limits** (Settings → Limits): time budgets for websites, enforced all day,
   with or without a pomodoro running.
   - Give a site (or a group of sites that share the time) one or more limits, such as *30 min
