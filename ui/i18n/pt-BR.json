@@ -392,6 +392,14 @@
         "via": "Conectado via {via}",
         "offline": "Fora de alcance: o timer roda neste PC",
         "unreachable": "A BUSY Bar não responde agora"
+      },
+      "homeassistant": {
+        "about": "Conte ao Home Assistant o que você está fazendo: foco, intervalo, pausa ou chamada, e em qual tarefa ou atividade, para as suas automações.",
+        "needs_url": "Falta a URL do webhook",
+        "waiting": "Ligado; nada enviado ainda",
+        "sent": "Último envio às {time}",
+        "failing": "O Home Assistant não responde: {error}",
+        "off": "Desligado"
       }
     },
     "general": {
@@ -816,6 +824,24 @@
       "confirm_bar": "O buZyist reinicia para atualizar. A sessão continua rodando na BUSY Bar e é retomada depois do reinício. Atualizar agora?",
       "confirm": "O buZyist reinicia para atualizar. A sessão continua rodando e é retomada depois do reinício. Atualizar agora?",
       "installing_toast": "Instalando o buZyist {version}. Ele reinicia sozinho."
+    },
+    "ha": {
+      "url": "URL do webhook",
+      "url_help": "No Home Assistant: <b>Configurações → Dispositivos e serviços → Adicionar integração → BUSY Bar Apps → buZyist</b>, e copie para cá a URL que ele mostrar.",
+      "url_lost": "Cole a URL do webhook de novo (ela não pode ser lida neste PC).",
+      "url_saved": "Há uma URL de webhook salva.",
+      "what": "O buZyist envia o que está fazendo quando isso muda, e a cada minuto de qualquer jeito: foco, intervalo, pausado, chamada ou parado, a tarefa, a atividade e quando a fase termina. O Home Assistant transforma isso em entidades e eventos; ele não controla o buZyist.",
+      "test": "Enviar agora",
+      "testing": "Enviando…",
+      "sent": "O Home Assistant recebeu: {state}.",
+      "sent_named": "“{name}” no Home Assistant recebeu: {state}.",
+      "states": {
+        "idle": "parado",
+        "focus": "foco",
+        "break": "intervalo",
+        "paused": "pausado",
+        "call": "chamada"
+      }
     }
   },
   "stats": {
@@ -1261,6 +1287,13 @@
       "empty": "Ainda não há estatísticas para exportar.",
       "write": "Não foi possível salvar o relatório: {error}",
       "no_window": "A janela ainda não está pronta. Tente de novo em instantes."
+    },
+    "ha": {
+      "bad_url": "Isso não é uma URL de webhook; copie a que o Home Assistant mostra (http://…/api/webhook/…).",
+      "no_url": "Cole primeiro a URL do webhook do Home Assistant.",
+      "refused": "O Home Assistant recusou (HTTP {status}).",
+      "unreachable": "O Home Assistant não responde: {error}",
+      "unknown_webhook": "O Home Assistant não conhece este webhook. Copie a URL de novo da entrada buZyist dele."
     }
   },
   "defaults": {

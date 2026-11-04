@@ -68,6 +68,7 @@ def test_get_settings_carries_the_registry(app):
     assert Api(app).get_settings()["integrations"] == [
         {"id": "todoist", "kind": "tasks", "setting": "use_todoist", "tab": "todoist"},
         {"id": "busybar", "kind": "timer", "setting": "use_busybar", "tab": "timer"},
+        {"id": "homeassistant", "kind": "status", "setting": "use_home_assistant", "tab": "homeassistant"},
     ]
 
 

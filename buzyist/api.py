@@ -256,6 +256,16 @@ class Api:
 
         return self._do(go)
 
+    def test_home_assistant(self, url=""):
+        """
+        Settings' Send now: what buZyist is doing, to the webhook URL typed
+        (empty: the saved one), at once. `{state, name}`: what was sent and
+        the name of the Home Assistant entry that took it.
+        """
+        return self._do(
+            lambda: self._app.home_assistant.test(str(url or "").strip() or self._app.cfg["ha_webhook_url"])
+        )
+
     def bar_power(self):
         """The bar's battery level and whether it is charging, for the BUSY Bar tab."""
         return self._do(self._app.bar.power)

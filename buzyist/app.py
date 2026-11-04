@@ -58,6 +58,7 @@ from buzyist.constants import (
 )
 from buzyist.focus_server import FocusServer
 from buzyist.focus_stats import SESSION_REASONS, earliest, focus_stats, session_minutes
+from buzyist.home_assistant import HomeAssistantLink
 from buzyist.hotkey import GlobalHotkey
 from buzyist.i18n import app_error, english, t
 from buzyist.integrations import DURATIONS, SUBTASKS, TaskSource, TimerSource
@@ -173,6 +174,8 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.calls = CallWatcher(self)
         # The bar's front screen during our sessions (bar_screens); the engine pokes it every poll.
         self.bar_screens = BarScreens(self)
+        # Tells Home Assistant what goes on (use_home_assistant); the engine pokes it every poll.
+        self.home_assistant = HomeAssistantLink(self)
         # Tells the Chrome extension whether to block sites (issue #2).
         self.extension_last = 0  # now_ms() of the last request the extension made
         self.extension_version = ""  # what it said it is; "" for ones from before it said
@@ -547,6 +550,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
                 "use_todoist": bool(self.cfg.get("use_todoist")),
                 "extension_connected": self.extension_connected(),
                 "extension_outdated": self.extension_outdated(),
+                "home_assistant": self.home_assistant.view(),  # the Integrations tab's status line
                 "update": self.update_view(),
             }
 
@@ -660,6 +664,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             self.pause_reminder()
             self.update_tray()
             self.bar_screens.poke()
+            self.home_assistant.poke()
         except Exception:
             log.exception("engine")
         # Reading the local clock costs nothing, so follow it closely.
@@ -833,6 +838,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.app_limiter.poke()
         self.calls.poke()
         self.bar_screens.poke()
+        self.home_assistant.poke()
         if language_changed:
             self.retranslate_tray()  # the menu and the tooltip, in the new language now
             self.reload_windows()  # the pages take their text from the catalog at load
@@ -924,6 +930,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         self.app_limiter.start()
         self.calls.start()
         self.bar_screens.start()
+        self.home_assistant.start()
         self.site_server.start()
         if paths.FROZEN:  # from source, git is the updater
             threading.Thread(target=self.updater, daemon=True, name="updater").start()

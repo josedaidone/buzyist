@@ -102,6 +102,14 @@ CALL_START_S = 15
 CALL_END_S = 10
 CALL_POLL_S = 2
 MAX_CALL_IGNORE = 20
+# Home Assistant (home_assistant.py): what buZyist is doing goes to a webhook
+# when it changes and every HA_HEARTBEAT_S anyway (Home Assistant counts a PC
+# it hasn't heard from in 3 heartbeats as gone); a failed send is tried again
+# after HA_RETRY_S, each waiting at most HA_TIMEOUT_S.
+HA_HEARTBEAT_S = 60
+HA_RETRY_S = 15
+HA_TIMEOUT_S = 5
+HA_PROTOCOL = 1  # the payload's "v": busybar-ha reads it
 SOLO_W, SOLO_H = 580, 740  # main window size without the task list
 
 

@@ -43,6 +43,7 @@ from buzyist.constants import (
     POLL_MIN,
     AppError,
 )
+from buzyist.home_assistant import clean_ha_url
 from buzyist.hotkey import parse_hotkey
 from buzyist.i18n import app_error, languages, t
 from buzyist.secrets_dpapi import protect_secrets
@@ -117,6 +118,11 @@ DEFAULTS = {
     "call_detect": False,
     "call_activity": "call",
     "call_ignore_apps": [],
+    # Home Assistant (see buzyist/home_assistant.py): what buZyist is doing
+    # goes to this webhook, which busybar-ha's "buZyist" entry registers. The
+    # URL is a secret (whoever has it can post to it), kept like the token.
+    "use_home_assistant": False,
+    "ha_webhook_url": "",
     # Keep distracting apps away while a work phase runs (issue #1). Off by
     # default for other users. The list is APP_PRESETS (each switchable)
     # plus apps added by hand; normalize_blocked_apps() fills it in.
@@ -419,6 +425,8 @@ class Config(BaseModel):
     call_detect: bool = _default("call_detect")
     call_activity: Annotated[str, Field(max_length=24)] = _default("call_activity")
     call_ignore_apps: list[str] = _default("call_ignore_apps")
+    use_home_assistant: bool = _default("use_home_assistant")
+    ha_webhook_url: str = _default("ha_webhook_url")
 
     @field_validator("filters", mode="before")
     @classmethod
@@ -444,6 +452,11 @@ class Config(BaseModel):
     @classmethod
     def _bar_end_app(cls, value, info: ValidationInfo):
         return _app_error(clean_end_app, value, _loading(info))
+
+    @field_validator("ha_webhook_url")
+    @classmethod
+    def _ha_url(cls, value: str) -> str:
+        return _app_error(clean_ha_url, value)
 
     @field_validator("hotkey")
     @classmethod
