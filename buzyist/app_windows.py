@@ -186,6 +186,7 @@ class WindowsMixin:
         self.update_wake.set()
         self.blocker.poke()
         self.site_server.stop()
+        self.home_assistant.close()
         self.usage.flush(force=True)
         self.app_usage.flush(force=True)
         self.app_time.flush(force=True)

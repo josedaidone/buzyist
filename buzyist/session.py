@@ -187,8 +187,10 @@ class SessionMixin:
             )
             self.history = self.history[-HISTORY_KEEP:]
             write_json(paths.HISTORY_PATH, self.history)
-            if reason == "replaced" or silent:
-                return
+        if not silent:
+            self.home_assistant.note_ended(session, reason, done, minutes)
+        if reason == "replaced" or silent:
+            return
         if session.get("task_done"):  # ended by "Mark as done" on the mini timer: no summary to read
             self.bar_screens.after_session()
             self.update_tray()

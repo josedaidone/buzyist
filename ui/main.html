@@ -187,6 +187,7 @@
     <button type="button" class="stab" role="tab" data-tab="integrations" aria-controls="p_integrations" data-i18n="settings.tabs.integrations">Integrations</button>
     <button type="button" class="stab" role="tab" data-tab="todoist" aria-controls="p_todoist">Todoist</button>
     <button type="button" class="stab" role="tab" data-tab="timer" aria-controls="p_timer">BUSY Bar</button>
+    <button type="button" class="stab" role="tab" data-tab="homeassistant" aria-controls="p_homeassistant">Home Assistant</button>
     <button type="button" class="stab" role="tab" data-tab="apps" aria-controls="p_apps" data-i18n="settings.tabs.apps">Apps</button>
     <button type="button" class="stab" role="tab" data-tab="sites" aria-controls="p_sites"><span data-i18n="settings.tabs.sites">Websites</span><i class="dot warn hidden" id="sitesDot"></i></button>
     <button type="button" class="stab" role="tab" data-tab="limits" aria-controls="p_limits"><span data-i18n="settings.tabs.limits">Limits</span><i class="dot warn hidden" id="limitsDot"></i></button>
@@ -222,7 +223,34 @@
             <button type="button" class="btn sm" data-open-tab="timer" data-i18n="settings.integrations.open">Settings</button>
           </div>
         </div>
+        <div class="integration" data-integration="homeassistant">
+          <div class="integration-head">
+            <div class="integration-name">Home Assistant</div>
+            <label class="switch"><input type="checkbox" name="use_home_assistant" id="s_use_home_assistant" aria-label="Home Assistant"><span class="knob"></span></label>
+          </div>
+          <div class="help" data-i18n="settings.integrations.homeassistant.about">Tell Home Assistant what you're doing: focus, a break, a pause or a call, and on which task or activity, for your automations.</div>
+          <div class="integration-foot">
+            <div class="integration-status" id="homeassistantStatus"></div>
+            <button type="button" class="btn sm" data-open-tab="homeassistant" data-i18n="settings.integrations.open">Settings</button>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- Home Assistant (buzyist/home_assistant.py): the webhook that
+         busybar-ha's "buZyist" entry registers. The URL is a secret, like
+         the Todoist token: the page never gets it back. -->
+    <div class="section" role="tabpanel" id="p_homeassistant" data-panel="homeassistant">
+      <div class="help" data-i18n="settings.ha.what">buZyist sends what it is doing when that changes, and every minute anyway: focus, break, paused, call or idle, the task, the activity and when the phase ends. Home Assistant turns it into entities and events; it can't control buZyist.</div>
+      <div class="field">
+        <label for="s_ha_webhook_url" data-i18n="settings.ha.url">Webhook URL</label>
+        <input class="input" id="s_ha_webhook_url" name="ha_webhook_url" type="password" spellcheck="false" placeholder="http://homeassistant.local:8123/api/webhook/…">
+        <div class="help hidden" id="haUrlLost" data-i18n="settings.ha.url_lost">Paste the webhook URL again (it can't be read on this PC).</div>
+        <div class="help hidden" id="haUrlSaved"><span data-i18n="settings.ha.url_saved">A webhook URL is saved.</span> <button type="button" class="link" id="removeHaUrl" data-i18n="settings.remove">Remove</button></div>
+        <div class="help" data-i18n-rich="settings.ha.url_help">In Home Assistant: <b>Settings → Devices &amp; services → Add integration → BUSY Bar Apps → buZyist</b>, then copy the URL it shows here.</div>
+      </div>
+      <button type="button" class="btn" id="testHa" data-i18n="settings.ha.test">Send now</button>
+      <div class="test-result" id="haResult"></div>
     </div>
 
     <div class="section" role="tabpanel" id="p_todoist" data-panel="todoist">

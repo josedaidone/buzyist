@@ -393,6 +393,14 @@
         "via": "Connected via {via}",
         "offline": "Out of reach: the timer runs on this PC",
         "unreachable": "Can't reach the bar right now"
+      },
+      "homeassistant": {
+        "about": "Tell Home Assistant what you're doing: focus, a break, a pause or a call, and on which task or activity, for your automations.",
+        "needs_url": "Needs the webhook URL",
+        "waiting": "On; nothing sent yet",
+        "sent": "Last sent at {time}",
+        "failing": "Can't reach Home Assistant: {error}",
+        "off": "Off"
       }
     },
     "general": {
@@ -823,6 +831,24 @@
       "confirm_bar": "buZyist restarts to update. The session keeps running on the bar and picks up again after the restart. Update now?",
       "confirm": "buZyist restarts to update. The session keeps running and picks up again after the restart. Update now?",
       "installing_toast": "Installing buZyist {version}. It restarts by itself."
+    },
+    "ha": {
+      "url": "Webhook URL",
+      "url_help": "In Home Assistant: <b>Settings → Devices & services → Add integration → BUSY Bar Apps → buZyist</b>, then copy the URL it shows here.",
+      "url_lost": "Paste the webhook URL again (it can't be read on this PC).",
+      "url_saved": "A webhook URL is saved.",
+      "what": "buZyist sends what it is doing when that changes, and every minute anyway: focus, break, paused, call or idle, the task, the activity and when the phase ends. Home Assistant turns it into entities and events; it can't control buZyist.",
+      "test": "Send now",
+      "testing": "Sending…",
+      "sent": "Home Assistant took it: {state}.",
+      "sent_named": "“{name}” in Home Assistant took it: {state}.",
+      "states": {
+        "idle": "idle",
+        "focus": "focus",
+        "break": "break",
+        "paused": "paused",
+        "call": "call"
+      }
     }
   },
   "stats": {
@@ -1271,6 +1297,13 @@
       "empty": "There are no stats to export yet.",
       "write": "Couldn't save the report: {error}",
       "no_window": "The window isn't ready yet. Try again in a moment."
+    },
+    "ha": {
+      "bad_url": "That isn't a webhook URL; copy the one Home Assistant shows (http://…/api/webhook/…).",
+      "no_url": "Paste the webhook URL from Home Assistant first.",
+      "refused": "Home Assistant refused it (HTTP {status}).",
+      "unreachable": "Can't reach Home Assistant: {error}",
+      "unknown_webhook": "Home Assistant doesn't know this webhook. Copy the URL again from its buZyist entry."
     }
   },
   "defaults": {

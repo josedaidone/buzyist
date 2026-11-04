@@ -28,9 +28,22 @@ test("BUSY Bar", () => {
   assert.equal(status("busybar", { on: true, bar: {} }).key, "settings.integrations.busybar.on");
 });
 
+test("Home Assistant", () => {
+  assert.equal(status("homeassistant", { on: false }).key, "settings.integrations.homeassistant.off");
+  assert.deepEqual(status("homeassistant", { on: true, url: false }), { key: "settings.integrations.homeassistant.needs_url", values: {}, tone: "warn" });
+  assert.equal(status("homeassistant", { on: true, url: true, ha: null }).key, "settings.integrations.unsaved");
+  assert.equal(status("homeassistant", { on: true, url: true, ha: { on: false } }).key, "settings.integrations.unsaved");
+  assert.equal(status("homeassistant", { on: true, url: true, ha: { on: true, last_ok_ms: 0, error: "" } }).key, "settings.integrations.homeassistant.waiting");
+  assert.deepEqual(status("homeassistant", { on: true, url: true, ha: { on: true, last_ok_ms: 5, error: "" }, time: "10:00" }),
+    { key: "settings.integrations.homeassistant.sent", values: { time: "10:00" }, tone: "ok" });
+  assert.deepEqual(status("homeassistant", { on: true, url: true, ha: { on: true, last_ok_ms: 5, error: "down" } }),
+    { key: "settings.integrations.homeassistant.failing", values: { error: "down" }, tone: "warn" });
+});
+
 test("every status key is in the catalog", () => {
   const xs = [{ on: false }, { on: true }, { on: true, token: true }, { on: true, saved: true, token: true },
-    { on: true, bar: { offline: true } }, { on: true, bar: { ok: true, via: "x" } }, { on: true, bar: { ok: false } }, { on: true, bar: {} }];
-  for (const id of ["todoist", "busybar"]) for (const x of xs) assert.ok(has(status(id, x).key), status(id, x).key);
+    { on: true, bar: { offline: true } }, { on: true, bar: { ok: true, via: "x" } }, { on: true, bar: { ok: false } }, { on: true, bar: {} }, { on: true, url: true, ha: { on: true, error: "x" } },
+    { on: true, url: true, ha: { on: true, last_ok_ms: 1 } }, { on: true, url: true, ha: { on: true } }];
+  for (const id of ["todoist", "busybar", "homeassistant"]) for (const x of xs) assert.ok(has(status(id, x).key), status(id, x).key);
   assert.equal(integrationStatus("other", {}), null);
 });

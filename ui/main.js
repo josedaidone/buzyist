@@ -1906,6 +1906,7 @@ $("settingsTabs").addEventListener("keydown", (e) => {
 const CORE_INTEGRATIONS = [
   { id: "todoist", kind: "tasks", setting: "use_todoist", tab: "todoist" },
   { id: "busybar", kind: "timer", setting: "use_busybar", tab: "timer" },
+  { id: "homeassistant", kind: "status", setting: "use_home_assistant", tab: "homeassistant" },
 ];
 let integrations = CORE_INTEGRATIONS;
 let loadedSettings = {};  // the last get_settings() answer (has_todoist_token, ...)
@@ -1931,6 +1932,17 @@ function integrationStatus(id, x) {
     if (bar.ok === false) return { key: "settings.integrations.busybar.unreachable", values: {}, tone: "warn" };
     return { key: "settings.integrations.busybar.on", values: {}, tone: "ok" };
   }
+  if (id === "homeassistant") {
+    // url: a webhook URL saved and kept, or one typed; ha: get_state()'s
+    // home_assistant ({on, last_ok_ms, error}) or null; time: last_ok_ms formatted.
+    const ha = x.ha;
+    if (!x.on) return { key: "settings.integrations.homeassistant.off", values: {}, tone: "off" };
+    if (!x.url) return { key: "settings.integrations.homeassistant.needs_url", values: {}, tone: "warn" };
+    if (!ha || !ha.on) return { key: "settings.integrations.unsaved", values: {}, tone: "ok" };
+    if (ha.error) return { key: "settings.integrations.homeassistant.failing", values: { error: ha.error }, tone: "warn" };
+    if (ha.last_ok_ms) return { key: "settings.integrations.homeassistant.sent", values: { time: x.time }, tone: "ok" };
+    return { key: "settings.integrations.homeassistant.waiting", values: {}, tone: "ok" };
+  }
   return null;
 }
 
@@ -1948,11 +1960,15 @@ function renderIntegrations() {
     const tab = document.querySelector(`#settingsTabs .stab[data-tab="${it.tab}"]`);
     if (tab) tab.classList.toggle("hidden", !on);
     const typed = !!$("s_todoist_token").value.trim();
+    const ha = state ? state.home_assistant : null;
     const status = integrationStatus(it.id, {
       on,
       saved: !!(state ? state.use_todoist : loadedSettings.use_todoist),  // Todoist's; the bar's is bar.local
       token: typed || (!!loadedSettings.has_todoist_token && !secretsToClear.todoist_token),
       bar: state ? state.bar : null,
+      url: !!$("s_ha_webhook_url").value.trim() || (!!loadedSettings.has_ha_webhook_url && !secretsToClear.ha_webhook_url),
+      ha,
+      time: ha && ha.last_ok_ms ? formatTime(new Date(ha.last_ok_ms)) : "",
     });
     const line = card.querySelector(".integration-status");
     if (status) line.textContent = t(status.key, status.values);
@@ -1965,6 +1981,8 @@ function renderIntegrations() {
 }
 for (const b of document.querySelectorAll("#integrationList [data-open-tab]")) b.onclick = () => showTab(b.dataset.openTab, true);
 $("s_todoist_token").addEventListener("input", () => renderIntegrations());
+$("s_ha_webhook_url").addEventListener("input", () => renderIntegrations());
+$("s_use_home_assistant").addEventListener("change", () => renderIntegrations());
 
 // Small dots on the tabs that need a look: an update, or site blocking
 // switched on without the extension connected.
@@ -1987,6 +2005,7 @@ async function openSettings(tab) {
     else input.value = s[input.name] ?? "";
   }
   $("testResult").textContent = "";
+  $("haResult").textContent = "";
   showLanguages(s);
   showSecrets(s);
   blockedApps =(s.blocked_apps || []).map((a) => ({ ...a, exes: [...a.exes] }));
@@ -2066,6 +2085,7 @@ function showLanguages(s) {
 const SECRETS = {
   todoist_token: { input: "s_todoist_token", saved: "tokenSaved", lost: "tokenLost", remove: "removeToken", empty: () => t("settings.todoist.token_placeholder") },
   busybar_pin: { input: "s_busybar_pin", saved: "pinSaved", lost: "pinLost", remove: "removePin", empty: () => "" },
+  ha_webhook_url: { input: "s_ha_webhook_url", saved: "haUrlSaved", lost: "haUrlLost", remove: "removeHaUrl", empty: () => "http://homeassistant.local:8123/api/webhook/…" },
 };
 let secretsToClear = {};
 
@@ -3637,6 +3657,18 @@ $("testBar").onclick = async () => {
   out.textContent = !result.ok ? result.error
     : t(result.version ? "settings.bar.connected_firmware" : "settings.bar.connected", { via: result.via, version: result.version });
   loadBarPower();
+};
+
+// Home Assistant's Send now: what buZyist is doing, to the URL typed (else the saved one), saved or not.
+$("testHa").onclick = async () => {
+  const out = $("haResult");
+  out.className = "test-result";
+  out.textContent = t("settings.ha.testing");
+  const result = await api.test_home_assistant($("s_ha_webhook_url").value.trim());
+  out.className = "test-result " + (result.ok ? "ok" : "bad");
+  const shown = result.ok && t("settings.ha.states." + result.state);
+  out.textContent = !result.ok ? result.error
+    : t(result.name ? "settings.ha.sent_named" : "settings.ha.sent", { name: result.name, state: shown });
 };
 
 // The reminders' chime, on the bar as saved (the connection fields first, as Test connection does).

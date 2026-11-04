@@ -18,7 +18,7 @@ from buzyist.win32 import CRYPTPROTECT_UI_FORBIDDEN, DATA_BLOB, crypt32, kernel3
 
 log = logging.getLogger(APP)
 
-SECRET_KEYS = ("todoist_token", "busybar_pin")
+SECRET_KEYS = ("todoist_token", "busybar_pin", "ha_webhook_url")
 DPAPI_PREFIX = "dpapi:v1:"
 DPAPI_ENTROPY = b"buZyist/v1"
 

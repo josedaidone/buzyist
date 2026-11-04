@@ -1,6 +1,8 @@
 """
 The seams between the app and its two core integrations: where tasks come
 from (Todoist) and what runs the timer (the BUSY Bar, or this PC's clock).
+Home Assistant is a third, one-way: it is told what goes on
+(home_assistant.py) and the app needs nothing from it.
 The session code reaches them only through what these protocols name, so a
 part of them that another source lacks is a capability it checks first
 (App.can). The registry is what Settings' Integrations tab is built from.
@@ -103,7 +105,7 @@ class TaskSource(Protocol):
 @dataclass(frozen=True)
 class Integration:
     id: str
-    kind: str  # "tasks" (a TaskSource) or "timer" (a TimerSource)
+    kind: str  # "tasks" (a TaskSource), "timer" (a TimerSource) or "status" (told what goes on)
     setting: str  # the switch in DEFAULTS that turns it on
     tab: str  # its Settings tab
 
@@ -111,6 +113,7 @@ class Integration:
 INTEGRATIONS = (
     Integration("todoist", "tasks", "use_todoist", "todoist"),
     Integration("busybar", "timer", "use_busybar", "timer"),
+    Integration("homeassistant", "status", "use_home_assistant", "homeassistant"),
 )
 
 
