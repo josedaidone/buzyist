@@ -529,12 +529,16 @@ body[data-phase="paused"] .badge { background: var(--bz-barro); }
 .drawer.on { transform: none; }
 .drawer-head { display: flex; align-items: center; padding: 18px 18px 10px 24px; }
 .drawer-head h3 { margin: 0; flex: 1; font: 600 28px/1.1 var(--bz-font-display); }
+/* The tabs don't fit one row of the drawer: a grid of two balanced rows
+   (renderIntegrations sets --cols from the tabs on show), each column as wide
+   as its longest name, so no name is cut. */
 .stabs {
-  display: flex; gap: 2px; margin: 0 16px; padding: 4px; border-radius: 999px;
+  display: grid; grid-template-columns: repeat(var(--cols, 5), auto); gap: 2px;
+  margin: 0 16px; padding: 4px; border-radius: 21px;
   background: var(--surface); flex: none;
 }
 .stab {
-  flex: 1 1 auto; min-width: 0; height: 34px; padding: 0 4px; /* auto: a longer name gets its width */ border: 0; border-radius: 999px;
+  height: 34px; padding: 0 8px; border: 0; border-radius: 999px;
   background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 700;
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap;
   transition: background .12s, color .12s;

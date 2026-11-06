@@ -1975,6 +1975,9 @@ function renderIntegrations() {
     line.className = "integration-status" + (status ? " " + status.tone : "");
     card.classList.toggle("off", !on);
   }
+  // Up to six tabs fit one row; more go in two balanced rows (.stabs).
+  const count = shownTabs().length;
+  $("settingsTabs").style.setProperty("--cols", count <= 6 ? count : Math.ceil(count / 2));
   // The tab on show went away with its integration.
   const shown = document.querySelector("#settingsTabs .stab.on");
   if (shown && shown.classList.contains("hidden")) showTab("integrations", document.activeElement === shown);
