@@ -29,7 +29,8 @@ class SyncMixin:
         or the latest it saw (`snap`, after a pause or skip). Once matched it
         stays matched while that PC still shares the session, the stamp only
         grows and the phase lengths agree, so a pause made here doesn't lose
-        the name until the other PC catches up.
+        the name until the other PC catches up. Calls (infinite timers) match
+        the same way but compare no phase length (calls have no work phases).
         """
         snap = self.snap
         if (
@@ -42,19 +43,23 @@ class SyncMixin:
             self._remote_match = None
             return None
         state = timer_state(snap)
-        if state.mode != "interval" or state.is_finished:
+        if state.is_finished:
+            self._remote_match = None
+            return None
+        is_call = state.mode == "infinite"
+        if state.mode != "interval" and not is_call:
             self._remote_match = None
             return None
         ts = snap.snapshot_timestamp_ms
-        work_ms = snap.snapshot.interval_settings.interval_work_ms
+        work_ms = 0 if is_call else snap.snapshot.interval_settings.interval_work_ms
         sessions = self.remote_sessions
         if self._remote_match:
             dev, stamp = self._remote_match
             s = sessions.get(dev)
-            if s and s["stamp"] == stamp and ts >= stamp and s["work_ms"] == work_ms:
+            if s and s["stamp"] == stamp and ts >= stamp and bool(s.get("call")) == is_call and s["work_ms"] == work_ms:
                 return s
         for dev, s in sessions.items():
-            if ts in (s["stamp"], s["snap"]) and s["work_ms"] == work_ms:
+            if ts in (s["stamp"], s["snap"]) and s["work_ms"] == work_ms and bool(s.get("call")) == is_call:
                 self._remote_match = (dev, s["stamp"])
                 return s
         self._remote_match = None
@@ -63,16 +68,22 @@ class SyncMixin:
     def _remote_view(self) -> dict | None:
         """remote_session() for the UI; call with self.lock held."""
         s = self.remote_session()
-        return s and {"task": s["task"], "started_at": s["started_at"], "by": s["name"] or t("notify.another_pc")}
+        return s and {
+            "task": s["task"],
+            "started_at": s["started_at"],
+            "by": s["name"] or t("notify.another_pc"),
+            **({"call": s["call"]} if s.get("call") else {}),
+        }
 
     def shared_session(self) -> dict | None:
         """This PC's running session, as other PCs on the same bar get it (see remote_session)."""
         with self.lock:
             session, snap = self.session, self.snap
-            if not session or session.get("local") or session.get("call"):
-                return None  # a clock on this PC (no other PC can see it), or a call (not a pomodoro)
+            if not session or session.get("local"):
+                return None  # a clock on this PC (no other PC can see it)
+            call = session.get("call")
             seen = snap.snapshot_timestamp_ms if snap is not None else 0
-            return {
+            out: dict = {
                 "stamp": session["stamp"],
                 "snap": max(seen, session["stamp"]),
                 "task": {k: session["task"].get(k) or "" for k in ("content", "project", "url")},
@@ -80,6 +91,9 @@ class SyncMixin:
                 "work_ms": session["work_ms"],
                 "rounds": session.get("rounds") or 0,
             }
+            if call:
+                out["call"] = {"apps": call["apps"], "keys": call["keys"], "started_ms": call["started_ms"]}
+            return out
 
     # ---------------------------------------------- sharing across PCs
     #

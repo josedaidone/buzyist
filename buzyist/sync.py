@@ -54,8 +54,9 @@ def clean_remote_sessions(raw, own_device: str) -> dict:
     """
     The sessions other PCs run, as the extension read them from Chrome sync,
     checked: {device: {"name", "t", "stamp", "snap", "task": {"content",
-    "project", "url"}, "started_at", "work_ms", "rounds"}}. One not
+    "project", "url"}, "started_at", "work_ms", "rounds", "call"}}. One not
     rewritten in a day is dropped (that PC went away mid-session).
+    "call" is {apps, keys, started_ms} for a call session, or None.
     """
     out: dict[str, dict] = {}
     if not isinstance(raw, dict):
@@ -79,6 +80,7 @@ def clean_remote_sessions(raw, own_device: str) -> dict:
                 "started_at": str(s.get("started_at") or "")[:5],
                 "work_ms": int(s.get("work_ms") or 0),
                 "rounds": int(s.get("rounds") or 0),
+                **({"call": s["call"]} if isinstance(s.get("call"), dict) else {}),
             }
         except (KeyError, TypeError, ValueError):
             continue

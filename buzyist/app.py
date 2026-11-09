@@ -307,6 +307,24 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         if snap is None:
             return None
         state = timer_state(snap)
+        # A remote call (another PC started one on this bar): infinite mode, no local session.
+        if state.mode == "infinite" and not state.is_finished and not state.is_paused and not session:
+            remote = self.remote_session()
+            if remote and remote.get("call"):
+                elapsed = max(0, now_ms() - remote["call"]["started_ms"])
+                return {
+                    "phase": "call",
+                    "paused": False,
+                    "left_ms": 0,
+                    "elapsed_ms": elapsed,
+                    "total_ms": 0,
+                    "fraction": 1.0,
+                    "minutes": elapsed // 60000,
+                    "round": 1,
+                    "rounds": 1,
+                    "work_ms": 0,
+                    "rest_ms": 0,
+                }
         if state.mode != "interval" or state.is_finished:
             return None
         settings = snap.snapshot.interval_settings
@@ -717,11 +735,17 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
     def beep(self, times: int = 3) -> None:
         """
         Ring, on a thread of its own: the chime on the bar (bar_sound on, the
-        bar in reach), else a few beeps on this PC. Silent while on a call.
+        bar in reach), else a few beeps on this PC. Silent while a call runs
+        here or on another PC that shares this bar (sync_session).
         """
         with self.lock:
             if self.session and self.session.get("call"):
                 return
+            # Also silent during a remote call (another PC started it on this bar).
+            if self.snap is not None and timer_state(self.snap).mode == "infinite" and not self.session:
+                remote = self.remote_session()
+                if remote and remote.get("call"):
+                    return
 
         def run():
             if self.ring_bar():
