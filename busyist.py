@@ -10,7 +10,7 @@ Inno script and the release workflow read from the line below.
 
 import sys
 
-__version__ = "2.17.1"
+__version__ = "2.17.2"
 
 if __name__ == "__main__":
     sys.modules.setdefault("busyist", sys.modules[__name__])  # app_version() reads this copy, not a second
