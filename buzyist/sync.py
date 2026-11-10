@@ -80,8 +80,14 @@ def clean_remote_sessions(raw, own_device: str) -> dict:
                 "started_at": str(s.get("started_at") or "")[:5],
                 "work_ms": int(s.get("work_ms") or 0),
                 "rounds": int(s.get("rounds") or 0),
-                **({"call": s["call"]} if isinstance(s.get("call"), dict) else {}),
             }
+            call = s.get("call")
+            if isinstance(call, dict):
+                entry["call"] = {
+                    "apps": [str(a)[:60] for a in call.get("apps") or []][:10],
+                    "keys": [str(k)[:60] for k in call.get("keys") or []][:10],
+                    "started_ms": int(call.get("started_ms") or entry["stamp"]),
+                }
         except (KeyError, TypeError, ValueError):
             continue
         if not entry["task"]["url"].startswith("https://"):
