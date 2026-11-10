@@ -29,8 +29,9 @@ class SyncMixin:
         or the latest it saw (`snap`, after a pause or skip). Once matched it
         stays matched while that PC still shares the session, the stamp only
         grows and the phase lengths agree, so a pause made here doesn't lose
-        the name until the other PC catches up. Calls (infinite timers) match
-        the same way but compare no phase length (calls have no work phases).
+        the name until the other PC catches up. A call (an infinite timer) is
+        the newest call shared with a stamp at or before the bar's, since its
+        stamp moves every minute and it has no phase lengths to compare.
         """
         snap = self.snap
         if (
@@ -43,11 +44,8 @@ class SyncMixin:
             self._remote_match = None
             return None
         state = timer_state(snap)
-        if state.is_finished:
-            self._remote_match = None
-            return None
         is_call = state.mode == "infinite"
-        if state.mode != "interval" and not is_call:
+        if state.is_finished or (state.mode != "interval" and not is_call):
             self._remote_match = None
             return None
         ts = snap.snapshot_timestamp_ms
@@ -58,8 +56,19 @@ class SyncMixin:
             s = sessions.get(dev)
             if s and s["stamp"] == stamp and ts >= stamp and bool(s.get("call")) == is_call and s["work_ms"] == work_ms:
                 return s
+        if is_call:
+            # A call's stamp moves every minute its text screen changes
+            # (BarScreens), faster than Chrome sync carries `snap`, and it has
+            # no phases to compare: the newest call shared from before the
+            # bar's stamp is the one on the bar.
+            calls = [(s["stamp"], dev) for dev, s in sessions.items() if s.get("call") and s["stamp"] <= ts]
+            if calls:
+                stamp, dev = max(calls)
+                log.info("matched remote call from %s (stamp=%d)", dev, ts)
+                self._remote_match = (dev, stamp)
+                return sessions[dev]
         for dev, s in sessions.items():
-            if ts in (s["stamp"], s["snap"]) and s["work_ms"] == work_ms and bool(s.get("call")) == is_call:
+            if not is_call and ts in (s["stamp"], s["snap"]) and s["work_ms"] == work_ms and not s.get("call"):
                 self._remote_match = (dev, s["stamp"])
                 return s
         self._remote_match = None

@@ -737,6 +737,69 @@ def test_a_local_session_is_not_shared(make_pc, cloud):
     assert cloud.sessions == {}
 
 
+def call_snap(ts: int, paused: bool = False) -> types.BusySnapshot:
+    return types.BusySnapshot(
+        snapshot=types.BusySnapshotInfinite(
+            type="INFINITE", card_id="busy", is_paused=paused, busy_bar_settings=LOCAL_SETTINGS
+        ),
+        snapshot_timestamp_ms=ts,
+    )
+
+
+@pytest.fixture
+def call_on_the_bar(make_pc, cloud):
+    """Two PCs on one bar sharing the running task; A is on a call started at `stamp`."""
+    a = make_pc("A", use_busybar=True, sync_limits=False, sync_session=True)
+    b = make_pc("B", use_busybar=True, sync_limits=False, sync_session=True)
+    stamp = a.clock.ms
+    a.app.session = {
+        "stamp": stamp,
+        "task": {"id": "", "content": "Call · Zoom", "project": "", "url": ""},
+        "started_at": "09:00",
+        "work_ms": 0,
+        "rounds": 0,
+        "done": 0,
+        "activity": {"id": "call", "name": "Call", "detail": "Zoom"},
+        "call": {"apps": ["Zoom"], "keys": ["zoom"], "started_ms": stamp - 30_000, "seen_ms": stamp},
+    }
+    a.app.snap = call_snap(stamp)
+    settle([a, b], cloud)
+    return a, b, stamp
+
+
+def test_a_call_reaches_the_other_pc_after_its_screen_moved_the_stamp(call_on_the_bar):
+    _, b, stamp = call_on_the_bar
+    b.app.snap = call_snap(stamp + 3 * 60_000)  # the CALL screen rewrote the snapshot since
+    s = remote(b)
+    assert s is not None and s["call"] == {"apps": ["Zoom"], "keys": ["zoom"], "started_ms": stamp - 30_000}
+    assert b.app.timer_view()["phase"] == "call"
+    b.app.snap = call_snap(stamp - 1)  # a timer from before the call
+    assert remote(b) is None
+
+
+def test_a_call_on_the_other_pc_blocks_here_and_keeps_this_pc_silent(call_on_the_bar, monkeypatch):
+    _, b, stamp = call_on_the_bar
+    b.app.snap = call_snap(stamp + 60_000)
+    focus = b.app.focus()
+    assert focus["active"] is True
+    assert (focus["activity"], focus["ends_at_ms"], focus["spare"]) == ("call", 0, ["zoom"])
+    assert focus["task"] == "Call · Zoom"
+    rang = []
+    monkeypatch.setattr(b.app, "ring_bar", lambda: rang.append(1) or True)
+    b.app.beep()
+    assert rang == []
+    b.app.snap = call_snap(stamp + 60_000, paused=True)
+    assert b.app.focus()["active"] is False
+
+
+def test_a_pomodoro_is_not_taken_for_a_call(call_on_the_bar):
+    _, b, stamp = call_on_the_bar
+    b.app.snap = bar_snap(stamp + 60_000)
+    assert remote(b) is None
+    assert b.app.focus()["active"] is True  # still a work phase on the bar, blocked as before
+    assert b.app.focus()["spare"] == []
+
+
 def test_sharing_only_the_task_leaves_the_limits_alone(on_the_bar, cloud):
     a, b, _ = on_the_bar
     assert "doc" not in a.payload()

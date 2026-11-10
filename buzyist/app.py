@@ -603,15 +603,20 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
             if session and snap.snapshot_timestamp_ms < session["stamp"]:
                 return off  # a reading from before our own start
             state = timer_state(snap)
+            remote = None if session else self.remote_session()
+            activity = (session and session.get("activity")) or {}
             call = session and session.get("call")
+            if not session and state.mode == "infinite" and remote and remote.get("call"):
+                # A call another PC runs on this bar: blocks here what our call_activity blocks.
+                call = remote["call"]
+                cfg = self.cfg.view()
+                activity = next((a for a in cfg["activities"] if a["id"] == cfg["call_activity"]), None) or {}
             if call:
                 running = state.mode == "infinite" and not state.is_paused
             else:
                 running = state.mode == "interval" and not state.is_finished and state.phase == "work"
             if not running or state.is_paused:
                 return off
-            remote = None if session else self.remote_session()
-            activity = (session and session.get("activity")) or {}
             return {
                 "active": True,
                 # No session here: the timer was started on the bar itself
