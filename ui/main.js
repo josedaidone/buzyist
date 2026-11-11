@@ -2031,6 +2031,7 @@ async function openSettings(tab) {
   renderLimits();
   refreshLimitUsage();
   syncOwner = s.sync_owner || "";
+  syncPicked = false;
   renderSync(s.sync_info);
   $("addBlockedSite").value = "";
   $("extDir").textContent = s.extension_dir || "extension";
@@ -3262,8 +3263,9 @@ async function refreshLimitUsage(kind) {
   renderLimits(kind);
 }
 setInterval(async () => {
-  if (!$("drawer").classList.contains("on") || settingsTab !== "limits") return;
-  refreshLimitUsage();
+  if (!$("drawer").classList.contains("on")) return;
+  if (settingsTab === "limits") refreshLimitUsage();
+  if (settingsTab !== "sync") return;
   const r = await api.sync_info();
   if (r.ok) renderSync(r);
 }, 5000);
@@ -3272,6 +3274,7 @@ setInterval(async () => {
 // PC does it (buzyist/app_sync.py, "sharing across PCs"). The profiles come from the
 // extensions that have called buZyist; the first one is picked by itself.
 let syncOwner = "";  // as picked here, saved with the rest
+let syncPicked = false;  // picked by hand since Settings opened; else it follows the app (another profile may take over)
 
 const agoText = (ms) => {
   const min = Math.round((Date.now() - ms) / 60000);
@@ -3283,6 +3286,7 @@ const agoText = (ms) => {
 
 function renderSync(info) {
   info = info || { instances: [], devices: [] };
+  if (!syncPicked && typeof info.owner === "string") syncOwner = info.owner;
   const select = $("s_sync_owner");
   if (document.activeElement !== select) {
     select.replaceChildren();
@@ -3319,7 +3323,7 @@ function renderSync(info) {
   syncMuted();
 }
 const syncMuted = () => $("syncFields").classList.toggle("muted", !$("s_sync_limits").checked && !$("s_sync_session").checked);
-$("s_sync_owner").onchange = () => { syncOwner = $("s_sync_owner").value; };
+$("s_sync_owner").onchange = () => { syncOwner = $("s_sync_owner").value; syncPicked = true; };
 $("s_sync_limits").onchange = $("s_sync_session").onchange = syncMuted;
 
 let namesText = "";  // what's typed in the editor's websites (or apps) box

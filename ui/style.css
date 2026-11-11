@@ -754,7 +754,6 @@ body.instant .modal, body.instant .scrim { transition: none; }
 #limitsFields, #appLimitsFields { margin-top: 12px; }
 #limitsFields.muted, #appLimitsFields.muted { opacity: .55; }
 .limits-apps { margin-top: 22px; }
-#syncBox { margin-top: 18px; }
 #syncBox .field { margin-bottom: 8px; }
 #syncFields.muted { opacity: .55; }
 #syncStatus { font-size: 13px; font-weight: 600; }

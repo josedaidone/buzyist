@@ -126,12 +126,13 @@ menu, and starts it.
     couple more minutes.
   - The extension keeps enforcing limits while buZyist is closed and reports the time it measured
     the next time buZyist runs.
-  - **Share limits and time with my other PCs** (off by default): the limits, and the time spent on
+  - **Share limits and time with my other PCs** (Settings → Sync, off by default): the limits, and the time spent on
     them, follow you between PCs through Chrome sync, so 20 minutes of Instagram at work count at
     home too. On each PC, load the extension in a Chrome profile signed in to the same Google
     account, with sync on, and turn the switch on. If a PC has several Chrome profiles with the
     extension, pick the one that shares (the first to connect does, until you pick); the others
-    still enforce the limits. Edits made on different PCs are merged rule by rule. Changes reach
+    still enforce the limits. If that profile goes away (the extension removed and loaded again),
+    another one signed in to the same Google account takes over after 10 minutes. Edits made on different PCs are merged rule by rule. Changes reach
     the other PCs within a minute or so of the extension seeing them.
 - **App limits** (Settings → Limits): the same time limits and blocked hours for Windows apps
   (`WhatsApp.exe`, `Slack.exe`, ...), measured by buZyist itself: time counts while the app's

@@ -113,6 +113,7 @@ class App(SessionMixin, SitesMixin, SyncMixin, UpdatesMixin, WindowsMixin, TrayM
         # And on the PC at all, one row ("pc"), without what was in front (pc_time_on).
         self.pc_time = AppTime(paths.PC_TIME_PATH, str, str)
         self.blocks = BlockLog(paths.BLOCKS_PATH)  # websites the extension blocked, for the Stats tab
+        self.started_ms = now_ms()  # when this run began (_owner_gone)
         self.sync_lock = threading.Lock()  # guards self.shared
         self.shared = load_shared()
         self.usage.set_remote(self.shared["remote"])

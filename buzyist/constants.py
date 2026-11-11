@@ -85,6 +85,9 @@ PASS_SECONDS = 120  # what "allow 2 more minutes" on the block page grants
 SYNC_DAYS = 35
 SYNC_STALE_DAYS = 40
 TOMBSTONE_DAYS = 60  # a limit removed on one PC stays removed on PCs that were off this long
+# The profile that shares (sync_owner), unheard of this long since buZyist started, hands over
+# to another one signed in to the same Google account (an extension removed and loaded again).
+SYNC_OWNER_GONE_MS = 10 * 60_000
 DEVICE_NAME = (os.environ.get("COMPUTERNAME") or socket.gethostname() or "PC")[:60]
 SITE_MODES = ("block", "allow")
 
