@@ -7,7 +7,15 @@ import logging
 from busylib.features import timer_state
 
 from buzyist import paths
-from buzyist.constants import APP, DEVICE_NAME, MAX_SITE_LIMITS, TOMBSTONE_DAYS, AppError, now_ms
+from buzyist.constants import (
+    APP,
+    DEVICE_NAME,
+    MAX_SITE_LIMITS,
+    SYNC_OWNER_GONE_MS,
+    TOMBSTONE_DAYS,
+    AppError,
+    now_ms,
+)
 from buzyist.i18n import t
 from buzyist.site_rules import clean_site_limit
 from buzyist.storage import write_json
@@ -152,12 +160,29 @@ class SyncMixin:
                 for iid in [i for i, e in seen.items() if e.get("seen", 0) < old]:
                     del seen[iid]
                 self._save_shared()
-        if trusted and self.sync_on() and not self.cfg.get("sync_owner"):
+            owner = self.cfg.get("sync_owner")
+            take = not owner or (owner != instance and self._owner_gone(owner, entry["email"]))
+        if trusted and self.sync_on() and take:
             with self.cfg.edit() as c:
-                if c.get("sync_owner"):
+                if c.get("sync_owner") != owner:
                     return  # another request took it meanwhile
                 c["sync_owner"] = instance
-            log.info("sharing through browser profile %s (%s)", instance, account or "no account")
+            if owner:
+                log.info("profile %s hasn't been seen: sharing through %s instead", owner, instance)
+            log.info("sharing through browser profile %s (%s)", instance, entry["email"] or "no account")
+
+    def _owner_gone(self, owner: str, email: str) -> bool:
+        """
+        The profile that shares hasn't called since SYNC_OWNER_GONE_MS (counted
+        from buZyist's start too: `seen` is saved only now and then), and the
+        one calling (`email`) is signed in to the same Google account, so it
+        reaches the same Chrome sync. Call with sync_lock held.
+        """
+        old = self.shared["instances"].get(owner)
+        if old and old.get("email") and old["email"] != email:
+            return False
+        last = max(old["seen"] if old else 0, self.started_ms)
+        return now_ms() - last > SYNC_OWNER_GONE_MS
 
     def _save_shared(self) -> None:
         """Write sync.json; call with sync_lock held."""

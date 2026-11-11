@@ -587,6 +587,42 @@ def test_only_the_sync_owner_is_listened_to(pair, cloud):
     assert (a.state(), canon(a.app.shared)) == before
 
 
+def meet(pc: PC, instance: str, email: str) -> None:
+    """A browser profile with the extension calls buZyist."""
+    pc.app.note_instance(instance, email, trusted=True)
+
+
+def test_a_profile_on_the_same_account_takes_over_from_one_gone(make_pc, clock):
+    a = make_pc("A")
+    meet(a, a.owner, "me@example.com")
+    meet(a, "otherprofile", "me@example.com")
+    assert a.app.cfg["sync_owner"] == a.owner  # the owner was just here
+    clock.advance(minutes=11)
+    meet(a, "workprofile", "work@example.com")
+    assert a.app.cfg["sync_owner"] == a.owner  # another account: another Chrome sync
+    meet(a, "otherprofile", "me@example.com")
+    assert a.app.cfg["sync_owner"] == "otherprofile"
+
+
+def test_an_owner_never_seen_counts_from_the_start(make_pc, clock):
+    a = make_pc("A")  # sync_owner set, its profile unknown (the extension was loaded again)
+    meet(a, "newprofile", "me@example.com")
+    assert a.app.cfg["sync_owner"] == a.owner  # it may just not have called yet
+    clock.advance(minutes=11)
+    meet(a, "newprofile", "me@example.com")
+    assert a.app.cfg["sync_owner"] == "newprofile"
+
+
+def test_no_takeover_with_sharing_off_or_an_untrusted_call(make_pc, clock):
+    a = make_pc("A", sync_limits=False, sync_session=False)
+    clock.advance(minutes=11)
+    meet(a, "newprofile", "me@example.com")
+    assert a.app.cfg["sync_owner"] == a.owner
+    a.app.cfg["sync_limits"] = True
+    a.app.note_instance("newprofile", "me@example.com", trusted=False)
+    assert a.app.cfg["sync_owner"] == a.owner
+
+
 def test_no_owner_no_sync(make_pc, cloud):
     a = make_pc("A", sync_owner="")
     assert not a.app.is_sync_owner("")
